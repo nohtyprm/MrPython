@@ -1,4 +1,4 @@
-# IDLE reads several config files to determine user preferences.  This
+# MrPython reads several config files to determine user preferences.  This
 # file is the default config file for idle key binding settings.
 # Where multiple keys are specified for an action: if they are separated
 # by a space (eg. action=<key1> <key2>) then the keys are alternatives, if
@@ -7,7 +7,7 @@
 # is used in all cases, for consistency in auto key conflict checking in the
 # configuration gui.
 
-[IDLE Classic Windows]
+[MrPython Classic Windows]
 copy=<Control-Key-c> <Control-Key-C>
 cut=<Control-Key-x> <Control-Key-X>
 paste=<Control-Key-v> <Control-Key-V>
@@ -58,7 +58,7 @@ change-indentwidth=<Alt-Key-u> <Meta-Key-u> <Alt-Key-U> <Meta-Key-U>
 del-word-left=<Control-Key-BackSpace>
 del-word-right=<Control-Key-Delete>
 
-[IDLE Classic Unix]
+[MrPython Classic Unix]
 copy=<Alt-Key-w> <Meta-Key-w>
 cut=<Control-Key-w>
 paste=<Control-Key-y>
@@ -109,7 +109,7 @@ change-indentwidth=<Alt-Key-u>
 del-word-left=<Alt-Key-BackSpace>
 del-word-right=<Alt-Key-d>
 
-[IDLE Classic Mac]
+[MrPython Classic Mac]
 copy=<Command-Key-c>
 cut=<Command-Key-x>
 paste=<Command-Key-v>
@@ -160,7 +160,7 @@ change-indentwidth=<Control-Key-u>
 del-word-left=<Control-Key-BackSpace>
 del-word-right=<Control-Key-Delete>
 
-[IDLE Classic OSX]
+[MrPython Classic OSX]
 toggle-tabs = <Control-Key-t>
 interrupt-execution = <Control-Key-c>
 untabify-region = <Control-Key-6>

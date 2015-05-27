@@ -54,7 +54,7 @@ delete-exitfunc= 1
 width= 80
 height= 40
 font= courier
-font-size= 10
+font-size= 12
 font-bold= 0
 encoding= none
 
@@ -68,7 +68,7 @@ name= IDLE New
 
 [Keys]
 default= 1
-name= IDLE Classic Mac
+name= MrPython Classic Mac
 
 [History]
 cyclic=1

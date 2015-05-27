@@ -507,7 +507,27 @@ class IdleConf:
 
     def GetCurrentKeySet(self):
         "Return CurrentKeys with 'darwin' modifications."
-        result = self.GetKeySet(self.CurrentKeys())
+
+        # XXX : here we make the keyset name according to the
+        #       guessed platform  (and only use the specified
+        #       name if the guessing fails).
+        #       Passing the layout as a default option
+        #       as in IDLE is a non-sense
+
+        keySetName = self.CurrentKeys()
+        if sys.platform.startswith('freebsd')  \
+           or sys.platform.startswith('linux') \
+           or sys.platform.startswith('sunos') \
+           or sys.platform.startswith('cygwin'): 
+            keySetName = "MrPython Classic Unix"
+        elif sys.platform.startswith('win32'):
+            keySetName = "MrPython Classic Windows"
+        elif sys.platform.startswith('darwin'):
+            keySetName = "MrPython Classic OSX"
+        else:
+            print("Warning ! unrecognized plateform: {} (using default bindings: {})".format(sys.platform, keySetName), file=sys.stderr)
+
+        result = self.GetKeySet(keySetName)
 
         if sys.platform == "darwin":
             # OS X Tk variants do not support the "Alt" keyboard modifier.
@@ -529,6 +549,8 @@ class IdleConf:
         If a binding defined in an extension is already in use, the
         extension binding is disabled by being set to ''
         """
+        print("keySetName = {}".format(keySetName))
+
         keySet = self.GetCoreKeys(keySetName)
         activeExtns = self.GetExtensions(active_only=1)
         for extn in activeExtns:
