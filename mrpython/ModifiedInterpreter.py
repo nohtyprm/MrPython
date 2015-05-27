@@ -71,7 +71,7 @@ class ModifiedInterpreter(InteractiveInterpreter):
                 lineno += 1  #mark end of offending line
             pos = "0.0 + %d lines + %d chars" % (lineno-1, offset-1)
             editwin.colorize_syntax_error(text, pos)
-            
+
             self.tkconsole.write("%s\n" % msg)
         finally:
             self.tkconsole.set_warning_stream(saved_stream)
@@ -123,4 +123,4 @@ class ModifiedInterpreter(InteractiveInterpreter):
         for key in list(c.keys()):
             if key[:1] + key[-1:] != "<>":
                 del c[key]
-        
+

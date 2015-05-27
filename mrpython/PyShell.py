@@ -10,7 +10,6 @@ class PyShell(Widget):
 
     shell_title = "Python " + python_version() + " Shell"
 
-    
     from ModifiedColorDelegator import ModifiedColorDelegator
     from ModifiedUndoDelegator import ModifiedUndoDelegator
     from IdleHistory import History
@@ -18,16 +17,16 @@ class PyShell(Widget):
     def __init__(self,parent):
 
         self.entre=Text(parent,height=1,background='#FFC757')
-    
+
         self.text=Text(parent)
         self.text.configure(state='disabled')
-        
+
         self.scroll=scroll=Scrollbar(self.text)
         scroll['command'] = self.text.yview
         scroll.pack(side=RIGHT, fill=Y)
         self.text['yscrollcommand'] = scroll.set
 
-        
+
         self.warning_stream=sys.__stderr__
         self.tkinter_vars = {}  # keys: Tkinter event names
                                     # values: Tkinter variable instances
@@ -62,7 +61,7 @@ class PyShell(Widget):
     closing = False
     _stop_readline_flag = False
     COPYRIGHT = 'Type "copyright", "credits" or "license()" for more information.'
-        
+
     def set_warning_stream(self, stream):
         global warning_stream
         warning_stream = stream
@@ -76,7 +75,7 @@ class PyShell(Widget):
             # create a Tkinter variable object with self.text as master:
             self.tkinter_vars[name] = var = vartype(self.text)
         return var
-        
+
     def run(self,filename):
         self.write("\n==== run %s ====\n" % (filename))
         self.interp.execfile(filename)
@@ -88,7 +87,6 @@ class PyShell(Widget):
         self.interp.execfile(filename,self.entre.get(1.0,END))
         self.entre.delete(1.0,END)
 
-        
 
     def check(self,pyEditor):
         self.write("\n==== check %s ====\n" % (pyEditor.long_title()))
@@ -162,14 +160,10 @@ class PyShell(Widget):
     def begin(self):
         self.text.mark_set("iomark", "insert")
         self.resetoutput()
-        nosub = ("==== No Subprocess ====\n\n" +
-                "WARNING: Running MrPython without a Subprocess is deprecated\n" +
-                "and will be removed in a later version. See Help/MrPython Help\n" +
-                "for details.\n\n")
         sys.displayhook = rpc.displayhook
 
-        self.write("Python %s on %s\n%s\n%s" %
-                   (sys.version, sys.platform, self.COPYRIGHT, nosub))
+        self.write("Python %s on %s\n%s\n" %
+                   (sys.version, sys.platform, self.COPYRIGHT))
         self.showprompt()
         import tkinter
         tkinter._default_root = None # 03Jan04 KBK What's this?
@@ -195,7 +189,7 @@ class PyShell(Widget):
             self.endoffile = 0
             line = ""
         return line
-        
+
     #heritage PyEditor??
     def reset_undo(self):
         self.undo.reset_undo()

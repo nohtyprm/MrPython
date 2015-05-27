@@ -10,12 +10,8 @@ class MenuManager:
             ("file", "_File"),
             ("edit", "_Edit"),
             ("format", "F_ormat"),
-            ("shell", "She_ll"),
-            ("run", "_Run"),
-            ("debug", "_Debug"),
-            ("options", "_Options"),
-            ("windows", "_Window"),
-            ("help", "_Help"),
+            ("command", "_Command"),
+            ("help", "_Help")
         ]
 
     def createmenubar(self):

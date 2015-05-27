@@ -4,7 +4,6 @@ from PyEditor import PyEditor
 from PyEditorList import PyEditorList
 from PyShell import  PyShell
 import Bindings
-#test git
 
 def main():
     app = Application()
@@ -14,7 +13,7 @@ class Application:
     def __init__(self):
 
         self.root=Tk()
-        self.root.title("MrPyton2.0")
+        self.root.title("MrPython")
 
         self.main_view=MainView(self.root)
         self.pyEditorList=self.main_view.pyEditorList
@@ -107,7 +106,7 @@ class Application:
     def check_module(self,event=None):
         reply=self.pyEditorList.get_current_editor().maybesave_run()
         if(reply!="cancel"):
-            self.pyShell.check(self.pyEditorList.get_current_editor())        
+            self.pyShell.check(self.pyEditorList.get_current_editor())
 
     def run_source(self,event=None):
         filename=self.pyEditorList.get_current_editor().long_title()
