@@ -1,9 +1,9 @@
-"Implement Idle Shell history mechanism with History class"
+"Implement MrPython Shell history mechanism with History class"
 
-from configHandler import idleConf
+from configHandler import MrPythonConf
 
 class History:
-    ''' Implement Idle Shell history mechanism.
+    ''' Implement MrPython Shell history mechanism.
 
     store - Store source statement (called from PyShell.resetoutput).
     fetch - Fetch stored statement matching prefix already entered.
@@ -13,7 +13,7 @@ class History:
     def __init__(self, text):
         '''Initialize data attributes and bind event methods.
 
-        .text - Idle wrapper of tk Text widget, with .bell().
+        .text - MrPython wrapper of tk Text widget, with .bell().
         .history - source statements, possibly with multiple lines.
         .prefix - source already entered at prompt; filters history list.
         .pointer - index into history.
@@ -23,7 +23,7 @@ class History:
         self.history = []
         self.prefix = None
         self.pointer = None
-        self.cyclic = idleConf.GetOption("main", "History", "cyclic", 1, "bool")
+        self.cyclic = MrPythonConf.GetOption("main", "History", "cyclic", 1, "bool")
         text.bind("<<history-previous>>", self.history_prev)
         text.bind("<<history-next>>", self.history_next)
 
@@ -101,4 +101,4 @@ class History:
 
 if __name__ == "__main__":
     from unittest import main
-    main('MrPython.idle_test.test_idlehistory', verbosity=2, exit=False)
+    main('MrPython.MrPython_test.test_mrpythonhistory', verbosity=2, exit=False)

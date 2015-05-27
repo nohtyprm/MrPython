@@ -14,12 +14,12 @@ class ModifiedColorDelegator(ColorDelegator):
 
     def LoadTagDefs(self):
         ColorDelegator.LoadTagDefs(self)
-        theme = idleConf.GetOption('main','Theme','name')
+        theme = MrPythonConf.GetOption('main','Theme','name')
         self.tagdefs.update({
             "stdin": {'background':None,'foreground':None},
-            "stdout": idleConf.GetHighlight(theme, "stdout"),
-            "stderr": idleConf.GetHighlight(theme, "stderr"),
-            "console": idleConf.GetHighlight(theme, "console"),
+            "stdout": MrPythonConf.GetHighlight(theme, "stdout"),
+            "stderr": MrPythonConf.GetHighlight(theme, "stderr"),
+            "console": MrPythonConf.GetHighlight(theme, "console"),
         })
 
     def removecolors(self):

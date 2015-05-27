@@ -1,4 +1,4 @@
-"""Provides access to stored IDLE configuration information.
+"""Provides access to stored MRPYTHON configuration information.
 
 Refer to the comments at the beginning of config-main.def for a description of
 the available configuration files and the design implemented to update user
@@ -6,12 +6,12 @@ configuration information.  In particular, user configuration choices which
 duplicate the defaults will be removed from the user's configuration files,
 and if a file becomes empty, it will be deleted.
 
-The contents of the user files may be altered using the Options/Configure IDLE
+The contents of the user files may be altered using the Options/Configure MRPYTHON
 menu to access the configuration GUI (configDialog.py), or manually.
 
 Throughout this module there is an emphasis on returning useable defaults
 when a problem occurs in returning a requested configuration value back to
-idle. This is to allow IDLE to continue to function in spite of errors in
+MrPython. This is to allow MRPYTHON to continue to function in spite of errors in
 the retrieval of config information. When a default is returned instead of
 a requested config value, a message is printed to stderr to aid in
 configuration problem notification and resolution.
@@ -28,9 +28,9 @@ class InvalidConfigSet(Exception): pass
 class InvalidFgBg(Exception): pass
 class InvalidTheme(Exception): pass
 
-class IdleConfParser(ConfigParser):
+class MrPythonConfParser(ConfigParser):
     """
-    A ConfigParser specialised for idle configuration file handling
+    A ConfigParser specialised for MrPython configuration file handling
     """
     def __init__(self, cfgFile, cfgDefaults=None):
         """
@@ -67,9 +67,9 @@ class IdleConfParser(ConfigParser):
         "Load the configuration file from disk."
         self.read(self.file)
 
-class IdleUserConfParser(IdleConfParser):
+class MrPythonUserConfParser(MrPythonConfParser):
     """
-    IdleConfigParser specialised for user configuration handling.
+    MrPythonConfigParser specialised for user configuration handling.
     """
 
     def AddSection(self, section):
@@ -138,12 +138,12 @@ class IdleUserConfParser(IdleConfParser):
         else:
             self.RemoveFile()
 
-class IdleConf:
-    """Hold config parsers for all idle config files in singleton instance.
+class MrPythonConf:
+    """Hold config parsers for all MrPython config files in singleton instance.
 
     Default config files, self.defaultCfg --
         for config_type in self.config_types:
-            (idle install dir)/config-{config-type}.def
+            (MrPython install dir)/config-{config-type}.def
 
     User config files, self.userCfg --
         for config_type in self.config_types:
@@ -160,11 +160,11 @@ class IdleConf:
 
     def CreateConfigHandlers(self):
         "Populate default and user config parser dictionaries."
-        #build idle install path
+        #build MrPython install path
         if __name__ != '__main__': # we were imported
-            idleDir=os.path.dirname(__file__)
+            MrPythonDir=os.path.dirname(__file__)
         else: # we were exec'ed (for testing only)
-            idleDir=os.path.abspath(sys.path[0])
+            MrPythonDir=os.path.abspath(sys.path[0])
         userDir=self.GetUserCfgDir()
 
         defCfgFiles = {}
@@ -172,12 +172,12 @@ class IdleConf:
         # TODO eliminate these temporaries by combining loops
         for cfgType in self.config_types: #build config file names
             defCfgFiles[cfgType] = os.path.join(
-                    idleDir, 'config-' + cfgType + '.def')
+                    MrPythonDir, 'config-' + cfgType + '.def')
             usrCfgFiles[cfgType] = os.path.join(
                     userDir, 'config-' + cfgType + '.cfg')
         for cfgType in self.config_types: #create config parsers
-            self.defaultCfg[cfgType] = IdleConfParser(defCfgFiles[cfgType])
-            self.userCfg[cfgType] = IdleUserConfParser(usrCfgFiles[cfgType])
+            self.defaultCfg[cfgType] = MrPythonConfParser(defCfgFiles[cfgType])
+            self.userCfg[cfgType] = MrPythonUserConfParser(usrCfgFiles[cfgType])
 
     def GetUserCfgDir(self):
         """Return a filesystem directory for storing user config files.
@@ -196,7 +196,7 @@ class IdleConf:
                     pass
                 userDir = '~'
         if userDir == "~": # still no path to home!
-            # traditionally IDLE has defaulted to os.getcwd(), is this adequate?
+            # traditionally MRPYTHON has defaulted to os.getcwd(), is this adequate?
             userDir = os.getcwd()
         userDir = os.path.join(userDir, cfgDir)
         if not os.path.exists(userDir):
@@ -228,7 +228,7 @@ class IdleConf:
                 return self.userCfg[configType].Get(section, option,
                                                     type=type, raw=raw)
         except ValueError:
-            warning = ('\n Warning: configHandler.py - IdleConf.GetOption -\n'
+            warning = ('\n Warning: configHandler.py - MrPythonConf.GetOption -\n'
                        ' invalid %r value for configuration option %r\n'
                        ' from section %r: %r' %
                        (type, option, section,
@@ -245,7 +245,7 @@ class IdleConf:
             pass
         #returning default, print warning
         if warn_on_default:
-            warning = ('\n Warning: configHandler.py - IdleConf.GetOption -\n'
+            warning = ('\n Warning: configHandler.py - MrPythonConf.GetOption -\n'
                        ' problem retrieving configuration option %r\n'
                        ' from section %r.\n'
                        ' returning default value: %r' %
@@ -321,7 +321,7 @@ class IdleConf:
             raise InvalidTheme('Invalid theme type specified')
         # Provide foreground and background colors for each theme
         # element (other than cursor) even though some values are not
-        # yet used by idle, to allow for their use in the future.
+        # yet used by MrPython, to allow for their use in the future.
         # Default values are generally black and white.
         # TODO copy theme from a class attribute.
         theme ={'normal-foreground':'#000000', #!!!!j'ai modifier des couleurs
@@ -356,15 +356,13 @@ class IdleConf:
         for element in theme:
             if not cfgParser.has_option(themeName, element):
                 # Print warning that will return a default color
-                warning = ('\n Warning: configHandler.IdleConf.GetThemeDict'
+                warning = ('\n Warning: configHandler.MrPythonConf.GetThemeDict'
                            ' -\n problem retrieving theme element %r'
                            '\n from theme %r.\n'
                            ' returning default color: %r' %
                            (element, themeName, theme[element]))
-                try:
-                    print(warning, file=sys.stderr)
-                except OSError:
-                    pass
+                print(warning, file=sys.stderr)
+
             theme[element] = cfgParser.Get(
                     themeName, element, default=theme[element])
         return theme
@@ -512,7 +510,7 @@ class IdleConf:
         #       guessed platform  (and only use the specified
         #       name if the guessing fails).
         #       Passing the layout as a default option
-        #       as in IDLE is a non-sense
+        #       as in MRPYTHON is a non-sense
 
         keySetName = self.CurrentKeys()
         if sys.platform.startswith('freebsd')  \
@@ -549,7 +547,7 @@ class IdleConf:
         If a binding defined in an extension is already in use, the
         extension binding is disabled by being set to ''
         """
-        print("keySetName = {}".format(keySetName))
+        # print("keySetName = {}".format(keySetName))
 
         keySet = self.GetCoreKeys(keySetName)
         activeExtns = self.GetExtensions(active_only=1)
@@ -564,7 +562,7 @@ class IdleConf:
         return keySet
 
     def IsCoreBinding(self, virtualEvent):
-        """Return True if the virtual event is one of the core idle key events.
+        """Return True if the virtual event is one of the core MrPython key events.
 
         virtualEvent - string, name of the virtual event to test for,
                        without the enclosing '<< >>'
@@ -640,7 +638,7 @@ class IdleConf:
                 if binding:
                     keyBindings[event] = binding
                 else: #we are going to return a default, print warning
-                    warning=('\n Warning: configHandler.py - IdleConf.GetCoreKeys'
+                    warning=('\n Warning: configHandler.py - MrPythonConf.GetCoreKeys'
                                ' -\n problem retrieving key binding for event %r'
                                '\n from key set %r.\n'
                                ' returning default value: %r' %
@@ -705,7 +703,7 @@ class IdleConf:
             self.userCfg[key].Save()
 
 
-idleConf = IdleConf()
+MrPythonConf = MrPythonConf()
 
 # TODO Revise test output, write expanded unittest
 ### module test
@@ -722,7 +720,6 @@ if __name__ == '__main__':
                 print(options)
                 for option in options:
                     print(option, '=', cfg[key].Get(section, option))
-    dumpCfg(idleConf.defaultCfg)
-    dumpCfg(idleConf.userCfg)
-    print(idleConf.userCfg['main'].Get('Theme', 'name'))
-    #print idleConf.userCfg['highlight'].GetDefHighlight('Foo','normal')
+    dumpCfg(MrPythonConf.defaultCfg)
+    dumpCfg(MrPythonConf.userCfg)
+    print(MrPythonConf.userCfg['main'].Get('Theme', 'name'))

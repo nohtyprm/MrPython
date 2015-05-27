@@ -3,7 +3,7 @@ import re
 import keyword
 import builtins
 from Delegator import Delegator
-from configHandler import idleConf
+from configHandler import MrPythonConf
 
 DEBUG = False
 
@@ -64,18 +64,18 @@ class ColorDelegator(Delegator):
         self.tag_raise('sel')
 
     def LoadTagDefs(self):
-        theme = idleConf.GetOption('main','Theme','name')
+        theme = MrPythonConf.GetOption('main','Theme','name')
         self.tagdefs = {
-            "COMMENT": idleConf.GetHighlight(theme, "comment"),
-            "KEYWORD": idleConf.GetHighlight(theme, "keyword"),
-            "BUILTIN": idleConf.GetHighlight(theme, "builtin"),
-            "STRING": idleConf.GetHighlight(theme, "string"),
-            "DEFINITION": idleConf.GetHighlight(theme, "definition"),
+            "COMMENT": MrPythonConf.GetHighlight(theme, "comment"),
+            "KEYWORD": MrPythonConf.GetHighlight(theme, "keyword"),
+            "BUILTIN": MrPythonConf.GetHighlight(theme, "builtin"),
+            "STRING": MrPythonConf.GetHighlight(theme, "string"),
+            "DEFINITION": MrPythonConf.GetHighlight(theme, "definition"),
             "SYNC": {'background':None,'foreground':None},
             "TODO": {'background':None,'foreground':None},
-            "ERROR": idleConf.GetHighlight(theme, "error"),
+            "ERROR": MrPythonConf.GetHighlight(theme, "error"),
             # The following is used by ReplaceDialog:
-            "hit": idleConf.GetHighlight(theme, "hit"),
+            "hit": MrPythonConf.GetHighlight(theme, "hit"),
             }
 
         if DEBUG: print('tagdefs',self.tagdefs)

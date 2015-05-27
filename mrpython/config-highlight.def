@@ -1,7 +1,7 @@
-# IDLE reads several config files to determine user preferences.  This
-# file is the default config file for idle highlight theme settings.
+# MrPython reads several config files to determine user preferences.  This
+# file is the default config file for the highlight theme settings.
 
-[IDLE Classic]
+[MrPython Classic]
 normal-foreground= #000000
 normal-background= #ffffff
 keyword-foreground= #ff7700
@@ -22,7 +22,7 @@ hit-foreground= #ffffff
 hit-background= #000000
 error-foreground= #000000
 error-background= #ff7777
-#cursor (only foreground can be set, restart IDLE)
+#cursor (only foreground can be set, restart MrPython)
 cursor-foreground= black
 #shell window
 stdout-foreground= blue
@@ -32,7 +32,7 @@ stderr-background= #ffffff
 console-foreground= #770000
 console-background= #ffffff
 
-[IDLE New]
+[MrPython New]
 normal-foreground= #F8F8F2
 normal-background= #272822
 keyword-foreground= #F92672
@@ -53,7 +53,7 @@ hit-foreground= #ffffff
 hit-background= #000000
 error-foreground= #000000
 error-background= #ff7777
-#cursor (only foreground can be set, restart IDLE)
+#cursor (only foreground can be set, restart MrPython)
 cursor-foreground= white
 #shell window
 stdout-foreground= blue

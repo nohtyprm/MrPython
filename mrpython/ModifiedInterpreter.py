@@ -6,7 +6,7 @@ import linecache
 import time
 import socket
 import rpc
-from configHandler import idleConf
+from configHandler import MrPythonConf
 import tkinter.messagebox as tkMessageBox
 
 class MyRPCClient(rpc.RPCClient):

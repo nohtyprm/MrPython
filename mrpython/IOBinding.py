@@ -10,7 +10,7 @@ import re
 from tkinter import *
 from tkinter.simpledialog import askstring
 
-from configHandler import idleConf
+from configHandler import MrPythonConf
 
 from codecs import BOM_UTF8
 
@@ -60,7 +60,7 @@ else:
 
 locale_encoding = locale_encoding.lower()
 
-encoding = locale_encoding  ### KBK 07Sep07  This is used all over IDLE, check!
+encoding = locale_encoding  ### KBK 07Sep07  This is used all over MRPYTHON, check!
                             ### 'encoding' is used below in encode(), check!
 
 coding_re = re.compile(r'^[ \t\f]*#.*coding[:=][ \t]*([-\w.]+)', re.ASCII)
@@ -267,7 +267,7 @@ class IOBinding:
             enc = askstring(
                 "Specify file encoding",
                 "The file's encoding is invalid for Python 3.x.\n"
-                "IDLE will convert it to UTF-8.\n"
+                "MRPYTHON will convert it to UTF-8.\n"
                 "What is the current encoding of the file?",
                 initialvalue = locale_encoding,
                 parent = self.editwin.text)
@@ -429,7 +429,7 @@ class IOBinding:
             filename = self.filename
         # shell undo is reset after every prompt, looks saved, probably isn't
         if not saved or filename is None:
-            (tfd, tempfilename) = tempfile.mkstemp(prefix='IDLE_tmp_')
+            (tfd, tempfilename) = tempfile.mkstemp(prefix='MRPYTHON_tmp_')
             filename = tempfilename
             os.close(tfd)
             if not self.writefile(tempfilename):
@@ -438,11 +438,11 @@ class IOBinding:
         platform = os.name
         printPlatform = True
         if platform == 'posix': #posix platform
-            command = idleConf.GetOption('main','General',
+            command = MrPythonConf.GetOption('main','General',
                                          'print-command-posix')
             command = command + " 2>&1"
         elif platform == 'nt': #win32 platform
-            command = idleConf.GetOption('main','General','print-command-win')
+            command = MrPythonConf.GetOption('main','General','print-command-win')
         else: #no printing for this platform
             printPlatform = False
         if printPlatform:  #we can try to print for this platform

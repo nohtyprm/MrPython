@@ -4,7 +4,7 @@ import platform
 import tkinter.messagebox as tkMessageBox
 import tkinter.simpledialog as tkSimpleDialog
 from tkinter import *
-from configHandler import idleConf
+from configHandler import MrPythonConf
 from Search import SearchDialog
 from Search import GrepDialog
 from Search import ReplaceDialog
@@ -29,7 +29,7 @@ class PyEditor(Text):
         self['yscrollcommand'] = scroll.set
         self.list=parent
 
-        self.recent_files_path = os.path.join(idleConf.GetUserCfgDir(),'recent-files.lst')
+        self.recent_files_path = os.path.join(MrPythonConf.GetUserCfgDir(),'recent-files.lst')
 
         self.apply_bindings()
 
@@ -47,8 +47,8 @@ class PyEditor(Text):
         #                  and dedent cmds, and ditto TAB keystrokes
         # Although use-spaces=0 can be configured manually in config-main.def,
         # configuration of tabs v. spaces is not supported in the configuration
-        # dialog.  IDLE promotes the preferred Python indentation: use spaces!
-        usespaces = idleConf.GetOption('main', 'Indent',
+        # dialog.  MRPYTHON promotes the preferred Python indentation: use spaces!
+        usespaces = MrPythonConf.GetOption('main', 'Indent',
                                        'use-spaces', type='bool')
         self.usetabs = not usespaces
         
@@ -128,10 +128,10 @@ class PyEditor(Text):
         # Called from self.filename_change_hook and from configDialog.py
         self._rmcolorizer()
         self._addcolorizer()
-        theme = idleConf.GetOption('main','Theme','name')
-        normal_colors = idleConf.GetHighlight(theme, 'normal')
-        cursor_color = idleConf.GetHighlight(theme, 'cursor', fgBg='fg')
-        select_colors = idleConf.GetHighlight(theme, 'hilite')
+        theme = MrPythonConf.GetOption('main','Theme','name')
+        normal_colors = MrPythonConf.GetHighlight(theme, 'normal')
+        cursor_color = MrPythonConf.GetHighlight(theme, 'cursor', fgBg='fg')
+        select_colors = MrPythonConf.GetHighlight(theme, 'hilite')
         self.config(
             foreground=normal_colors['foreground'],
             background=normal_colors['background'],
@@ -663,7 +663,7 @@ class PyEditor(Text):
         "Update the indentwidth if changed and not using tabs in this window"
         # Called from configDialog.py
         if not self.usetabs:
-            self.indentwidth = idleConf.GetOption('main', 'Indent','num-spaces',
+            self.indentwidth = MrPythonConf.GetOption('main', 'Indent','num-spaces',
                                                   type='int')
 
     # Our editwin provides a is_char_in_string function that works

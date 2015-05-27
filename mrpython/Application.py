@@ -5,10 +5,6 @@ from PyEditorList import PyEditorList
 from PyShell import  PyShell
 import Bindings
 
-def main():
-    app = Application()
-    app.run()
-
 class Application:
     def __init__(self):
 
@@ -113,4 +109,5 @@ class Application:
         self.pyShell.runit(filename)
 
 if __name__ =="__main__":
-    main()
+    app = Application()
+    app.run()

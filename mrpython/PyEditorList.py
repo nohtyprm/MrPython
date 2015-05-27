@@ -9,13 +9,13 @@ class PyEditorList(Notebook):
     from IOBinding import filesystemencoding,encoding
 
     def __init__(self,parent):
-        from configHandler import idleConf
+        from configHandler import MrPythonConf
         Notebook.__init__(self,parent,width=300,height=300)
         self.parent=parent
         self.sizetab=0
         self.recent_files_menu=None
 
-        self.recent_files_path = os.path.join(idleConf.GetUserCfgDir(),'recent-files.lst')
+        self.recent_files_path = os.path.join(MrPythonConf.GetUserCfgDir(),'recent-files.lst')
 
     def get_size(self):
         return self.sizetab
@@ -60,7 +60,7 @@ class PyEditorList(Notebook):
         except OSError as err:
             if not getattr(self, "recentfilelist_error_displayed", False):
                 self.recentfilelist_error_displayed = True
-                tkMessageBox.showerror(title='IDLE Error',
+                tkMessageBox.showerror(title='MrPython Error',
                     message='Unable to update Recent Files list:\n%s'
                         % str(err),
                     parent=self)

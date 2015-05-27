@@ -10,7 +10,7 @@ windows.
 """
 #from importlib.util import find_spec
 
-from configHandler import idleConf
+from configHandler import MrPythonConf
 
 #   Warning: menudefs is altered in macosxSupport.overrideRootMenu()
 #   after it is determined that an OS X Aqua Tk is in use,
@@ -63,7 +63,7 @@ menudefs = [
      ('Run Module', '<<run-module>>'),
  ]),
     ('help', [
-   ('_About MrPython', '<<about-idle>>'),
+   ('_About MrPython', '<<about-mrpython>>'),
    None,
    ('_MrPython Help', '<<help>>'),
    ('Python _Docs', '<<python-docs>>'),
@@ -73,5 +73,5 @@ menudefs = [
 #if find_spec('turtledemo'):
  #   menudefs[-1][1].append(('Turtle Demo', '<<open-turtle-demo>>'))
 
-default_keydefs = idleConf.GetCurrentKeySet()
+default_keydefs = MrPythonConf.GetCurrentKeySet()
 
