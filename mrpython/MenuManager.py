@@ -17,6 +17,9 @@ class MenuManager:
     def createmenubar(self):
         parent=self.parent
 
+        # deactivate the tearOff's
+        parent.root.option_add('*tearOff', FALSE)
+
         parent.menubar=Menu(parent.root)
 
         self.menudict = menudict = {}
