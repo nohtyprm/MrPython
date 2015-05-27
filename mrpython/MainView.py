@@ -5,11 +5,23 @@ from PyShell import  PyShell
 from tkinter.ttk import *
 from tkinter import *
 
+import tkinter.font
+
 class MainView(object):
 
     def __init__(self,root):
         self.root=root
         self.recent_files_menu=None
+
+        default_font = tkinter.font.nametofont("TkFixedFont")
+        default_font.configure(size=12)
+
+        ### XXX : a small hack to use a nicer default theme
+        s = Style()
+        #print("Themes = {}".format(s.theme_names()))
+        import sys
+        if sys.platform == 'linux' and 'clam' in s.theme_names():
+            s.theme_use('clam')
 
         self.createview()
 
@@ -42,8 +54,4 @@ class MainView(object):
 
     def createPyShell(self,parent):
         self.pyShell=PyShell(parent)
-
-
-
-
 
