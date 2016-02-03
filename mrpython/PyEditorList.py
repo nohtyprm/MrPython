@@ -4,18 +4,20 @@ from tkinter.ttk import *
 import tkinter.messagebox as tkMessageBox
 from PyEditor import PyEditor
 
-
 class PyEditorList(Notebook):
-    from IOBinding import filesystemencoding,encoding
+    """
+    Manages the PyEditor widgets, in editor interface
+    """
 
     def __init__(self,parent):
         from configHandler import MrPythonConf
-        Notebook.__init__(self,parent,width=300,height=300)
-        self.parent=parent
-        self.sizetab=0
-        self.recent_files_menu=None
+        Notebook.__init__(self, parent)
+        self.parent = parent
+        self.sizetab = 0
+        self.recent_files_menu = None
 
-        self.recent_files_path = os.path.join(MrPythonConf.GetUserCfgDir(),'recent-files.lst')
+        self.recent_files_path = os.path.join(MrPythonConf.GetUserCfgDir(),
+                                              'recent-files.lst')
 
     def get_size(self):
         return self.sizetab

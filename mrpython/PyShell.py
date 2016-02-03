@@ -1,12 +1,10 @@
-
 from  ModifiedInterpreter import ModifiedInterpreter
 import io
 from tkinter import *
 import rpc
 from platform import python_version
-from tkinter import *
 
-class PyShell(Widget):
+class PyShell:
 
     shell_title = "Python " + python_version() + " Shell"
 
@@ -15,17 +13,16 @@ class PyShell(Widget):
     from IdleHistory import History
 
     def __init__(self,parent):
-
-        self.entre=Text(parent,height=1,background='#FFC757')
+        self.entre=Text(parent,background='#FFC757')
 
         self.text=Text(parent)
         self.text.configure(state='disabled')
 
-        self.scroll=scroll=Scrollbar(self.text)
-        scroll['command'] = self.text.yview
-        scroll.pack(side=RIGHT, fill=Y)
-        self.text['yscrollcommand'] = scroll.set
-
+        self.scroll=Scrollbar(self.text)
+        self.scroll['command'] = self.text.yview
+        self.scroll.pack(side=RIGHT, fill=Y)
+        self.text['yscrollcommand'] = self.scroll.set
+        self.entre.insert(END, ">>> ")
 
         self.warning_stream=sys.__stderr__
         self.tkinter_vars = {}  # keys: Tkinter event names
@@ -60,7 +57,6 @@ class PyShell(Widget):
     endoffile = False
     closing = False
     _stop_readline_flag = False
-    COPYRIGHT = 'Type "copyright", "credits" or "license()" for more information.'
 
     def set_warning_stream(self, stream):
         global warning_stream
@@ -162,8 +158,8 @@ class PyShell(Widget):
         self.resetoutput()
         sys.displayhook = rpc.displayhook
 
-        self.write("Python %s on %s\n%s\n" %
-                   (sys.version, sys.platform, self.COPYRIGHT))
+        self.write("Python %s on %s\n" %
+                   (sys.version, sys.platform))
         self.showprompt()
         import tkinter
         tkinter._default_root = None # 03Jan04 KBK What's this?
@@ -193,6 +189,13 @@ class PyShell(Widget):
     #heritage PyEditor??
     def reset_undo(self):
         self.undo.reset_undo()
+        
+    def change_mode(self, mode):
+        self.text.config(state=NORMAL)
+        self.text.delete(1.0, END)
+        self.begin()
+        self.write("Current mode : %s mode\n" % (mode))
+        self.text.config(state=DISABLED)
 
 class PseudoFile(io.TextIOBase):
 
