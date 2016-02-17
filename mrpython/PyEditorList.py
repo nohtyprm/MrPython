@@ -1,5 +1,5 @@
 import os
-from tkinter import END
+from tkinter import *
 from tkinter.ttk import *
 import tkinter.messagebox as tkMessageBox
 from PyEditor import PyEditor
@@ -23,10 +23,10 @@ class PyEditorList(Notebook):
         return self.sizetab
 
     def add(self, child, **kw):
-        super(PyEditorList, self).add(child,**kw)
-        child.list=self
+        super(PyEditorList, self).add(child, **kw)
+        child.list = self
         self.select(child)
-        self.sizetab+=1
+        self.sizetab += 1
 
     def changerFileName(self,editor):
         if editor.isOpen():

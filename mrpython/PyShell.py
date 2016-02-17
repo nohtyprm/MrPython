@@ -5,39 +5,53 @@ import rpc
 from platform import python_version
 
 class PyShell:
-
-    shell_title = "Python " + python_version() + " Shell"
+    """
+    Gather the information widget (white one)
+    and the interactive shell one
+    """
 
     from ModifiedColorDelegator import ModifiedColorDelegator
     from ModifiedUndoDelegator import ModifiedUndoDelegator
     from IdleHistory import History
 
+    shell_title = "Python " + python_version() + " Shell"
+    text_colors_by_mode = {"run":"green", "error":"red", "normal":"black"}
+    
     def __init__(self,parent):
-        self.entre=Text(parent,background='#FFC757')
-
-        self.text=Text(parent)
+        """
+        Create and configure the shell (the text widget that gives informations
+        and the interactive shell)
+        """
+        self.entre = Text(parent, background='#FFC757')
+        
+        self.text = Text(parent)
         self.text.configure(state='disabled')
-
-        self.scroll=Scrollbar(self.text)
+        self.scroll = Scrollbar(self.text)
         self.scroll['command'] = self.text.yview
         self.scroll.pack(side=RIGHT, fill=Y)
         self.text['yscrollcommand'] = self.scroll.set
-        self.entre.insert(END, ">>> ")
 
-        self.warning_stream=sys.__stderr__
+        # Create the variables used for delimiting the different regions
+        # of the text, for displaying different colors
+        # Index (x, y) of the beginning of the current tag (region)
+        self.current_begin_index = "0.0"
+        # Color of the current tag
+        self.current_color = "black"
+        self.current_tag = 0
+
+        self.warning_stream = sys.__stderr__
         self.tkinter_vars = {}  # keys: Tkinter event names
                                     # values: Tkinter variable instances
         self.interp = ModifiedInterpreter(self)
-
         self.save_stdout = sys.stdout
         self.save_stderr = sys.stderr
         self.save_stdin = sys.stdin
         import IOBinding
+        
         self.stdin = PseudoInputFile(self, "stdin", IOBinding.encoding)
         self.stdout = PseudoOutputFile(self, "stdout", IOBinding.encoding)
         self.stderr = PseudoOutputFile(self, "stderr", IOBinding.encoding)
         self.console = PseudoOutputFile(self, "console", IOBinding.encoding)
-
         sys.stdout = self.stdout
         sys.stderr = self.stderr
         sys.stdin = self.stdin
@@ -49,7 +63,6 @@ class PyShell:
 
         self.io = io = IOBinding.IOBinding(self)
         self.begin()
-
 
     reading = False
     executing = False
@@ -80,9 +93,8 @@ class PyShell:
 
     def runit(self,filename=None):
         self.interp.execfile(filename)
-        self.interp.execfile(filename,self.entre.get(1.0,END))
+        self.interp.execfile(filename, self.entre.get(1.0, END))
         self.entre.delete(1.0,END)
-
 
     def check(self,pyEditor):
         self.write("\n==== check %s ====\n" % (pyEditor.long_title()))
@@ -109,6 +121,24 @@ class PyShell:
             self.text.insert("end-1c", "\n")
         self.text.mark_set("iomark", "end-1c")
 
+    def change_text_color(self, mode):
+        """
+        Change the text color according to the specified mode :
+        we get the color by accessing the dictonnary text_colors_by_mode[mode]
+        - mode : string
+        """
+        # Give the current color to the current tag
+        tag_name = "tag" + str(self.current_tag)
+        self.text.tag_add(tag_name, self.current_begin_index, END)
+        self.text.tag_config(tag_name, foreground=self.current_color)
+
+        # Change of color, we start a new tag that will be create on the next
+        # change_text_color
+        self.current_color = self.text_colors_by_mode[mode]
+        self.current_begin_index = self.text.index(END)
+        self.current_tag += 1
+        self.text.configure(foreground=self.current_color)
+        
     def write(self, s, tags=()):
         if isinstance(s, str) and len(s) and max(s) > '\uffff':
             # Tk doesn't support outputting non-BMP characters

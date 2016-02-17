@@ -52,7 +52,7 @@ class MainView:
         self.view.add(self.py_shell.entre, minsize=27, height=27)
 
     def create_py_icon_frame(self, parent):
-        self.py_icon_frame = PyIconFrame(parent)
+        self.py_icon_frame = PyIconFrame(parent, self.root)
 
     def create_py_editor_list(self, parent):
         self.py_editor_list = PyEditorList(parent)
