@@ -16,6 +16,10 @@ class MyRPCClient(rpc.RPCClient):
         raise EOFError
 
 class ModifiedInterpreter(InteractiveInterpreter):
+    """
+    This class aims to running the code and check syntax, and
+    report erros if any in the text shell
+    """
 
     def __init__(self, tkconsole):
         self.tkconsole = tkconsole
@@ -25,7 +29,6 @@ class ModifiedInterpreter(InteractiveInterpreter):
         self.restarting = False
         self.subprocess_arglist = None
         self.original_compiler_flags = self.compile.compiler.flags
-
 
     rpcclt = None
 
@@ -37,14 +40,18 @@ class ModifiedInterpreter(InteractiveInterpreter):
         try:
             code = compile(source, filename, "exec")
         except (OverflowError, SyntaxError):
+            self.tkconsole.change_text_color("error")
             self.tkconsole.resetoutput()
             print('*** Error in script or command!\n'
                  'Traceback (most recent call last):',
                   file=self.tkconsole.stderr)
             InteractiveInterpreter.showsyntaxerror(self, filename)
             self.tkconsole.showprompt()
+            self.tkconsole.change_text_color("normal")
         else:
+            self.tkconsole.change_text_color("run")
             self.runcode(code)
+            self.tkconsole.change_text_color("normal")
 
     def checksyntax(self, pyEditor):
         filename=pyEditor.long_title()
@@ -76,6 +83,8 @@ class ModifiedInterpreter(InteractiveInterpreter):
         finally:
             self.tkconsole.set_warning_stream(saved_stream)
             self.tkconsole.showprompt()
+
+    
 
     def runcode(self, code):
         "Override base class method"

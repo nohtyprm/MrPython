@@ -12,7 +12,8 @@ class Application:
     - py_shell defines the shell interface (white and orange widgets)
     """
     
-    def __init__(self):    
+    def __init__(self):
+        """ Set up some information like, set up the interfaces """
         self.root = Tk()
         self.root.title("MrPython")
         
@@ -34,10 +35,14 @@ class Application:
         """ Bind the menu actions to the related event methods """
         self.new_file_button = self.py_icons.icon_new_file_label
         self.run_button = self.py_icons.icon_run_label
+        self.save_button = self.py_icons.icon_save_label
+        self.open_button = self.py_icons.icon_open_label
         self.mode_button = self.py_icons.icon_mode_label
         self.new_file_button.bind("<1>", self.new_file)
         self.run_button.bind("<1>", self.run_module)
         self.mode_button.bind("<1>", self.change_mode)
+        self.save_button.bind("<1>", self.py_editor_list.save)
+        self.open_button.bind("<1>", self.open)
         
         #file
         self.root.bind("<<open-new-window>>", self.new_file)
@@ -66,7 +71,7 @@ class Application:
         self.root.bind('<<replace>>', self.py_editor_list.replace_event)
         self.root.bind('<<goto-line>>', self.py_editor_list.goto_line_event)
 
-        # #format
+        #format
         self.root.bind('<<indent-region>>',
                        self.py_editor_list.indent_region_event)
         self.root.bind('<<dedent-region>>',
@@ -82,14 +87,17 @@ class Application:
         self.root.bind('<<toggle-tabs>>',
                        self.py_editor_list.toggle_tabs_event)
  
-        # #run
+        #run
         self.root.bind('<<check-module>>', self.check_module)
         self.root.bind('<<run-module>>', self.run_module)
         self.root.bind('<Control-Key-Return>', self.run_source)
 
-        # #debug
+        #debug
         self.root.bind('<<goto-file-line>>',
                        self.py_editor_list.goto_line_event)
+
+        # Show the tooltips of the shortcut icons when pressing Alt-Ctrl
+        #self.root.bind('<
 
         #bindings keys
         if keydefs is None:
@@ -98,7 +106,6 @@ class Application:
             if keylist:
                 self.root.event_add(event, *keylist)
 
-    # Change mode
     def change_mode(self, event=None):
         if self.mode == "student":
             self.mode = "full"
@@ -109,7 +116,7 @@ class Application:
 
     def new_file(self, event=None):
         """ Creates a new empty editor and put it into the pyEditorList """
-        file_editor = PyEditor(self.py_editor_list)
+        file_editor = PyEditor(self.py_editor_list)        
         self.py_editor_list.add(file_editor, text=file_editor.get_file_name())
 
     def open(self, event=None):
@@ -144,4 +151,4 @@ class Application:
 
 if __name__ == "__main__":
     app = Application()
-    app.run()
+    app.run()  

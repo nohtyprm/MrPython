@@ -109,11 +109,11 @@ class PyEditor(Text):
         self.askyesno = tkMessageBox.askyesno
         self.askinteger = tkSimpleDialog.askinteger
 
-
     def apply_bindings(self,keydefs=None):
         self.bind("<<smart-backspace>>",self.smart_backspace_event)
         self.bind("<<newline-and-indent>>",self.newline_and_indent_event)
         self.bind("<<smart-indent>>",self.smart_indent_event)
+        
 
         #bindings keys
         if keydefs is None:
@@ -197,7 +197,6 @@ class PyEditor(Text):
             filename = "Untitled"
         # return unicode string to display non-ASCII chars correctly
         return self._filename_to_unicode(filename)
-
 
     def _filename_to_unicode(self, filename):
         """convert filename to unicode in order to display it in Tk"""
