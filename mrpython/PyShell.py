@@ -257,6 +257,9 @@ class PyShell:
         self.begin()
         self.write("Current mode : %s mode\n" % (mode))
         self.text.config(state=DISABLED)
+        self.current_begin_index = "0.0"
+        self.current_color = "black"
+        self.current_tag = 0
 
 class PseudoFile(io.TextIOBase):
 

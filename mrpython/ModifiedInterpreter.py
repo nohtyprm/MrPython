@@ -71,9 +71,9 @@ class ModifiedInterpreter(InteractiveInterpreter):
             # Check if there are asserts that end the source
             if not self.check_tests(tree):
                 if not errors:
-                    self.tkconsole.write("== Les conventions du cours ne sont "
-                                         "pas respectées ==\n")
                     self.tkconsole.change_text_color("error")
+                    self.tkconsole.write("\n== Les conventions du cours ne sont "
+                                         "pas respectées ==\n")                    
                     errors = True
                 self.tkconsole.write("--> Le code doit terminer par un "
                                      "jeu de tests\n")
@@ -100,7 +100,7 @@ class ModifiedInterpreter(InteractiveInterpreter):
                     return False
             else:
                 test = True
-        return True
+        return test
 
     def evaluate(self, expression):
         """ Evaluate the expression in the prompt """
