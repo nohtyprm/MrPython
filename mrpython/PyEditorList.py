@@ -11,7 +11,7 @@ class PyEditorList(Notebook):
 
     def __init__(self,parent):
         from configHandler import MrPythonConf
-        Notebook.__init__(self, parent)
+        Notebook.__init__(self, parent, height=500)
         self.parent = parent
         self.sizetab = 0
         self.recent_files_menu = None

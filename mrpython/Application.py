@@ -19,7 +19,7 @@ class Application:
         
         self.mode = "full"
         
-        self.main_view = MainView(self.root)
+        self.main_view = MainView(self)
         self.py_icons = self.main_view.py_icon_frame
         self.py_editor_list = self.main_view.py_editor_list
         self.py_shell = self.main_view.py_shell
@@ -45,7 +45,7 @@ class Application:
         self.open_button.bind("<1>", self.open)
         
         #file
-        self.root.bind("<<open-new-window>>", self.new_file)
+        self.root.bind("<Control-n>", self.new_file)
         self.root.bind('<<open-window-from-file>>', self.open)
         self.root.bind('<<save-window>>', self.py_editor_list.save)
         self.root.bind('<<save-window-as-file>>', self.py_editor_list.save_as)
@@ -72,9 +72,9 @@ class Application:
         self.root.bind('<<goto-line>>', self.py_editor_list.goto_line_event)
 
         #format
-        self.root.bind('<<indent-region>>',
+        self.root.bind('<Control-i>',
                        self.py_editor_list.indent_region_event)
-        self.root.bind('<<dedent-region>>',
+        self.root.bind('<Control-d>',
                        self.py_editor_list.dedent_region_event)
         self.root.bind('<<comment-region>>',
                        self.py_editor_list.comment_region_event)
@@ -89,15 +89,12 @@ class Application:
  
         #run
         self.root.bind('<<check-module>>', self.check_module)
-        self.root.bind('<<run-module>>', self.run_module)
+        self.root.bind('<Control-r>', self.run_module)
         self.root.bind('<Control-Key-Return>', self.run_source)
 
         #debug
         self.root.bind('<<goto-file-line>>',
                        self.py_editor_list.goto_line_event)
-
-        # Show the tooltips of the shortcut icons when pressing Alt-Ctrl
-        #self.root.bind('<
 
         #bindings keys
         if keydefs is None:
