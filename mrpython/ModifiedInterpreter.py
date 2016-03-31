@@ -4,6 +4,7 @@ import subprocess
 import sys
 import linecache
 import time
+import ast
 import socket
 import rpc
 from configHandler import MrPythonConf
@@ -17,9 +18,11 @@ class MyRPCClient(rpc.RPCClient):
 
 class ModifiedInterpreter(InteractiveInterpreter):
     """
-    This class aims to running the code and check syntax, and
+    This class aims at running the code and check syntax, and
     report erros if any in the text shell
     """
+
+    rpcclt = None
 
     def __init__(self, tkconsole):
         self.tkconsole = tkconsole
@@ -30,27 +33,97 @@ class ModifiedInterpreter(InteractiveInterpreter):
         self.subprocess_arglist = None
         self.original_compiler_flags = self.compile.compiler.flags
 
-    rpcclt = None
-
     def execfile(self, filename, source=None):
-        "Execute an existing file"
+        """ Execute an existing file in full Python mode """
         if source is None:
             with tokenize.open(filename) as fp:
                 source = fp.read()
         try:
             code = compile(source, filename, "exec")
-        except (OverflowError, SyntaxError):
+        except: # Compilation error : syntax...
             self.tkconsole.change_text_color("error")
-            self.tkconsole.resetoutput()
-            print('*** Error in script or command!\n'
-                 'Traceback (most recent call last):',
-                  file=self.tkconsole.stderr)
+            self.tkconsole.write("\n== Erreur(s) de syntaxe dans le script ==\n")
             InteractiveInterpreter.showsyntaxerror(self, filename)
-            self.tkconsole.showprompt()
+            self.tkconsole.write("== Fin du rapport ==\n")
             self.tkconsole.change_text_color("normal")
-        else:
+        else: # Code execution
             self.tkconsole.change_text_color("run")
-            self.runcode(code)
+            self.tkconsole.write("\n== Exécution de %s ==\n" % (filename))
+            InteractiveInterpreter.runcode(self, code)
+            self.tkconsole.write("== Fin de l'exécution ==\n")
+            self.tkconsole.change_text_color("normal")
+
+    def exec_file_student_mode(self, filename, source=None):
+        """ Execute an existing file in student Python mode """
+        if source is None:
+            with tokenize.open(filename) as fp:
+                source = fp.read()
+        try:
+            tree = ast.parse(source, filename)
+        except: # Compilation error : syntax...
+            self.tkconsole.change_text_color("error")
+            self.tkconsole.write("\n== Erreur(s) de syntaxe dans le script ==\n")
+            InteractiveInterpreter.showsyntaxerror(self, filename)
+            self.tkconsole.write("== Fin du rapport ==\n")
+            self.tkconsole.change_text_color("normal")
+        else: # Check if the source code respect the class conventions
+            errors = False
+            # Check if there are asserts that end the source
+            if not self.check_tests(tree):
+                if not errors:
+                    self.tkconsole.change_text_color("error")
+                    self.tkconsole.write("\n== Les conventions du cours ne sont "
+                                         "pas respectées ==\n")                    
+                    errors = True
+                self.tkconsole.write("--> Le code doit terminer par un "
+                                     "jeu de tests\n")
+            # Check if.......
+
+            if errors:
+                self.tkconsole.write("== Fin du rapport ==\n")
+            else:
+                self.tkconsole.change_text_color("run")
+                self.tkconsole.write("\n== Exécution de %s ==\n" % (filename))
+                code = compile(source, filename, "exec")
+                InteractiveInterpreter.runcode(self, code)
+                self.tkconsole.write("== Fin de l'exécution ==\n")
+                self.tkconsole.change_text_color("normal")
+            
+    def check_tests(self, tree):
+        """ Check if there are asserts that end the source 
+            The tree is the root of program (instance of ast.Module) """ 
+        stmt_list = tree.body
+        test = False
+        for node in stmt_list:
+            if not isinstance(node, ast.Assert):
+                if test:
+                    return False
+            else:
+                test = True
+        return test
+
+    def evaluate(self, expression):
+        """ Evaluate the expression in the prompt """
+        try:
+            result = eval(expression)
+        except SyntaxError: # Syntax error
+            self.tkconsole.change_text_color("error")
+            self.tkconsole.write("\n== Erreur de syntaxe dans l'expression ==\n")
+            InteractiveInterpreter.showsyntaxerror(self)
+            self.tkconsole.write("== Fin du rapport ==\n")
+            self.tkconsole.change_text_color("normal")
+        except: # Other errors that can occur
+            self.tkconsole.change_text_color("error")
+            self.tkconsole.write("\n== Erreur dans l'évaluation de l'expression ==\n")
+            InteractiveInterpreter.showtraceback(self)
+            self.tkconsole.write("== Fin du rapport ==\n")
+            self.tkconsole.change_text_color("normal")
+        else: # Print the result of the evaluation to the console
+            self.tkconsole.change_text_color("run")
+            self.write("\n== Evaluation de l'expression ==\n")
+            # This line is for configure the color of the tag region
+            print(result)
+            self.write("== Fin de l'evaluation ==\n")
             self.tkconsole.change_text_color("normal")
 
     def checksyntax(self, pyEditor):
@@ -84,10 +157,10 @@ class ModifiedInterpreter(InteractiveInterpreter):
             self.tkconsole.set_warning_stream(saved_stream)
             self.tkconsole.showprompt()
 
-    
-
-    def runcode(self, code):
+    """def runcode(self, code):
         "Override base class method"
+        
+        
         if self.tkconsole.executing:
             self.interp.restart_subprocess()
         self.checklinecache()
@@ -120,6 +193,7 @@ class ModifiedInterpreter(InteractiveInterpreter):
                 self.tkconsole.endexecuting()
             except AttributeError:  # shell may have closed
                 pass
+        """
 
     def showtraceback(self):
         "Extend base class method to reset output properly"

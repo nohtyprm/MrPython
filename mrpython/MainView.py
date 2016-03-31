@@ -13,8 +13,9 @@ class MainView:
     Creates the editor and shell interfaces
     """
 
-    def __init__(self, root):
-        self.root = root
+    def __init__(self, app):
+        self.root = app.root
+        self.app = app
         self.recent_files_menu = None
 
         default_font = tkinter.font.nametofont("TkFixedFont")
@@ -29,8 +30,8 @@ class MainView:
 
         self.create_view()
 
-        self.menu_manager = MenuManager(self)
-        self.menu_manager.createmenubar()
+        #self.menu_manager = MenuManager(self)
+        #self.menu_manager.createmenubar()
 
         self.py_editor_list.set_recent_files_menu(self.recent_files_menu)
 
@@ -39,17 +40,18 @@ class MainView:
 
     def create_view(self):
         """ Create the window : editor and shell interfaces """
-        self.view = PanedWindow(self.root, width=800, height=700,
-                                orient=VERTICAL, background="white")
-        self.view.pack(fill=BOTH, expand=1)
+        self.view = Frame(self.root, background="white", width=900)
+        
         self.create_py_icon_frame(self.view)
         self.create_py_editor_list(self.view)
         self.create_py_shell(self.view)
 
-        self.view.add(self.py_icon_frame, minsize=59, height=59)
-        self.view.add(self.py_editor_list, height=600)
-        self.view.add(self.py_shell.text, height=220)
-        self.view.add(self.py_shell.entre, minsize=27, height=27)
+        self.view.pack(fill=BOTH, expand=1)
+
+        self.py_icon_frame.pack(fill=BOTH)
+        self.py_editor_list.pack(fill=BOTH, expand=1)
+        self.py_shell.frame_text.pack(fill=BOTH)
+        self.py_shell.frame_entre.pack(fill=BOTH)
 
     def create_py_icon_frame(self, parent):
         self.py_icon_frame = PyIconFrame(parent, self.root)
@@ -58,5 +60,5 @@ class MainView:
         self.py_editor_list = PyEditorList(parent)
 
     def create_py_shell(self, parent):
-        self.py_shell = PyShell(parent)
+        self.py_shell = PyShell(parent, self.app)
 

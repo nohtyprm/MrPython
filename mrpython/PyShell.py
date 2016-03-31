@@ -17,20 +17,41 @@ class PyShell:
     shell_title = "Python " + python_version() + " Shell"
     text_colors_by_mode = {"run":"green", "error":"red", "normal":"black"}
     
-    def __init__(self,parent):
+    def __init__(self, parent, app):
         """
         Create and configure the shell (the text widget that gives informations
         and the interactive shell)
         """
-        self.entre = Text(parent, background='#FFC757')
-        
-        self.text = Text(parent)
+        self.app = app
+
+        # Creating text area
+        self.frame_text = Frame(parent)
+
+        self.text = Text(self.frame_text, height=15)
+        self.text.pack(fill=BOTH, expand=1)
         self.text.configure(state='disabled')
-        self.scroll = Scrollbar(self.text)
+
+        # TODO: bug d'affichage quand on active le scroll,
+        # mais est-ce nécessaire
+        """self.scroll = Scrollbar(self.text)
         self.scroll['command'] = self.text.yview
         self.scroll.pack(side=RIGHT, fill=Y)
-        self.text['yscrollcommand'] = self.scroll.set
+        self.text['yscrollcommand'] = self.scroll.set"""
 
+        # Creating interactive area
+        self.frame_entre = Frame(parent)
+
+        self.arrows = Label(self.frame_entre, text=">>> ")
+        self.entre = Text(self.frame_entre, background='#FFC757', height=3)
+        #self.entre.configure(state='disabled')
+        self.eval_button = Button(self.frame_entre, text="Eval",
+                                  command=self.evaluate_action)
+        #self.eval_button.configure(state='disabled')
+
+        self.arrows.pack(side=LEFT)
+        self.entre.pack(side=LEFT, expand=1, fill=BOTH)
+        self.eval_button.pack(side=LEFT, fill=Y)
+     
         # Create the variables used for delimiting the different regions
         # of the text, for displaying different colors
         # Index (x, y) of the beginning of the current tag (region)
@@ -85,11 +106,21 @@ class PyShell:
             self.tkinter_vars[name] = var = vartype(self.text)
         return var
 
-    def run(self,filename):
-        self.write("\n==== run %s ====\n" % (filename))
-        self.interp.execfile(filename)
-        self.write("==== end run ====\n")
-        self.showprompt()
+    def evaluate_action(self):
+        self.interp.evaluate(self.entre.get(1.0, END))
+
+    def run(self, filename):
+        """
+        Run the program in the current editor
+        """
+        #self.write("\n== Exécution de %s ==" % (filename))
+        if self.app.mode == "full": #Full Python mode : normal execution
+            result = self.interp.execfile(filename)
+        else: #Student mode
+            result = self.interp.exec_file_student_mode(filename)
+        #self.write("== Fin de l'exécution ==\n")
+        self.entre.delete(1.0, END)
+        #self.showprompt() # Que fait cette ligne ?
 
     def runit(self,filename=None):
         self.interp.execfile(filename)
@@ -133,7 +164,7 @@ class PyShell:
         self.text.tag_config(tag_name, foreground=self.current_color)
 
         # Change of color, we start a new tag that will be create on the next
-        # change_text_color
+        # change_text_color call
         self.current_color = self.text_colors_by_mode[mode]
         self.current_begin_index = self.text.index(END)
         self.current_tag += 1
@@ -226,6 +257,9 @@ class PyShell:
         self.begin()
         self.write("Current mode : %s mode\n" % (mode))
         self.text.config(state=DISABLED)
+        self.current_begin_index = "0.0"
+        self.current_color = "black"
+        self.current_tag = 0
 
 class PseudoFile(io.TextIOBase):
 

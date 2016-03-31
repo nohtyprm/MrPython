@@ -23,8 +23,8 @@ class ToolTip:
         x, y, tx, ty = self.icon_label.bbox("insert")
         x += self.icon_label.winfo_rootx()
         y += self.icon_label.winfo_rooty() + 55
-        if (self.column % 2 == 1):
-            y -= 17
+        #if (self.column % 2 == 1):
+        #    y -= 17
         self.tooltip = Toplevel(self.icon_label)
         self.tooltip.wm_overrideredirect(True)
         self.tooltip.wm_geometry("+%d+%d" % (x, y))
@@ -62,7 +62,7 @@ class PyIconFrame(Frame):
         self.icon_new_file_label.grid(row=0, column=0, padx=3, pady=3, 
                                       ipadx=3, ipady=3)
         self.icon_new_file_tooltip = ToolTip(self.icon_new_file_label,
-                                             "New file  Ctrl-N", 0)
+                                             "New Ctrl-N", 0)
         
         # Run icon
         icon_run_gif = PhotoImage(file="run_icon.gif")
@@ -73,7 +73,7 @@ class PyIconFrame(Frame):
         self.icon_run_label.grid(row=0, column=1, padx=3, pady=3, 
                                  ipadx=3, ipady=3)
         self.icon_run_tooltip = ToolTip(self.icon_run_label,
-                                        "Run  Ctrl-R", 1)
+                                        "Run Ctrl-R", 1)
 
         # Mode icon
         self.icon_student_gif = PhotoImage(file="student_icon.gif")
@@ -83,7 +83,7 @@ class PyIconFrame(Frame):
         self.icon_mode_label.grid(row=0, column=2, padx=3, pady=3, 
                                       ipadx=3, ipady=3)
         self.icon_mode_tooltip = ToolTip(self.icon_mode_label,
-                                         "Change Python mode  Alt-M", 2)
+                                         "Mode Alt-M", 2)
 
         # Save icon
         icon_save_gif = PhotoImage(file="save_icon.gif")
@@ -94,7 +94,7 @@ class PyIconFrame(Frame):
         self.icon_save_label.grid(row=0, column=3, padx=3, pady=3, 
                                   ipadx=3, ipady=3)
         self.icon_save_tooltip = ToolTip(self.icon_save_label,
-                                         "Save file  Ctrl-S", 3)
+                                         "Save Ctrl-S", 3)
 
         # Open icon
         icon_open_gif = PhotoImage(file="open_icon.gif")
@@ -105,10 +105,10 @@ class PyIconFrame(Frame):
         self.icon_open_label.grid(row=0, column=4, padx=3, pady=3, 
                                   ipadx=3, ipady=3)
         self.icon_open_tooltip = ToolTip(self.icon_open_label,
-                                         "Open file  Ctrl-O", 4)
+                                         "Open Ctrl-O", 4)
 
-        root.bind('<KeyPress-Shift_L>', self.show_tooltips)
-        root.bind('<KeyRelease-Shift_L>', self.destroy_tooltips)
+        root.bind('<KeyPress-Control_L>', self.show_tooltips)
+        root.bind('<KeyRelease-Control_L>', self.destroy_tooltips)
                                       
     def switch_icon_mode(self, mode):
         if mode == "student":
