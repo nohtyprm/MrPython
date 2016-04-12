@@ -20,16 +20,16 @@ class PyEditor(Text):
     from Percolator import Percolator
     from ColorDelegator import  ColorDelegator
     
-    def __init__(self,parent,open=False,filename=None):
+    def __init__(self, parent, open=False, filename=None):
 
         Text.__init__(self,parent)
-        self.scroll=scroll=Scrollbar(self)
+        self.scroll = scroll=Scrollbar(self)
         scroll['command'] = self.yview
         scroll.pack(side=RIGHT, fill=Y)
         self['yscrollcommand'] = scroll.set
         self.list=parent
 
-        self.recent_files_path = os.path.join(MrPythonConf.GetUserCfgDir(),'recent-files.lst')
+        self.recent_files_path = os.path.join(MrPythonConf.GetUserCfgDir(), 'recent-files.lst')
 
         self.apply_bindings()
 
@@ -194,7 +194,7 @@ class PyEditor(Text):
         if filename:
             filename = os.path.basename(filename)
         else:
-            filename = "Untitled"
+            filename = "Sans nom"
         # return unicode string to display non-ASCII chars correctly
         return self._filename_to_unicode(filename)
 
@@ -747,3 +747,14 @@ def classifyws(s, tabwidth):
         else:
             break
     return raw, effective
+
+
+
+
+
+
+
+
+
+
+

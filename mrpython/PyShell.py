@@ -43,10 +43,10 @@ class PyShell:
 
         self.arrows = Label(self.frame_entre, text=">>> ")
         self.entre = Text(self.frame_entre, background='#FFC757', height=3)
-        #self.entre.configure(state='disabled')
+        self.entre.configure(state='disabled')
         self.eval_button = Button(self.frame_entre, text="Eval",
-                                  command=self.evaluate_action)
-        #self.eval_button.configure(state='disabled')
+                                  command=self.evaluate_action, width=7)
+        self.eval_button.configure(state='disabled')
 
         self.arrows.pack(side=LEFT)
         self.entre.pack(side=LEFT, expand=1, fill=BOTH)
