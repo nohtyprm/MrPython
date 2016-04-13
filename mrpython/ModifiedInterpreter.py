@@ -28,9 +28,9 @@ class ModifiedInterpreter(InteractiveInterpreter):
 
     def __init__(self, tkconsole):
         self.tkconsole = tkconsole
-        locals = sys.modules['__main__'].__dict__
+        locals = dict() # sys.modules['__main__'].__dict__
         self.environment = set()
-        InteractiveInterpreter.__init__(self, locals=locals)
+        InteractiveInterpreter.__init__(self , locals=locals)
         self.save_warnings_filters = None
         self.restarting = False
         self.subprocess_arglist = None
