@@ -1,4 +1,5 @@
 from code import InteractiveInterpreter
+from EnvironmentNodeVisitor import EnvironmentNodeVisitor
 import tokenize
 import subprocess
 import sys
@@ -7,6 +8,7 @@ import time
 import ast
 import socket
 import rpc
+import re
 from configHandler import MrPythonConf
 import tkinter.messagebox as tkMessageBox
 
@@ -27,6 +29,7 @@ class ModifiedInterpreter(InteractiveInterpreter):
     def __init__(self, tkconsole):
         self.tkconsole = tkconsole
         locals = sys.modules['__main__'].__dict__
+        self.environment = set()
         InteractiveInterpreter.__init__(self, locals=locals)
         self.save_warnings_filters = None
         self.restarting = False
@@ -35,6 +38,7 @@ class ModifiedInterpreter(InteractiveInterpreter):
 
     def execfile(self, filename, source=None):
         """ Execute an existing file in full Python mode """
+        # TODO: AST + redémarrer l'environment à chaque fois
         if source is None:
             with tokenize.open(filename) as fp:
                 source = fp.read()
@@ -54,20 +58,37 @@ class ModifiedInterpreter(InteractiveInterpreter):
             self.tkconsole.change_text_color("normal")
 
     def exec_file_student_mode(self, filename, source=None):
-        """ Execute an existing file in student Python mode """
+        """ Execute an existing file in student Python mode
+            Return True if there is compilation or execution error """
         if source is None:
             with tokenize.open(filename) as fp:
                 source = fp.read()
+        # Parse the code following the rules given in class
+        # that students must respect
+        # If correct : compile then run the code
+        if not self.parse_student_code(filename, source):
+            return self.run_student_code(filename, source)
+        return True
+
+    def parse_student_code(self, filename, source):
+        """ Parse the code and check if it follows the class rules
+            Return true if there is at least one rule not followed
+            or a compilation error """
         try:
             tree = ast.parse(source, filename)
         except: # Compilation error : syntax...
             self.tkconsole.change_text_color("error")
             self.tkconsole.write("\n== Erreur(s) de syntaxe dans le script ==\n")
+            # TODO: afficher des erreurs plus détaillées pour la compilation
             InteractiveInterpreter.showsyntaxerror(self, filename)
             self.tkconsole.write("== Fin du rapport ==\n")
             self.tkconsole.change_text_color("normal")
+            return True
         else: # Check if the source code respect the class conventions
             errors = False
+            # Put the new names into the environment to delete them later  
+            # and get all the lines of the functions          
+            function_lines = self.update_environment_names(tree)
             # Check if there are asserts that end the source
             if not self.check_tests(tree):
                 if not errors:
@@ -77,20 +98,104 @@ class ModifiedInterpreter(InteractiveInterpreter):
                     errors = True
                 self.tkconsole.write("--> Le code doit terminer par un "
                                      "jeu de tests\n")
-            # Check if.......
-
+            # Check if there are specifications for all the defined functions
+            # if not self.check_specifications
+            # Check if.....
             if errors:
                 self.tkconsole.write("== Fin du rapport ==\n")
-            else:
-                self.tkconsole.change_text_color("run")
-                self.tkconsole.write("\n== Exécution de %s ==\n" % (filename))
-                code = compile(source, filename, "exec")
-                InteractiveInterpreter.runcode(self, code)
-                self.tkconsole.write("== Fin de l'exécution ==\n")
-                self.tkconsole.change_text_color("normal")
-            
+            return errors
+
+    def update_environment_names(self, tree):
+        """ Get all the names in the code source to remove them from
+            the environment later """
+        visitor = EnvironmentNodeVisitor()
+        visitor.visit(tree)
+        self.environment = visitor.name_list
+        return visitor.function_lines
+
+    def run_student_code(self, filename, source):
+        """ Run the code, giving verbose informations about errors
+            that can occur during compilation, or during execution 
+            Return true if errors """
+        # We first change the output for the compiling and execution messages
+        output_file = open('interpreter_output', 'w+')
+        original_stdout = self.tkconsole.stdout
+        original_stderr = self.tkconsole.stderr
+        sys.stderr = output_file
+        sys.stdout = output_file
+        # All send to the temporary output
+        code = compile(source, filename, "exec")
+        InteractiveInterpreter.runcode(self, code)
+        sys.stderr = original_stderr
+        sys.stdout = original_stdout
+        # Analyse the output seeking for errors (execution)
+        output_file.seek(0)
+        result = output_file.read()
+        errors = (result.find('Traceback (most recent call last):') > -1)
+        if errors: # Error : analyse the output to give details
+            self.tkconsole.change_text_color("error")
+            self.tkconsole.write("\n== Erreur dans le script ==\n")
+            self.display_errors(output_file, filename)
+            self.tkconsole.write("== Fin du rapport ==\n")
+        else: # No error, just copy the result into the shell
+            self.tkconsole.change_text_color("run")
+            self.tkconsole.write("\n== Exécution de %s ==\n" % (filename))
+            self.tkconsole.write(result)
+            self.tkconsole.write("== Fin de l'exécution ==\n")
+        self.tkconsole.change_text_color("normal")
+        output_file.close()
+        return errors
+
+    def display_errors(self, output_file, filename):
+        """ Analyse the output and display more verbose details about errors """
+        output_file.seek(0)
+        line_number = 0
+        error_line = ''
+        line = ''
+        # Read the lines, one after another, detect the most recent call in the
+        # traceback : this call holds the error
+        while (True):
+            line = output_file.readline()
+            if line.find(filename) > -1:
+                search_line = re.search(r"line (?P<number>\d+)", line)
+                line_number = int(search_line.group('number'))
+                break
+        line = output_file.readline()
+        # Get the very last line that describes the error
+        while (line != ''):
+            error_line = line
+            line = output_file.readline()
+        # What kind of error is it ?
+        #   NameError : name that is not defined
+        if 'NameError' in error_line:
+            search_name = re.search(r"name '(?P<name>\w+)'", error_line)
+            name_error = search_name.group('name')
+            self.tkconsole.write("--> Ligne " + str(line_number) +
+                                 " : La variable '" + name_error +
+                                 "' n'est pas définie.")
+        #   ZeroDivisionError 
+        elif 'ZeroDivisionError' in error_line:
+            self.tkconsole.write("--> Ligne " + str(line_number) +
+                                 " : Division par zéro.")
+        #   Other runtime error
+        else:
+            self.tkconsole.write("--> Ligne " + str(line_number) +
+                                 " : Erreur lors de l'exécution.")
+        self.tkconsole.write("\n")
+        return line_number
+
+    def clear_environment(self):
+        """ Clear the environment : variables, functions previously added """
+        for name in self.environment:
+            if (name != 'app') and (name in self.locals):
+                del self.locals[name]
+
+    def check_specifications(self, source):
+        """ Check if all the functions have a specification """
+        
+
     def check_tests(self, tree):
-        """ Check if there are asserts that end the source 
+        """ Check if there are asserts that end the source code
             The tree is the root of program (instance of ast.Module) """ 
         stmt_list = tree.body
         test = False
@@ -103,9 +208,10 @@ class ModifiedInterpreter(InteractiveInterpreter):
         return test
 
     def evaluate(self, expression):
-        """ Evaluate the expression in the prompt """
+        """ Evaluate the expression in the prompt with the environment built
+            by the last code execution """
         try:
-            result = eval(expression)
+            result = eval(expression, globals(), self.locals)
         except SyntaxError: # Syntax error
             self.tkconsole.change_text_color("error")
             self.tkconsole.write("\n== Erreur de syntaxe dans l'expression ==\n")

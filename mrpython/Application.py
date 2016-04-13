@@ -21,7 +21,7 @@ class Application:
         
         self.main_view = MainView(self)
         self.py_icons = self.main_view.py_icon_frame
-        self.py_editor_list = self.main_view.py_editor_list
+        self.py_editor_list = self.main_view.py_editor_list.py_notebook
         self.py_shell = self.main_view.py_shell
         self.change_mode()
 
@@ -115,6 +115,7 @@ class Application:
         """ Creates a new empty editor and put it into the pyEditorList """
         file_editor = PyEditor(self.py_editor_list)        
         self.py_editor_list.add(file_editor, text=file_editor.get_file_name())
+		
 
     def open(self, event=None):
         file_editor = PyEditor(self.py_editor_list, open=True)

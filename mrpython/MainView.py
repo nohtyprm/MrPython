@@ -2,6 +2,7 @@ from MenuManager import MenuManager
 from PyEditorList import PyEditorList
 from PyIconFrame import PyIconFrame
 from PyShell import PyShell
+from PyFrameEditor import PyFrameEditor
 from tkinter.ttk import *
 from tkinter import *
 
@@ -33,7 +34,7 @@ class MainView:
         #self.menu_manager = MenuManager(self)
         #self.menu_manager.createmenubar()
 
-        self.py_editor_list.set_recent_files_menu(self.recent_files_menu)
+        self.py_editor_list.py_notebook.set_recent_files_menu(self.recent_files_menu)
 
     def show(self):
         self.root.mainloop()
@@ -43,7 +44,7 @@ class MainView:
         self.view = Frame(self.root, background="white", width=900)
         
         self.create_py_icon_frame(self.view)
-        self.create_py_editor_list(self.view)
+        self.create_py_frame_editor(self.view)
         self.create_py_shell(self.view)
 
         self.view.pack(fill=BOTH, expand=1)
@@ -56,8 +57,8 @@ class MainView:
     def create_py_icon_frame(self, parent):
         self.py_icon_frame = PyIconFrame(parent, self.root)
 
-    def create_py_editor_list(self, parent):
-        self.py_editor_list = PyEditorList(parent)
+    def create_py_frame_editor(self, parent):
+        self.py_editor_list = PyFrameEditor(parent)
 
     def create_py_shell(self, parent):
         self.py_shell = PyShell(parent, self.app)
