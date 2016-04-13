@@ -42,11 +42,11 @@ class PyShell:
         self.frame_entre = Frame(parent)
 
         self.arrows = Label(self.frame_entre, text=">>> ")
-        self.entre = Text(self.frame_entre, background='#FFC757', height=3)
-        self.entre.configure(state='disabled')
+        self.entre = Text(self.frame_entre, background='#775F57', height=3,
+                          state='disabled')
         self.eval_button = Button(self.frame_entre, text="Eval",
-                                  command=self.evaluate_action, width=7)
-        self.eval_button.configure(state='disabled')
+                                  command=self.evaluate_action, width=7,
+                                  state='disabled')
 
         self.arrows.pack(side=LEFT)
         self.entre.pack(side=LEFT, expand=1, fill=BOTH)
@@ -110,17 +110,20 @@ class PyShell:
         self.interp.evaluate(self.entre.get(1.0, END))
 
     def run(self, filename):
-        """
-        Run the program in the current editor
-        """
-        #self.write("\n== Exécution de %s ==" % (filename))
+        """ Run the program in the current editor """
+        self.interp.clear_environment()
         if self.app.mode == "full": #Full Python mode : normal execution
             result = self.interp.execfile(filename)
         else: #Student mode
             result = self.interp.exec_file_student_mode(filename)
-        #self.write("== Fin de l'exécution ==\n")
         self.entre.delete(1.0, END)
-        #self.showprompt() # Que fait cette ligne ?
+        # If errors, disable the interactive prompt
+        if result:
+            self.entre.config(background='#775F57', state='disabled')
+            self.eval_button.config(state='disabled')
+        else:
+            self.entre.config(background='#FFC757', state='normal')
+            self.eval_button.config(state='normal')
 
     def runit(self,filename=None):
         self.interp.execfile(filename)
