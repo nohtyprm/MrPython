@@ -1,20 +1,19 @@
-from  ModifiedInterpreter import ModifiedInterpreter
-import io
-from tkinter import *
-import rpc
+from ModifiedInterpreter import ModifiedInterpreter
 from platform import python_version
+from tkinter import *
+import io
+import rpc
 
-class PyShell:
+class Console:
     """
-    Gather the information widget (white one)
-    and the interactive shell one
+    Interactive console of MrPython, two widgets : output and input
     """
 
     from ModifiedColorDelegator import ModifiedColorDelegator
     from ModifiedUndoDelegator import ModifiedUndoDelegator
     from IdleHistory import History
 
-    shell_title = "Python " + python_version() + " Shell"
+    SHELL_TITLE = "Python " + python_version() + " Shell"
     text_colors_by_mode = {"run":"green", "error":"red", "normal":"black"}
     
     def __init__(self, parent, app):
@@ -23,33 +22,24 @@ class PyShell:
         and the interactive shell)
         """
         self.app = app
-
-        # Creating text area
-        self.frame_text = Frame(parent)
-
-        self.text = Text(self.frame_text, height=15)
-        self.text.pack(fill=BOTH, expand=1)
-        self.text.configure(state='disabled')
-
-        # TODO: bug d'affichage quand on active le scroll,
-        # mais est-ce nécessaire
-        """self.scroll = Scrollbar(self.text)
-        self.scroll['command'] = self.text.yview
-        self.scroll.pack(side=RIGHT, fill=Y)
-        self.text['yscrollcommand'] = self.scroll.set"""
-
-        # Creating interactive area
-        self.frame_entre = Frame(parent)
-
-        self.arrows = Label(self.frame_entre, text=">>> ")
-        self.entre = Text(self.frame_entre, background='#775F57', height=3,
-                          state='disabled')
-        self.eval_button = Button(self.frame_entre, text="Eval",
+        # Creating output console
+        self.frame_output = Frame(parent)
+        self.scrollbar = Scrollbar(self.frame_output)
+        self.scrollbar.pack(side=RIGHT, fill=Y)
+        self.output_console = Text(self.frame_output, height=15, state='disabled', 
+                                   yscrollcommand=self.scrollbar.set)
+        self.output_console.pack(side=LEFT, fill=BOTH, expand=1)
+        self.scrollbar.config(command=self.output_console.yview)
+        # Creating input console
+        self.frame_input = Frame(parent)
+        self.arrows = Label(self.frame_input, text=" >>> ")
+        self.input_console = Text(self.frame_input, background='#775F57',
+                                  height=1, state='disabled')
+        self.eval_button = Button(self.frame_input, text="Eval",
                                   command=self.evaluate_action, width=7,
                                   state='disabled')
-
         self.arrows.pack(side=LEFT)
-        self.entre.pack(side=LEFT, expand=1, fill=BOTH)
+        self.input_console.pack(side=LEFT, expand=1, fill=BOTH)
         self.eval_button.pack(side=LEFT, fill=Y)
      
         # Create the variables used for delimiting the different regions
@@ -77,7 +67,7 @@ class PyShell:
         sys.stderr = self.stderr
         sys.stdin = self.stdin
 
-        self.history = self.History(self.text)
+        self.history = self.History(self.output_console)
         self.pollinterval = 50  # millisec
         ##heritage pyEditor?
         self.undo = undo = self.ModifiedUndoDelegator()
@@ -107,7 +97,7 @@ class PyShell:
         return var
 
     def evaluate_action(self):
-        self.interp.evaluate(self.entre.get(1.0, END))
+        self.interp.evaluate(self.input_console.get(1.0, END))
 
     def run(self, filename):
         """ Run the program in the current editor """
@@ -116,19 +106,19 @@ class PyShell:
             result = self.interp.execfile(filename)
         else: #Student mode
             result = self.interp.exec_file_student_mode(filename)
-        self.entre.delete(1.0, END)
+        self.input_console.delete(1.0, END)
         # If errors, disable the interactive prompt
         if result:
-            self.entre.config(background='#775F57', state='disabled')
+            self.input_console.config(background='#775F57', state='disabled')
             self.eval_button.config(state='disabled')
         else:
-            self.entre.config(background='#FFC757', state='normal')
+            self.input_console.config(background='#FFC757', state='normal')
             self.eval_button.config(state='normal')
 
     def runit(self,filename=None):
         self.interp.execfile(filename)
-        self.interp.execfile(filename, self.entre.get(1.0, END))
-        self.entre.delete(1.0,END)
+        self.interp.execfile(filename, self.input_console.get(1.0, END))
+        self.input_console.delete(1.0,END)
 
     def check(self,pyEditor):
         self.write("\n==== check %s ====\n" % (pyEditor.long_title()))
@@ -148,12 +138,12 @@ class PyShell:
         self.showprompt()
 
     def resetoutput(self):
-        source = self.text.get("iomark", "end-1c")
+        source = self.output_console.get("iomark", "end-1c")
         if self.history:
             self.history.store(source)
-        if self.text.get("end-2c") != "\n":
-            self.text.insert("end-1c", "\n")
-        self.text.mark_set("iomark", "end-1c")
+        if self.output_console.get("end-2c") != "\n":
+            self.output_console.insert("end-1c", "\n")
+        self.output_console.mark_set("iomark", "end-1c")
 
     def change_text_color(self, mode):
         """
@@ -163,15 +153,14 @@ class PyShell:
         """
         # Give the current color to the current tag
         tag_name = "tag" + str(self.current_tag)
-        self.text.tag_add(tag_name, self.current_begin_index, END)
-        self.text.tag_config(tag_name, foreground=self.current_color)
-
+        self.output_console.tag_add(tag_name, self.current_begin_index, END)
+        self.output_console.tag_config(tag_name, foreground=self.current_color)
         # Change of color, we start a new tag that will be create on the next
         # change_text_color call
         self.current_color = self.text_colors_by_mode[mode]
-        self.current_begin_index = self.text.index(END)
+        self.current_begin_index = self.output_console.index(END)
         self.current_tag += 1
-        self.text.configure(foreground=self.current_color)
+        self.output_console.configure(foreground=self.current_color)
         
     def write(self, s, tags=()):
         if isinstance(s, str) and len(s) and max(s) > '\uffff':
@@ -185,9 +174,9 @@ class PyShell:
             raise UnicodeEncodeError("UCS-2", char, start, start+1,
                                      'Non-BMP character not supported in Tk')
         try:
-            self.text.mark_gravity("iomark", "right")
+            self.output_console.mark_gravity("iomark", "right")
             count = self.writebis(s, tags, "iomark")
-            self.text.mark_gravity("iomark", "left")
+            self.output_console.mark_gravity("iomark", "left")
         except:
             raise ###pass  # ### 11Aug07 KBK if we are expecting exceptions
                            # let's find out what they are and be specific.
@@ -200,11 +189,11 @@ class PyShell:
         if isinstance(s, (bytes, bytes)):
             s = s.decode(IOBinding.encoding, "replace")
 
-        self.text.configure(state='normal')
-        self.text.insert(mark, s, tags)
-        self.text.configure(state='disabled')
-        self.text.see(mark)
-        self.text.update()
+        self.output_console.configure(state='normal')
+        self.output_console.insert(mark, s, tags)
+        self.output_console.configure(state='disabled')
+        self.output_console.see(mark)
+        self.output_console.update()
         return len(s)
 
     def showprompt(self):
@@ -214,11 +203,11 @@ class PyShell:
         except:
             s = ""
         self.console.write(s)
-        self.text.mark_set("insert", "end-1c")
+        self.output_console.mark_set("insert", "end-1c")
         self.io.reset_undo()
 
     def begin(self):
-        self.text.mark_set("iomark", "insert")
+        self.output_console.mark_set("iomark", "insert")
         self.resetoutput()
         sys.displayhook = rpc.displayhook
 
@@ -238,7 +227,7 @@ class PyShell:
         if self._stop_readline_flag:
             self._stop_readline_flag = False
             return ""
-        line = self.text.get("iomark", "end-1c")
+        line = self.output_console.get("iomark", "end-1c")
         if len(line) == 0:  # may be EOF if we quit our mainloop with Ctrl-C
             line = "\n"
         self.resetoutput()
@@ -255,11 +244,11 @@ class PyShell:
         self.undo.reset_undo()
         
     def change_mode(self, mode):
-        self.text.config(state=NORMAL)
-        self.text.delete(1.0, END)
+        self.output_console.config(state=NORMAL)
+        self.output_console.delete(1.0, END)
         self.begin()
         self.write("Current mode : %s mode\n" % (mode))
-        self.text.config(state=DISABLED)
+        self.output_console.config(state=DISABLED)
         self.current_begin_index = "0.0"
         self.current_color = "black"
         self.current_tag = 0

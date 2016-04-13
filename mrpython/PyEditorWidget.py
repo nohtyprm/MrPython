@@ -1,7 +1,7 @@
 from tkinter import *
 from PyEditorList import PyEditorList
 
-class PyFrameEditor(Frame):
+class PyEditorWidget(Frame):
     """
     Represents a tkinter Notebook widget with a bar widget displaying the line
     numbers on the left, and a status bar on the bottom
@@ -31,6 +31,7 @@ class PyFrameEditor(Frame):
         self.py_notebook.pack(side=LEFT, fill=BOTH, expand=1)
         
         self.update_line_numbers()
+
 
     def get_line_numbers(self):
         """ Get the string that will fill the line widget """
@@ -63,6 +64,7 @@ class PyFrameEditor(Frame):
                 ln += (lineMask % line)[-5:]
         return ln
 
+
     def update_line_numbers(self):
         """ Update the line numbers only if there is at least one file open """
         if self.py_notebook.index("end") > 0:
@@ -82,16 +84,4 @@ class PyFrameEditor(Frame):
                 self.line_widget.config(state='disabled')            
         # Will update again the line widget in UPDATE_PERIOD ms
         self.after(self.UPDATE_PERIOD, self.update_line_numbers)
-
-
-
-
-
-
-    
-
-
-
-
-
 
