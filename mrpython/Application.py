@@ -20,10 +20,10 @@ class Application:
         self.main_view = MainView(self)
         self.editor_list = self.main_view.editor_widget.py_notebook
         self.icon_widget = self.main_view.icon_widget
+        self.status_bar = self.main_view.status_bar
         self.console = self.main_view.console
         self.change_mode()
         self.apply_bindings()
-        self.status_bar = self.main_view.status_bar
         self.root.protocol('WM_DELETE_WINDOW', self.close_all_event)
 
 
@@ -97,6 +97,7 @@ class Application:
             self.mode = "student"
         self.icon_widget.switch_icon_mode(self.mode)
         self.console.change_mode(self.mode)
+        self.status_bar.change_mode(self.mode)
 
 
     def new_file(self, event=None):

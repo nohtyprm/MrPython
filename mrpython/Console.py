@@ -146,29 +146,23 @@ class Console:
                                      'Non-BMP character not supported in Tk')
         try:
             self.output_console.mark_gravity("iomark", "right")
-            count = self.writebis(s, tags, "iomark")
+            if isinstance(s, (bytes, bytes)):
+                s = s.decode(IOBinding.encoding, "replace")
+            self.output_console.configure(state='normal')
+            self.output_console.insert("iomark", s, tags)
+            self.output_console.configure(state='disabled')
+            self.output_console.see("iomark")
+            self.output_console.update()
             self.output_console.mark_gravity("iomark", "left")
         except:
             raise
         if self.canceled:
             self.canceled = 0
             raise KeyboardInterrupt
-        return count
-
-
-    def writebis(self, s, tags=(), mark="insert"):
-        if isinstance(s, (bytes, bytes)):
-            s = s.decode(IOBinding.encoding, "replace")
-
-        self.output_console.configure(state='normal')
-        self.output_console.insert(mark, s, tags)
-        self.output_console.configure(state='disabled')
-        self.output_console.see(mark)
-        self.output_console.update()
-        return len(s)
 
 
     def begin(self):
+        """ Display some informations in the output console at the beginning """
         self.output_console.mark_set("iomark", "insert")
         sys.displayhook = rpc.displayhook
         self.write("Python %s on %s\n" %
