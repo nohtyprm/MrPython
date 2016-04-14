@@ -40,8 +40,8 @@ class Console:
         self.frame_input = Frame(parent)
         self.arrows = Label(self.frame_input, text=" >>> ")
         self.input_console = Text(self.frame_input, background='#775F57',
-                                  height=1, state='disabled')
-        self.frame_input.config(borderwidth=1, relief=GROOVE)
+                                  height=1, state='disabled', relief=FLAT)
+        #self.frame_input.config(borderwidth=1, relief=GROOVE)
         self.eval_button = Button(self.frame_input, text="Eval",
                                   command=self.evaluate_action, width=7,
                                   state='disabled')
@@ -49,36 +49,26 @@ class Console:
         self.arrows.pack(side=LEFT, fill=Y)
         self.input_console.pack(side=LEFT, expand=1, fill=BOTH)
         self.eval_button.pack(side=LEFT, fill=Y)
-        # Create the variables used for delimiting the different regions
-        # of the text, for displaying different colors
-        # Index (x, y) of the beginning of the current tag (region)
-        self.current_begin_index = "0.0"
-        # Color of the current tag
-        self.current_color = "black"
-        self.current_tag = 0
-        ### self.save_stdout = sys.stdout
-        ### self.save_stderr = sys.stderr
-        ### self.save_stdin = sys.stdin
 		# Redirect the Python output, input and error stream to the console
         import IOBinding
         self.stdin = PseudoInputFile(self, "run", IOBinding.encoding)
         self.stdout = PseudoOutputFile(self, "normal", IOBinding.encoding)
         self.stderr = PseudoOutputFile(self, "error", IOBinding.encoding)
         self.console = PseudoOutputFile(self, "normal", IOBinding.encoding)
-        #sys.stdout = self.stdout
-        #sys.stderr = self.stderr
-        #sys.stdin = self.stdin
-        
+        sys.stdout = self.stdout
+        sys.stderr = self.stderr
+        sys.stdin = self.stdin
+        # The current Python mode        
+        self.mode = "student"
+
         self.interp = ModifiedInterpreter(self)
 
-        
         self.reading = False
         self.executing = False
         self.canceled = False
         self.endoffile = False
         self.closing = False
         self._stop_readling_flag = False
-
 
         self.history = self.History(self.output_console)
         self.undo = undo = self.ModifiedUndoDelegator()
@@ -88,23 +78,27 @@ class Console:
 
 
     def configure_color_tags(self):
+        """ Set the colors for the specific tags """
         self.output_console.tag_config('run', foreground='green')
         self.output_console.tag_config('error', foreground='red')
         self.output_console.tag_config('normal', foreground='black')
         self.output_console.tag_config('warning', foreground='orange')
 
 
-    def change_mode(self, mode):
-        """ When the mode change : clear the output console and display
-            the new one """
+    def reset_output(self):
+        """ Clear all the output console """
         self.output_console.config(state=NORMAL)
         self.output_console.delete(1.0, END)
         self.begin()
-        self.write("Current mode : %s mode\n" % (mode))
+        self.write("Current mode : %s mode\n" % (self.mode))
         self.output_console.config(state=DISABLED)
-        self.current_begin_index = "0.0"
-        self.current_color = "black"
-        self.current_tag = 0
+
+
+    def change_mode(self, mode):
+        """ When the mode change : clear the output console and display
+            the new mode """
+        self.mode = mode
+        self.reset_output()
 
 
     def evaluate_action(self):
@@ -136,33 +130,6 @@ class Console:
         self.interp.checksyntax(pyEditor)
         self.write("==== end check ====\n")
         self.showprompt()
-
-    """
-    def resetoutput(self):
-        source = self.output_console.get("iomark", "end-1c")
-        if self.history:
-            self.history.store(source)
-        if self.output_console.get("end-2c") != "\n":
-            self.output_console.insert("end-1c", "\n")
-        self.output_console.mark_set("iomark", "end-1c")"""
-
-    
-    def change_text_color(self, mode):
-        """ Change the text color according to the specified mode :
-            we get the color by accessing the dictonnary
-            TEXT_COLORS_BY_MODE[mode] """
-        """
-        # Give the current color to the current tag
-        tag_name = "tag" + str(self.current_tag)
-        self.output_console.tag_add(tag_name, self.current_begin_index, END)
-        self.output_console.tag_config(tag_name, foreground=self.current_color)
-        # Change of color, we start a new tag that will be create on the next
-        # change_text_color call
-        self.current_color = self.TEXT_COLORS_BY_MODE[mode]
-        self.current_begin_index = self.output_console.index(END)
-        self.current_tag += 1
-        self.output_console.configure(foreground=self.current_color)
-    """
         
 
     def write(self, s, tags=()):
@@ -182,8 +149,7 @@ class Console:
             count = self.writebis(s, tags, "iomark")
             self.output_console.mark_gravity("iomark", "left")
         except:
-            raise ###pass  # ### 11Aug07 KBK if we are expecting exceptions
-                           # let's find out what they are and be specific.
+            raise
         if self.canceled:
             self.canceled = 0
             raise KeyboardInterrupt
@@ -202,29 +168,11 @@ class Console:
         return len(s)
 
 
-    def showprompt(self):
-        #self.resetoutput()
-        try:
-            s = str(sys.ps1)
-        except:
-            s = ""
-        self.console.write(s)
-        self.output_console.mark_set("insert", "end-1c")
-        self.io.reset_undo()
-
-
     def begin(self):
         self.output_console.mark_set("iomark", "insert")
-        # self.resetoutput()
-
         sys.displayhook = rpc.displayhook
-
         self.write("Python %s on %s\n" %
                    (sys.version, sys.platform))
-        self.showprompt()
-        import tkinter
-        tkinter._default_root = None # 03Jan04 KBK What's this?
-        return True
 
 
     def readline(self):
@@ -249,7 +197,6 @@ class Console:
         return line
 
 
-    #heritage PyEditor??
     def reset_undo(self):
         self.undo.reset_undo()
 

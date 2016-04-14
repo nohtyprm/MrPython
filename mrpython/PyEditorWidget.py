@@ -9,27 +9,23 @@ class PyEditorWidget(Frame):
 
     def __init__(self, parent):
         Frame.__init__(self, parent, background='#E8E8E8')
-        #self.config(borderwidth=1, relief=GROOVE)
         self.UPDATE_PERIOD = 100
-        
         # Holds the text inside the line widget : the text simply
         # contains all the line numbers
         self.line_numbers = ''
-
         self.py_notebook = PyEditorList(self)
-
         left_frame = Frame(self, background='#E8E8E8')
-        empty_frame_space = Frame(left_frame, background='#E8E8E8', height=28)
+        empty_frame_space = Frame(left_frame, background='#E8E8E8', height=28,
+                                  borderwidth=0, relief=FLAT)
         # Creates the widget (a text one) that displays the line numbers
         self.line_widget = Text(left_frame, width=4, padx=4, state='disabled', 
                                 takefocus=0, bd=0, background='#E8E8E8',
-                                foreground='#404040', relief=FLAT)
+                                foreground='#404040', relief=FLAT,
+                                borderwidth=0)
         empty_frame_space.pack(side=TOP)
         self.line_widget.pack(side=BOTTOM, fill='y', expand=1)
         left_frame.pack(side=LEFT, fill='y')
-
         self.py_notebook.pack(side=LEFT, fill=BOTH, expand=1)
-        
         self.update_line_numbers()
 
 

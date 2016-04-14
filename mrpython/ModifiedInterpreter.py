@@ -47,18 +47,14 @@ class ModifiedInterpreter(InteractiveInterpreter):
         try:
             code = compile(source, filename, "exec")
         except: # Compilation error : syntax...
-            self.tkconsole.change_text_color("error")
             self.tkconsole.write("\n== Erreur(s) de syntaxe dans le script ==\n")
             InteractiveInterpreter.showsyntaxerror(self, filename)
             self.tkconsole.write("== Fin du rapport ==\n")
-            self.tkconsole.change_text_color("normal")
         else: # Code execution
-            self.tkconsole.change_text_color("run")
             self.tkconsole.write("\n== Exécution de %s ==\n" % (filename))
             InteractiveInterpreter.runcode(self, code)
             self.tkconsole.write("== Fin de l'exécution ==\n")
-            self.tkconsole.change_text_color("normal")
-
+            
 
     def exec_file_student_mode(self, filename, source=None):
         """ Execute an existing file in student Python mode
@@ -81,12 +77,11 @@ class ModifiedInterpreter(InteractiveInterpreter):
         try:
             tree = ast.parse(source, filename)
         except: # Compilation error : syntax...
-            self.tkconsole.change_text_color("error")
+            
             self.tkconsole.write("\n== Erreur(s) de syntaxe dans le script ==\n")
             # TODO: afficher des erreurs plus détaillées pour la compilation
             InteractiveInterpreter.showsyntaxerror(self, filename)
             self.tkconsole.write("== Fin du rapport ==\n")
-            self.tkconsole.change_text_color("normal")
             return True
         else: # Check if the source code respect the class conventions
             errors = False
@@ -96,7 +91,6 @@ class ModifiedInterpreter(InteractiveInterpreter):
             # Check if there are asserts that end the source
             if not self.check_tests(tree):
                 if not errors:
-                    self.tkconsole.change_text_color("error")
                     self.tkconsole.write("\n== Les conventions du cours ne sont "
                                          "pas respectées ==\n")                    
                     errors = True
@@ -139,16 +133,13 @@ class ModifiedInterpreter(InteractiveInterpreter):
         result = output_file.read()
         errors = (result.find('Traceback (most recent call last):') > -1)
         if errors: # Error : analyse the output to give details
-            self.tkconsole.change_text_color("error")
             self.tkconsole.write("\n== Erreur dans le script ==\n")
             self.display_errors(output_file, filename)
             self.tkconsole.write("== Fin du rapport ==\n")
         else: # No error, just copy the result into the shell
-            self.tkconsole.change_text_color("run")
             self.tkconsole.write("\n== Exécution de %s ==\n" % (filename))
             self.tkconsole.write(result)
             self.tkconsole.write("== Fin de l'exécution ==\n")
-        self.tkconsole.change_text_color("normal")
         output_file.close()
         return errors
 
@@ -223,25 +214,19 @@ class ModifiedInterpreter(InteractiveInterpreter):
         try:
             result = eval(expression, globals(), self.locals)
         except SyntaxError: # Syntax error
-            self.tkconsole.change_text_color("error")
             self.tkconsole.write("\n== Erreur de syntaxe dans l'expression ==\n")
             InteractiveInterpreter.showsyntaxerror(self)
             self.tkconsole.write("== Fin du rapport ==\n")
-            self.tkconsole.change_text_color("normal")
         except: # Other errors that can occur
-            self.tkconsole.change_text_color("error")
             self.tkconsole.write("\n== Erreur dans l'évaluation de l'expression ==\n")
             InteractiveInterpreter.showtraceback(self)
             self.tkconsole.write("== Fin du rapport ==\n")
-            self.tkconsole.change_text_color("normal")
         else: # Print the result of the evaluation to the console
-            self.tkconsole.change_text_color("run")
             self.write("\n== Evaluation de l'expression ==\n")
             # This line is for configure the color of the tag region
             print(result)
             self.write("== Fin de l'evaluation ==\n")
-            self.tkconsole.change_text_color("normal")
-
+            
 
     def checksyntax(self, pyEditor):
         filename=pyEditor.long_title()

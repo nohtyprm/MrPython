@@ -101,7 +101,7 @@ class Application:
 
     def new_file(self, event=None):
         """ Creates a new empty editor and put it into the pyEditorList """
-        file_editor = PyEditor(self.py_editor_list)        
+        file_editor = PyEditor(self.editor_list)        
         self.editor_list.add(file_editor, text=file_editor.get_file_name())
 		
 
