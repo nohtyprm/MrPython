@@ -14,8 +14,13 @@ class Console:
     from IdleHistory import History
 
     SHELL_TITLE = "Python " + python_version() + " Shell"
-    text_colors_by_mode = {"run":"green", "error":"red", "normal":"black"}
-    
+    TEXT_COLORS_BY_MODE = {
+                            'run':'green',
+                            'error':'red',
+                            'normal':'black',
+                            'warning':'orange'
+                          }
+
     def __init__(self, parent, app):
         """
         Create and configure the shell (the text widget that gives informations
@@ -28,6 +33,7 @@ class Console:
         self.scrollbar.pack(side=RIGHT, fill=Y)
         self.output_console = Text(self.frame_output, height=15, state='disabled', 
                                    yscrollcommand=self.scrollbar.set)
+        #self.frame_output.config(borderwidth=1, relief=GROOVE)
         self.output_console.pack(side=LEFT, fill=BOTH, expand=1)
         self.scrollbar.config(command=self.output_console.yview)
         # Creating input console
@@ -35,13 +41,14 @@ class Console:
         self.arrows = Label(self.frame_input, text=" >>> ")
         self.input_console = Text(self.frame_input, background='#775F57',
                                   height=1, state='disabled')
+        self.frame_input.config(borderwidth=1, relief=GROOVE)
         self.eval_button = Button(self.frame_input, text="Eval",
                                   command=self.evaluate_action, width=7,
                                   state='disabled')
-        self.arrows.pack(side=LEFT)
+        self.arrows.config(borderwidth=1, relief=RIDGE)
+        self.arrows.pack(side=LEFT, fill=Y)
         self.input_console.pack(side=LEFT, expand=1, fill=BOTH)
         self.eval_button.pack(side=LEFT, fill=Y)
-     
         # Create the variables used for delimiting the different regions
         # of the text, for displaying different colors
         # Index (x, y) of the beginning of the current tag (region)
@@ -49,55 +56,61 @@ class Console:
         # Color of the current tag
         self.current_color = "black"
         self.current_tag = 0
-
-        self.warning_stream = sys.__stderr__
-        self.tkinter_vars = {}  # keys: Tkinter event names
-                                    # values: Tkinter variable instances
-        self.interp = ModifiedInterpreter(self)
-        self.save_stdout = sys.stdout
-        self.save_stderr = sys.stderr
-        self.save_stdin = sys.stdin
+        ### self.save_stdout = sys.stdout
+        ### self.save_stderr = sys.stderr
+        ### self.save_stdin = sys.stdin
+		# Redirect the Python output, input and error stream to the console
         import IOBinding
+        self.stdin = PseudoInputFile(self, "run", IOBinding.encoding)
+        self.stdout = PseudoOutputFile(self, "normal", IOBinding.encoding)
+        self.stderr = PseudoOutputFile(self, "error", IOBinding.encoding)
+        self.console = PseudoOutputFile(self, "normal", IOBinding.encoding)
+        #sys.stdout = self.stdout
+        #sys.stderr = self.stderr
+        #sys.stdin = self.stdin
         
-        self.stdin = PseudoInputFile(self, "stdin", IOBinding.encoding)
-        self.stdout = PseudoOutputFile(self, "stdout", IOBinding.encoding)
-        self.stderr = PseudoOutputFile(self, "stderr", IOBinding.encoding)
-        self.console = PseudoOutputFile(self, "console", IOBinding.encoding)
-        sys.stdout = self.stdout
-        sys.stderr = self.stderr
-        sys.stdin = self.stdin
+        self.interp = ModifiedInterpreter(self)
+
+        
+        self.reading = False
+        self.executing = False
+        self.canceled = False
+        self.endoffile = False
+        self.closing = False
+        self._stop_readling_flag = False
+
 
         self.history = self.History(self.output_console)
-        self.pollinterval = 50  # millisec
-        ##heritage pyEditor?
         self.undo = undo = self.ModifiedUndoDelegator()
-
-        self.io = io = IOBinding.IOBinding(self)
+        self.io = IOBinding.IOBinding(self)
         self.begin()
+        self.configure_color_tags()
 
-    reading = False
-    executing = False
-    canceled = False
-    endoffile = False
-    closing = False
-    _stop_readline_flag = False
 
-    def set_warning_stream(self, stream):
-        global warning_stream
-        warning_stream = stream
+    def configure_color_tags(self):
+        self.output_console.tag_config('run', foreground='green')
+        self.output_console.tag_config('error', foreground='red')
+        self.output_console.tag_config('normal', foreground='black')
+        self.output_console.tag_config('warning', foreground='orange')
 
-    def get_warning_stream(self):
-        return self.warning_stream
 
-    def get_var_obj(self, name, vartype=None):
-        var = self.tkinter_vars.get(name)
-        if not var and vartype:
-            # create a Tkinter variable object with self.text as master:
-            self.tkinter_vars[name] = var = vartype(self.text)
-        return var
+    def change_mode(self, mode):
+        """ When the mode change : clear the output console and display
+            the new one """
+        self.output_console.config(state=NORMAL)
+        self.output_console.delete(1.0, END)
+        self.begin()
+        self.write("Current mode : %s mode\n" % (mode))
+        self.output_console.config(state=DISABLED)
+        self.current_begin_index = "0.0"
+        self.current_color = "black"
+        self.current_tag = 0
+
 
     def evaluate_action(self):
+        """ Evaluate the expression in the input console """
         self.interp.evaluate(self.input_console.get(1.0, END))
+
 
     def run(self, filename):
         """ Run the program in the current editor """
@@ -115,41 +128,29 @@ class Console:
             self.input_console.config(background='#FFC757', state='normal')
             self.eval_button.config(state='normal')
 
-    def runit(self,filename=None):
-        self.interp.execfile(filename)
-        self.interp.execfile(filename, self.input_console.get(1.0, END))
-        self.input_console.delete(1.0,END)
 
-    def check(self,pyEditor):
+    def check_syntax(self, pyEditor):
+        """ Check the syntax of the current editor """
+        # TODO: correct this
         self.write("\n==== check %s ====\n" % (pyEditor.long_title()))
         self.interp.checksyntax(pyEditor)
         self.write("==== end check ====\n")
         self.showprompt()
 
-    def beginexecuting(self):
-        "Helper for ModifiedInterpreter"
-        self.resetoutput()
-        self.executing = 1
-
-    def endexecuting(self):
-        "Helper for ModifiedInterpreter"
-        self.executing = 0
-        self.canceled = 0
-        self.showprompt()
-
+    """
     def resetoutput(self):
         source = self.output_console.get("iomark", "end-1c")
         if self.history:
             self.history.store(source)
         if self.output_console.get("end-2c") != "\n":
             self.output_console.insert("end-1c", "\n")
-        self.output_console.mark_set("iomark", "end-1c")
+        self.output_console.mark_set("iomark", "end-1c")"""
 
+    
     def change_text_color(self, mode):
-        """
-        Change the text color according to the specified mode :
-        we get the color by accessing the dictonnary text_colors_by_mode[mode]
-        - mode : string
+        """ Change the text color according to the specified mode :
+            we get the color by accessing the dictonnary
+            TEXT_COLORS_BY_MODE[mode] """
         """
         # Give the current color to the current tag
         tag_name = "tag" + str(self.current_tag)
@@ -157,12 +158,15 @@ class Console:
         self.output_console.tag_config(tag_name, foreground=self.current_color)
         # Change of color, we start a new tag that will be create on the next
         # change_text_color call
-        self.current_color = self.text_colors_by_mode[mode]
+        self.current_color = self.TEXT_COLORS_BY_MODE[mode]
         self.current_begin_index = self.output_console.index(END)
         self.current_tag += 1
         self.output_console.configure(foreground=self.current_color)
+    """
         
+
     def write(self, s, tags=()):
+        """ Write into the output console """
         if isinstance(s, str) and len(s) and max(s) > '\uffff':
             # Tk doesn't support outputting non-BMP characters
             # Let's assume what printed string is not very long,
@@ -185,6 +189,7 @@ class Console:
             raise KeyboardInterrupt
         return count
 
+
     def writebis(self, s, tags=(), mark="insert"):
         if isinstance(s, (bytes, bytes)):
             s = s.decode(IOBinding.encoding, "replace")
@@ -196,8 +201,9 @@ class Console:
         self.output_console.update()
         return len(s)
 
+
     def showprompt(self):
-        self.resetoutput()
+        #self.resetoutput()
         try:
             s = str(sys.ps1)
         except:
@@ -206,9 +212,11 @@ class Console:
         self.output_console.mark_set("insert", "end-1c")
         self.io.reset_undo()
 
+
     def begin(self):
         self.output_console.mark_set("iomark", "insert")
-        self.resetoutput()
+        # self.resetoutput()
+
         sys.displayhook = rpc.displayhook
 
         self.write("Python %s on %s\n" %
@@ -218,12 +226,13 @@ class Console:
         tkinter._default_root = None # 03Jan04 KBK What's this?
         return True
 
+
     def readline(self):
-        save = self.reading
+        save = self.READING
         try:
-            self.reading = 1
+            self.READING = 1
         finally:
-            self.reading = save
+            self.READING = save
         if self._stop_readline_flag:
             self._stop_readline_flag = False
             return ""
@@ -239,19 +248,11 @@ class Console:
             line = ""
         return line
 
+
     #heritage PyEditor??
     def reset_undo(self):
         self.undo.reset_undo()
-        
-    def change_mode(self, mode):
-        self.output_console.config(state=NORMAL)
-        self.output_console.delete(1.0, END)
-        self.begin()
-        self.write("Current mode : %s mode\n" % (mode))
-        self.output_console.config(state=DISABLED)
-        self.current_begin_index = "0.0"
-        self.current_color = "black"
-        self.current_tag = 0
+
 
 class PseudoFile(io.TextIOBase):
 
@@ -260,21 +261,26 @@ class PseudoFile(io.TextIOBase):
         self.tags = tags
         self._encoding = encoding
 
+
     @property
     def encoding(self):
         return self._encoding
+
 
     @property
     def name(self):
         return '<%s>' % self.tags
 
+
     def isatty(self):
         return True
+
 
 class PseudoOutputFile(PseudoFile):
 
     def writable(self):
         return True
+
 
     def write(self, s):
         if self.closed:
@@ -286,14 +292,17 @@ class PseudoOutputFile(PseudoFile):
             s = str.__str__(s)
         return self.shell.write(s, self.tags)
 
+
 class PseudoInputFile(PseudoFile):
 
     def __init__(self, shell, tags, encoding=None):
         PseudoFile.__init__(self, shell, tags, encoding)
         self._line_buffer = ''
 
+
     def readable(self):
         return True
+
 
     def read(self, size=-1):
         if self.closed:
@@ -318,6 +327,7 @@ class PseudoInputFile(PseudoFile):
             result = result[:size]
         return result
 
+
     def readline(self, size=-1):
         if self.closed:
             raise ValueError("read from closed file")
@@ -333,6 +343,7 @@ class PseudoInputFile(PseudoFile):
             size = eol + 1
         self._line_buffer = line[size:]
         return line[:size]
+
 
     def close(self):
         self.shell.close()

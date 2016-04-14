@@ -275,45 +275,6 @@ class ModifiedInterpreter(InteractiveInterpreter):
             self.tkconsole.showprompt()
 
 
-    """def runcode(self, code):
-        "Override base class method"
-        
-        
-        if self.tkconsole.executing:
-            self.interp.restart_subprocess()
-        self.checklinecache()
-        if self.save_warnings_filters is not None:
-            warnings.filters[:] = self.save_warnings_filters
-            self.save_warnings_filters = None
-        try:
-            self.tkconsole.beginexecuting()
-            exec(code, self.locals)
-        except SystemExit:
-            if not self.tkconsole.closing:
-                if tkMessageBox.askyesno(
-                    "Exit?",
-                    "Do you want to exit altogether?",
-                    default="yes",
-                    master=self.tkconsole.text):
-                    raise
-                else:
-                    self.showtraceback()
-            else:
-                raise
-        except:
-            if self.tkconsole.canceled:
-                self.tkconsole.canceled = False
-                print("KeyboardInterrupt", file=self.tkconsole.stderr)
-            else:
-                    self.showtraceback()
-        finally:
-            try:
-                self.tkconsole.endexecuting()
-            except AttributeError:  # shell may have closed
-                pass
-        """
-
-
     def showtraceback(self):
         "Extend base class method to reset output properly"
         self.tkconsole.resetoutput()

@@ -12,18 +12,18 @@ class Application:
     - py_shell defines the shell interface (white and orange widgets)
     """
 
-
     def __init__(self):
         """ Set up some information like, set up the interfaces """
         self.root = Tk()
         self.root.title("MrPython")        
         self.mode = "full"
         self.main_view = MainView(self)
-        self.icon_widget = self.main_view.icon_widget
         self.editor_list = self.main_view.editor_widget.py_notebook
+        self.icon_widget = self.main_view.icon_widget
         self.console = self.main_view.console
         self.change_mode()
         self.apply_bindings()
+        self.status_bar = self.main_view.status_bar
         self.root.protocol('WM_DELETE_WINDOW', self.close_all_event)
 
 
@@ -136,7 +136,7 @@ class Application:
         """ Check syntax : compilation """
         reply = self.editor_list.get_current_editor().maybesave_run()
         if (reply != "cancel"):
-            self.console.check(self.editor_list.get_current_editor())
+            self.console.check_syntax(self.editor_list.get_current_editor())
 
 
     # TODO: remove ?

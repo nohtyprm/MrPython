@@ -2,6 +2,7 @@ from PyEditorList import PyEditorList
 from PyIconWidget import PyIconWidget
 from Console import Console
 from PyEditorWidget import PyEditorWidget
+from StatusBar import StatusBar
 from tkinter.ttk import *
 from tkinter import *
 import sys
@@ -37,12 +38,19 @@ class MainView:
         self.create_icon_widget(self.view)
         self.create_editor_widget(self.view)
         self.create_console(self.view)
+        self.create_status_bar(self.view, self.editor_widget.py_notebook)
         # Packing
         self.view.pack(fill=BOTH, expand=1)
         self.icon_widget.pack(fill=BOTH)
         self.editor_widget.pack(fill=BOTH, expand=1)
         self.console.frame_output.pack(fill=BOTH)
         self.console.frame_input.pack(fill=BOTH)
+        self.status_bar.pack(fill=BOTH)
+
+
+    def create_status_bar(self, parent, notebook):
+        """ Create the status bar on the bottom """
+        self.status_bar = StatusBar(parent, notebook)
 
 
     def create_icon_widget(self, parent):

@@ -9,7 +9,7 @@ class PyEditorWidget(Frame):
 
     def __init__(self, parent):
         Frame.__init__(self, parent, background='#E8E8E8')
-
+        #self.config(borderwidth=1, relief=GROOVE)
         self.UPDATE_PERIOD = 100
         
         # Holds the text inside the line widget : the text simply
@@ -70,7 +70,6 @@ class PyEditorWidget(Frame):
         if self.py_notebook.index("end") > 0:
             text = self.py_notebook.get_current_editor()
             ll, cc = text.index('@0,0').split('.')
-            
             line_numbers = self.get_line_numbers()
             if self.line_numbers != line_numbers:
                 self.line_numbers = line_numbers
