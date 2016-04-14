@@ -31,34 +31,22 @@ class PyEditorWidget(Frame):
 
     def get_line_numbers(self):
         """ Get the string that will fill the line widget """
-        line = '0'
-        col= ''
-        ln = ''
-
-        step = 6 #px
-
-        nl = '\n'
+        s = ''
         lineMask = '    %s\n'
-        indexMask = '@0,%d'
-
         text = self.py_notebook.get_current_editor()
-
         # First, make sure that the first line is clearly visible within the
         # text widget
         # ll, cc = text.index('@0,0').split('.')
         text.see(text.index('@0,0'))
-
+        # Get the first and last visible lines
+        ll, cc = text.index('@0,0').split('.')
+        first = ll
+        ll, cc = text.index('@0,%d' % text.winfo_height()).split('.')
+        last = ll
         # Build the string containing all the line numbers
-        for i in range(0, text.winfo_height(), step):
-            ll, cc = text.index(indexMask % i).split('.')
-            if line == ll:
-                if col != cc:
-                    col = cc
-                    ln += nl
-            else:
-                line, col = ll, cc
-                ln += (lineMask % line)[-5:]
-        return ln
+        for line in range(int(first), int(last) + 1):
+            s += (lineMask % line)[-5:]
+        return s
 
 
     def update_line_numbers(self):
