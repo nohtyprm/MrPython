@@ -123,8 +123,12 @@ class PyEditorList(Notebook):
             self.forget(self.get_current_editor())
         return reply
 
+
     def save(self,event=None):
-        return self.get_current_editor().save(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().save(event)
+        else:
+            return None
 
     def save_as(self,event=None):
         return self.get_current_editor().save_as(event)

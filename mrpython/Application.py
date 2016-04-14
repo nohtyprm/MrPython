@@ -42,12 +42,12 @@ class Application:
         self.new_file_button.bind("<1>", self.new_file)
         self.run_button.bind("<1>", self.run_module)
         self.mode_button.bind("<1>", self.change_mode)
-        self.save_button.bind("<1>", self.editor_list.save)
+        self.save_button.bind("<1>", self.save)
         self.open_button.bind("<1>", self.open)
         # File
         self.root.bind("<Control-n>", self.new_file)
         self.root.bind('<<open-window-from-file>>', self.open)
-        self.root.bind('<<save-window>>', self.editor_list.save)
+        self.root.bind('<<save-window>>', self.save)
         self.root.bind('<<save-window-as-file>>', self.editor_list.save_as)
         self.root.bind('<<save-copy-of-window-as-file>>',
                        self.editor_list.save_as_copy)
@@ -77,16 +77,38 @@ class Application:
         self.root.bind('<<tabify-region>>', self.editor_list.tabify_region_event)
         self.root.bind('<<untabify-region>>', self.editor_list.untabify_region_event)
         self.root.bind('<<toggle-tabs>>', self.editor_list.toggle_tabs_event)
-        # Run
+        # Code execution
         self.root.bind('<<check-module>>', self.check_module)
         self.root.bind('<Control-r>', self.run_module)
         self.root.bind('<Control-Key-Return>', self.run_source)
+        # File change in notebook
+        self.root.bind('<<NotebookTabChanged>>', self.update_title)
         # Bind the keys
         if keydefs is None:
             keydefs = Bindings.default_keydefs
         for event, keylist in keydefs.items():
             if keylist:
                 self.root.event_add(event, *keylist)
+
+
+    def update_title(self, event=None):
+        """ Give the title the current filename """
+        new_title = self.editor_list.tab(self.editor_list.index("current"), "text")
+        directory = ""
+        if self.editor_list.get_current_editor().io.filename:
+            directory = self.editor_list.get_current_editor().io.filename
+        if directory != "":
+            new_title += " (" + directory + ")"
+        new_title += " - MrPython"
+        self.root.title(new_title)
+
+
+    def save(self, event=None):
+        """ Save the current file (and display it in the status bar) """
+        filename = self.editor_list.save()
+        if filename:
+            self.status_bar.update_save_label(filename)
+            self.update_title()
 
 
     def change_mode(self, event=None):

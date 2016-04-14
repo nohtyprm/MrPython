@@ -55,9 +55,9 @@ class Console:
         self.stdout = PseudoOutputFile(self, "normal", IOBinding.encoding)
         self.stderr = PseudoOutputFile(self, "error", IOBinding.encoding)
         self.console = PseudoOutputFile(self, "normal", IOBinding.encoding)
-        sys.stdout = self.stdout
-        sys.stderr = self.stderr
-        sys.stdin = self.stdin
+        #sys.stdout = self.stdout
+        #sys.stderr = self.stderr
+        #sys.stdin = self.stdin
         # The current Python mode        
         self.mode = "student"
 
