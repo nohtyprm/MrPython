@@ -45,7 +45,7 @@ class MainView:
         self.editor_widget.pack(fill=BOTH, expand=1)
         self.console.frame_output.pack(fill=BOTH)
         self.console.frame_input.pack(fill=BOTH)
-        self.status_bar.pack(fill=BOTH, expand=1)
+        self.status_bar.pack(fill=BOTH)
 
 
     def create_status_bar(self, parent, notebook):

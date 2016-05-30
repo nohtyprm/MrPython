@@ -51,9 +51,9 @@ class ModifiedInterpreter(InteractiveInterpreter):
             InteractiveInterpreter.showsyntaxerror(self, filename)
             self.tkconsole.write("== Fin du rapport ==\n")
         else: # Code execution
-            self.tkconsole.write("\n== Exécution de %s ==\n" % (filename))
+            self.tkconsole.write("\n== Exécution de %s ==\n" % (filename), tags=('error'))
             InteractiveInterpreter.runcode(self, code)
-            self.tkconsole.write("== Fin de l'exécution ==\n")
+            self.tkconsole.write("== Fin de l'exécution ==\n", tags=('error'))
             
 
     def exec_file_student_mode(self, filename, source=None):
@@ -133,9 +133,9 @@ class ModifiedInterpreter(InteractiveInterpreter):
         result = output_file.read()
         errors = (result.find('Traceback (most recent call last):') > -1)
         if errors: # Error : analyse the output to give details
-            self.tkconsole.write("\n== Erreur dans le script ==\n")
+            self.tkconsole.write("\n== Erreur dans le script ==\n", tags=('error'))
             self.display_errors(output_file, filename)
-            self.tkconsole.write("== Fin du rapport ==\n")
+            self.tkconsole.write("== Fin du rapport ==\n", tags=('error'))
         else: # No error, just copy the result into the shell
             self.tkconsole.write("\n== Exécution de %s ==\n" % (filename))
             self.tkconsole.write(result)
@@ -170,11 +170,11 @@ class ModifiedInterpreter(InteractiveInterpreter):
             name_error = search_name.group('name')
             self.tkconsole.write("--> Ligne " + str(line_number) +
                                  " : La variable '" + name_error +
-                                 "' n'est pas définie.")
+                                 "' n'est pas définie.", tags=('error'))
         #   ZeroDivisionError 
         elif 'ZeroDivisionError' in error_line:
             self.tkconsole.write("--> Ligne " + str(line_number) +
-                                 " : Division par zéro.")
+                                 " : Division par zéro.", tags=('error'))
         #   Other runtime error
         else:
             self.tkconsole.write("--> Ligne " + str(line_number) +
@@ -222,10 +222,10 @@ class ModifiedInterpreter(InteractiveInterpreter):
             InteractiveInterpreter.showtraceback(self)
             self.tkconsole.write("== Fin du rapport ==\n")
         else: # Print the result of the evaluation to the console
-            self.write("\n== Evaluation de l'expression ==\n")
+            self.tkconsole.write("\n== Evaluation de l'expression ==\n")
             # This line is for configure the color of the tag region
-            print(result)
-            self.write("== Fin de l'evaluation ==\n")
+            self.tkconsole.write(str(result) + '\n', tags=('run'))
+            self.tkconsole.write("== Fin de l'evaluation ==\n")
             
 
     def checksyntax(self, pyEditor):
@@ -262,7 +262,6 @@ class ModifiedInterpreter(InteractiveInterpreter):
 
     def showtraceback(self):
         "Extend base class method to reset output properly"
-        self.tkconsole.resetoutput()
         self.checklinecache()
         InteractiveInterpreter.showtraceback(self)
 

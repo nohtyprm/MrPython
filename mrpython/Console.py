@@ -1,12 +1,12 @@
-from ModifiedInterpreter import ModifiedInterpreter
 from platform import python_version
 from tkinter import *
+from PyInterpreter import PyInterpreter
 import io
 import rpc
 
 class Console:
     """
-    Interactive console of MrPython, two widgets : output and input
+    Interactive console of MrPython, consisting of two widgets : output and input
     """
 
     from ModifiedColorDelegator import ModifiedColorDelegator
@@ -51,17 +51,15 @@ class Console:
         self.eval_button.pack(side=LEFT, fill=Y)
 		# Redirect the Python output, input and error stream to the console
         import IOBinding
-        self.stdin = PseudoInputFile(self, "run", IOBinding.encoding)
-        self.stdout = PseudoOutputFile(self, "normal", IOBinding.encoding)
+        self.stdin = PseudoInputFile(self, "error", IOBinding.encoding)
+        self.stdout = PseudoOutputFile(self, "error", IOBinding.encoding)
         self.stderr = PseudoOutputFile(self, "error", IOBinding.encoding)
-        self.console = PseudoOutputFile(self, "normal", IOBinding.encoding)
+        self.console = PseudoOutputFile(self, "error", IOBinding.encoding)
         #sys.stdout = self.stdout
         #sys.stderr = self.stderr
         #sys.stdin = self.stdin
         # The current Python mode        
         self.mode = "student"
-
-        self.interp = ModifiedInterpreter(self)
 
         self.reading = False
         self.executing = False
@@ -90,7 +88,7 @@ class Console:
         self.output_console.config(state=NORMAL)
         self.output_console.delete(1.0, END)
         self.begin()
-        self.write("Current mode : %s mode\n" % (self.mode))
+        self.write("Current mode : %s mode\n\n" % (self.mode))
         self.output_console.config(state=DISABLED)
 
 
@@ -99,38 +97,61 @@ class Console:
             the new mode """
         self.mode = mode
         self.reset_output()
+        self.switch_input_status(False)
 
 
     def evaluate_action(self):
         """ Evaluate the expression in the input console """
-        self.interp.evaluate(self.input_console.get(1.0, END))
+        output_file = open('interpreter_output', 'w+')
+        original_stdout = sys.stdout
+        sys.stdout = output_file
+        text, result = self.interpreter.run_evaluation(self.input_console.get(1.0, END))
+        self.input_console.delete(1.0, END)
+        self.write(text, tags=(result))
+        sys.stdout = original_stdout
+        output_file.close()
+
+
+    def switch_input_status(self, on):
+        """ Enable or disable the evaluation bar and button """
+        stat = None
+        bg = None
+        if on:
+            stat = 'normal'
+            bg = '#FFA500'
+        else:
+            stat = 'disabled'
+            bg = '#775F57'
+        self.input_console.config(state=stat, background=bg)
+        self.eval_button.config(state=stat)
 
 
     def run(self, filename):
-        """ Run the program in the current editor """
-        self.interp.clear_environment()
-        if self.app.mode == "full": #Full Python mode : normal execution
-            result = self.interp.execfile(filename)
-        else: #Student mode
-            result = self.interp.exec_file_student_mode(filename)
-        self.input_console.delete(1.0, END)
-        # If errors, disable the interactive prompt
-        if result:
-            self.input_console.config(background='#775F57', state='disabled')
-            self.eval_button.config(state='disabled')
+        """ Run the program in the current editor : execute, print results """
+        # Reset the output first
+        self.reset_output()
+        # A new PyInterpreter is created each time code is run
+        # It is then kept for other actions, like evaluation
+        self.interpreter = PyInterpreter(self.app.mode, filename)
+        # Change the output during execution
+        output_file = open('interpreter_output', 'w+')
+        original_stdout = sys.stdout
+        sys.stdout = output_file
+        text, result = self.interpreter.execute()
+        self.write(text, tags=(result))
+        sys.stdout = original_stdout
+        output_file.close()
+        # Enable or disable the evaluation bar according to the execution status
+        if result == 'run':
+            self.switch_input_status(True)
         else:
-            self.input_console.config(background='#FFC757', state='normal')
-            self.eval_button.config(state='normal')
-
-
-    def check_syntax(self, pyEditor):
-        """ Check the syntax of the current editor """
-        # TODO: correct this
-        self.write("\n==== check %s ====\n" % (pyEditor.long_title()))
-        self.interp.checksyntax(pyEditor)
-        self.write("==== end check ====\n")
-        self.showprompt()
+            self.switch_input_status(False)
         
+
+    def no_file_to_run_message(self):
+        self.reset_output()
+        self.write("=== No file to run ===", "error")
+
 
     def write(self, s, tags=()):
         """ Write into the output console """
@@ -181,7 +202,7 @@ class Console:
         line = self.output_console.get("iomark", "end-1c")
         if len(line) == 0:  # may be EOF if we quit our mainloop with Ctrl-C
             line = "\n"
-        self.resetoutput()
+        self.reset_output()
         if self.canceled:
             self.canceled = 0
             raise KeyboardInterrupt

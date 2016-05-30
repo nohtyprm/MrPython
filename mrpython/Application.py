@@ -46,12 +46,13 @@ class Application:
         self.open_button.bind("<1>", self.open)
         # File
         self.root.bind("<Control-n>", self.new_file)
-        self.root.bind('<<open-window-from-file>>', self.open)
-        self.root.bind('<<save-window>>', self.save)
+        self.root.bind('<Control-o>', self.open)
+        self.root.bind('<Control-s>', self.save)
+        self.root.bind("<Control-m>", self.change_mode)
         self.root.bind('<<save-window-as-file>>', self.editor_list.save_as)
         self.root.bind('<<save-copy-of-window-as-file>>',
                        self.editor_list.save_as_copy)
-        self.root.bind('<<close-window>>',
+        self.root.bind('<Control-w>',
                        self.editor_list.close_current_editor)
         self.root.bind('<<close-all-windows>>', self.close_all_event)
         # Edit
@@ -103,6 +104,10 @@ class Application:
         self.root.title(new_title)
 
 
+    #def maybe_save_run(self, event=None):
+        
+
+
     def save(self, event=None):
         """ Save the current file (and display it in the status bar) """
         filename = self.editor_list.save()
@@ -148,9 +153,14 @@ class Application:
 
     def run_module(self, event=None):
         """ Run the code : give the file name and code will be run from the source file """
+        if self.editor_list.get_size() == 0:
+            self.main_view.console.no_file_to_run_message()
+            return
         reply = self.editor_list.get_current_editor().maybesave_run()
         if (reply != "cancel"):
             file_name = self.editor_list.get_current_editor().long_title()
+            self.update_title()
+            self.status_bar.update_save_label(file_name)
             self.console.run(file_name)
 
 
