@@ -20,16 +20,16 @@ class PyEditor(Text):
     from Percolator import Percolator
     from ColorDelegator import  ColorDelegator
     
-    def __init__(self,parent,open=False,filename=None):
+    def __init__(self, parent, open=False, filename=None):
 
         Text.__init__(self,parent)
-        self.scroll=scroll=Scrollbar(self)
+        self.scroll = scroll=Scrollbar(self)
         scroll['command'] = self.yview
         scroll.pack(side=RIGHT, fill=Y)
         self['yscrollcommand'] = scroll.set
         self.list=parent
 
-        self.recent_files_path = os.path.join(MrPythonConf.GetUserCfgDir(),'recent-files.lst')
+        self.recent_files_path = os.path.join(MrPythonConf.GetUserCfgDir(), 'recent-files.lst')
 
         self.apply_bindings()
 
@@ -109,11 +109,11 @@ class PyEditor(Text):
         self.askyesno = tkMessageBox.askyesno
         self.askinteger = tkSimpleDialog.askinteger
 
-
     def apply_bindings(self,keydefs=None):
         self.bind("<<smart-backspace>>",self.smart_backspace_event)
         self.bind("<<newline-and-indent>>",self.newline_and_indent_event)
         self.bind("<<smart-indent>>",self.smart_indent_event)
+        
 
         #bindings keys
         if keydefs is None:
@@ -194,10 +194,9 @@ class PyEditor(Text):
         if filename:
             filename = os.path.basename(filename)
         else:
-            filename = "Untitled"
+            filename = "Sans nom"
         # return unicode string to display non-ASCII chars correctly
         return self._filename_to_unicode(filename)
-
 
     def _filename_to_unicode(self, filename):
         """convert filename to unicode in order to display it in Tk"""
@@ -748,3 +747,14 @@ def classifyws(s, tabwidth):
         else:
             break
     return raw, effective
+
+
+
+
+
+
+
+
+
+
+

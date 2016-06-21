@@ -1,30 +1,32 @@
 import os
-from tkinter import END
+from tkinter import *
 from tkinter.ttk import *
 import tkinter.messagebox as tkMessageBox
 from PyEditor import PyEditor
 
-
 class PyEditorList(Notebook):
-    from IOBinding import filesystemencoding,encoding
+    """
+    Manages the PyEditor widgets, in editor interface
+    """
 
     def __init__(self,parent):
         from configHandler import MrPythonConf
-        Notebook.__init__(self,parent,width=300,height=300)
-        self.parent=parent
-        self.sizetab=0
-        self.recent_files_menu=None
+        Notebook.__init__(self, parent, height=500)
+        self.parent = parent
+        self.sizetab = 0
+        self.recent_files_menu = None
 
-        self.recent_files_path = os.path.join(MrPythonConf.GetUserCfgDir(),'recent-files.lst')
+        self.recent_files_path = os.path.join(MrPythonConf.GetUserCfgDir(),
+                                              'recent-files.lst')
 
     def get_size(self):
         return self.sizetab
 
     def add(self, child, **kw):
-        super(PyEditorList, self).add(child,**kw)
-        child.list=self
+        super(PyEditorList, self).add(child, **kw)
+        child.list = self
         self.select(child)
-        self.sizetab+=1
+        self.sizetab += 1
 
     def changerFileName(self,editor):
         if editor.isOpen():
@@ -121,8 +123,12 @@ class PyEditorList(Notebook):
             self.forget(self.get_current_editor())
         return reply
 
+
     def save(self,event=None):
-        return self.get_current_editor().save(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().save(event)
+        else:
+            return None
 
     def save_as(self,event=None):
         return self.get_current_editor().save_as(event)
