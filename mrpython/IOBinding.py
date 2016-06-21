@@ -330,7 +330,11 @@ class IOBinding:
                 except AttributeError:  # may be a PyShell
                     pass
         self.editwin.focus_set()
-        return "break"
+        if not self.filename:
+            return None
+        else:
+            return self.filename
+        ### return "break"
 
     def save_as(self, event):
         filename = self.asksavefile()

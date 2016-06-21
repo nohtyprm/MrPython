@@ -1,4 +1,5 @@
 from code import InteractiveInterpreter
+from configHandler import MrPythonConf
 from EnvironmentNodeVisitor import EnvironmentNodeVisitor
 import tokenize
 import subprocess
@@ -9,7 +10,6 @@ import ast
 import socket
 import rpc
 import re
-from configHandler import MrPythonConf
 import tkinter.messagebox as tkMessageBox
 
 class MyRPCClient(rpc.RPCClient):
@@ -17,6 +17,7 @@ class MyRPCClient(rpc.RPCClient):
     def handle_EOF(self):
         "Override the base class - just re-raise EOFError"
         raise EOFError
+
 
 class ModifiedInterpreter(InteractiveInterpreter):
     """
@@ -36,6 +37,7 @@ class ModifiedInterpreter(InteractiveInterpreter):
         self.subprocess_arglist = None
         self.original_compiler_flags = self.compile.compiler.flags
 
+
     def execfile(self, filename, source=None):
         """ Execute an existing file in full Python mode """
         # TODO: AST + redémarrer l'environment à chaque fois
@@ -45,17 +47,14 @@ class ModifiedInterpreter(InteractiveInterpreter):
         try:
             code = compile(source, filename, "exec")
         except: # Compilation error : syntax...
-            self.tkconsole.change_text_color("error")
             self.tkconsole.write("\n== Erreur(s) de syntaxe dans le script ==\n")
             InteractiveInterpreter.showsyntaxerror(self, filename)
             self.tkconsole.write("== Fin du rapport ==\n")
-            self.tkconsole.change_text_color("normal")
         else: # Code execution
-            self.tkconsole.change_text_color("run")
-            self.tkconsole.write("\n== Exécution de %s ==\n" % (filename))
+            self.tkconsole.write("\n== Exécution de %s ==\n" % (filename), tags=('error'))
             InteractiveInterpreter.runcode(self, code)
-            self.tkconsole.write("== Fin de l'exécution ==\n")
-            self.tkconsole.change_text_color("normal")
+            self.tkconsole.write("== Fin de l'exécution ==\n", tags=('error'))
+            
 
     def exec_file_student_mode(self, filename, source=None):
         """ Execute an existing file in student Python mode
@@ -70,6 +69,7 @@ class ModifiedInterpreter(InteractiveInterpreter):
             return self.run_student_code(filename, source)
         return True
 
+
     def parse_student_code(self, filename, source):
         """ Parse the code and check if it follows the class rules
             Return true if there is at least one rule not followed
@@ -77,12 +77,11 @@ class ModifiedInterpreter(InteractiveInterpreter):
         try:
             tree = ast.parse(source, filename)
         except: # Compilation error : syntax...
-            self.tkconsole.change_text_color("error")
+            
             self.tkconsole.write("\n== Erreur(s) de syntaxe dans le script ==\n")
             # TODO: afficher des erreurs plus détaillées pour la compilation
             InteractiveInterpreter.showsyntaxerror(self, filename)
             self.tkconsole.write("== Fin du rapport ==\n")
-            self.tkconsole.change_text_color("normal")
             return True
         else: # Check if the source code respect the class conventions
             errors = False
@@ -92,7 +91,6 @@ class ModifiedInterpreter(InteractiveInterpreter):
             # Check if there are asserts that end the source
             if not self.check_tests(tree):
                 if not errors:
-                    self.tkconsole.change_text_color("error")
                     self.tkconsole.write("\n== Les conventions du cours ne sont "
                                          "pas respectées ==\n")                    
                     errors = True
@@ -105,6 +103,7 @@ class ModifiedInterpreter(InteractiveInterpreter):
                 self.tkconsole.write("== Fin du rapport ==\n")
             return errors
 
+
     def update_environment_names(self, tree):
         """ Get all the names in the code source to remove them from
             the environment later """
@@ -112,6 +111,7 @@ class ModifiedInterpreter(InteractiveInterpreter):
         visitor.visit(tree)
         self.environment = visitor.name_list
         return visitor.function_lines
+
 
     def run_student_code(self, filename, source):
         """ Run the code, giving verbose informations about errors
@@ -133,18 +133,16 @@ class ModifiedInterpreter(InteractiveInterpreter):
         result = output_file.read()
         errors = (result.find('Traceback (most recent call last):') > -1)
         if errors: # Error : analyse the output to give details
-            self.tkconsole.change_text_color("error")
-            self.tkconsole.write("\n== Erreur dans le script ==\n")
+            self.tkconsole.write("\n== Erreur dans le script ==\n", tags=('error'))
             self.display_errors(output_file, filename)
-            self.tkconsole.write("== Fin du rapport ==\n")
+            self.tkconsole.write("== Fin du rapport ==\n", tags=('error'))
         else: # No error, just copy the result into the shell
-            self.tkconsole.change_text_color("run")
             self.tkconsole.write("\n== Exécution de %s ==\n" % (filename))
             self.tkconsole.write(result)
             self.tkconsole.write("== Fin de l'exécution ==\n")
-        self.tkconsole.change_text_color("normal")
         output_file.close()
         return errors
+
 
     def display_errors(self, output_file, filename):
         """ Analyse the output and display more verbose details about errors """
@@ -172,11 +170,11 @@ class ModifiedInterpreter(InteractiveInterpreter):
             name_error = search_name.group('name')
             self.tkconsole.write("--> Ligne " + str(line_number) +
                                  " : La variable '" + name_error +
-                                 "' n'est pas définie.")
+                                 "' n'est pas définie.", tags=('error'))
         #   ZeroDivisionError 
         elif 'ZeroDivisionError' in error_line:
             self.tkconsole.write("--> Ligne " + str(line_number) +
-                                 " : Division par zéro.")
+                                 " : Division par zéro.", tags=('error'))
         #   Other runtime error
         else:
             self.tkconsole.write("--> Ligne " + str(line_number) +
@@ -184,11 +182,13 @@ class ModifiedInterpreter(InteractiveInterpreter):
         self.tkconsole.write("\n")
         return line_number
 
+
     def clear_environment(self):
         """ Clear the environment : variables, functions previously added """
         for name in self.environment:
             if (name != 'app') and (name in self.locals):
                 del self.locals[name]
+
 
     def check_specifications(self, source):
         """ Check if all the functions have a specification """
@@ -207,30 +207,26 @@ class ModifiedInterpreter(InteractiveInterpreter):
                 test = True
         return test
 
+
     def evaluate(self, expression):
         """ Evaluate the expression in the prompt with the environment built
             by the last code execution """
         try:
             result = eval(expression, globals(), self.locals)
         except SyntaxError: # Syntax error
-            self.tkconsole.change_text_color("error")
             self.tkconsole.write("\n== Erreur de syntaxe dans l'expression ==\n")
             InteractiveInterpreter.showsyntaxerror(self)
             self.tkconsole.write("== Fin du rapport ==\n")
-            self.tkconsole.change_text_color("normal")
         except: # Other errors that can occur
-            self.tkconsole.change_text_color("error")
             self.tkconsole.write("\n== Erreur dans l'évaluation de l'expression ==\n")
             InteractiveInterpreter.showtraceback(self)
             self.tkconsole.write("== Fin du rapport ==\n")
-            self.tkconsole.change_text_color("normal")
         else: # Print the result of the evaluation to the console
-            self.tkconsole.change_text_color("run")
-            self.write("\n== Evaluation de l'expression ==\n")
+            self.tkconsole.write("\n== Evaluation de l'expression ==\n")
             # This line is for configure the color of the tag region
-            print(result)
-            self.write("== Fin de l'evaluation ==\n")
-            self.tkconsole.change_text_color("normal")
+            self.tkconsole.write(str(result) + '\n', tags=('run'))
+            self.tkconsole.write("== Fin de l'evaluation ==\n")
+            
 
     def checksyntax(self, pyEditor):
         filename=pyEditor.long_title()
@@ -263,49 +259,12 @@ class ModifiedInterpreter(InteractiveInterpreter):
             self.tkconsole.set_warning_stream(saved_stream)
             self.tkconsole.showprompt()
 
-    """def runcode(self, code):
-        "Override base class method"
-        
-        
-        if self.tkconsole.executing:
-            self.interp.restart_subprocess()
-        self.checklinecache()
-        if self.save_warnings_filters is not None:
-            warnings.filters[:] = self.save_warnings_filters
-            self.save_warnings_filters = None
-        try:
-            self.tkconsole.beginexecuting()
-            exec(code, self.locals)
-        except SystemExit:
-            if not self.tkconsole.closing:
-                if tkMessageBox.askyesno(
-                    "Exit?",
-                    "Do you want to exit altogether?",
-                    default="yes",
-                    master=self.tkconsole.text):
-                    raise
-                else:
-                    self.showtraceback()
-            else:
-                raise
-        except:
-            if self.tkconsole.canceled:
-                self.tkconsole.canceled = False
-                print("KeyboardInterrupt", file=self.tkconsole.stderr)
-            else:
-                    self.showtraceback()
-        finally:
-            try:
-                self.tkconsole.endexecuting()
-            except AttributeError:  # shell may have closed
-                pass
-        """
 
     def showtraceback(self):
         "Extend base class method to reset output properly"
-        self.tkconsole.resetoutput()
         self.checklinecache()
         InteractiveInterpreter.showtraceback(self)
+
 
     def checklinecache(self):
         c = linecache.cache
