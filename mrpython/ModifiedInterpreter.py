@@ -226,7 +226,7 @@ class ModifiedInterpreter(InteractiveInterpreter):
             # This line is for configure the color of the tag region
             self.tkconsole.write(str(result) + '\n', tags=('run'))
             self.tkconsole.write("== Fin de l'evaluation ==\n")
-            
+
 
     def checksyntax(self, pyEditor):
         filename=pyEditor.long_title()

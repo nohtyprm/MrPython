@@ -135,7 +135,7 @@ class Application:
             self.mode = "full"
         else:
             self.mode = "student"
-        self.icon_widget.switch_icon_mode(tr(self.mode))
+        self.icon_widget.switch_icon_mode(self.mode)
         self.console.change_mode(tr(self.mode))
         self.status_bar.change_mode(tr(self.mode))
 

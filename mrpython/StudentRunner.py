@@ -9,11 +9,11 @@ class StudentRunner:
     """
     Runs a code under the student mode
     """
-    
+
     def __init__(self, filename, source):
         self.filename = filename
         self.source = source
-        self.report = RunReport()        
+        self.report = RunReport()
 
 
     def get_report(self):
