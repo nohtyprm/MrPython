@@ -3,6 +3,8 @@ from tkinter import Tk, sys
 from PyEditor import PyEditor
 import Bindings
 
+import translate
+
 class Application:
     """
     The main class of the application
@@ -14,6 +16,19 @@ class Application:
 
     def __init__(self):
         """ Set up some information like, set up the interfaces """
+        import locale
+
+        language = None
+        loc = locale.getdefaultlocale()
+        if loc:
+            for el in loc:
+                if str(el).upper().startswith("FR"):
+                    language = "fr"
+                    break
+
+        if language is not None:
+            translate.set_translator_locale(language)
+
         self.root = Tk()
         self.root.title("MrPython")
         self.mode = "full"
@@ -28,6 +43,8 @@ class Application:
 
         self.key_pressed_timer = False
 
+
+
     def run(self):
         """ Run the application """
         self.main_view.show()
@@ -35,11 +52,11 @@ class Application:
 
     def apply_bindings(self, keydefs=None):
         """ Bind the actions to the related event methods """
-        self.new_file_button = self.icon_widget.icons['new_file']
-        self.run_button = self.icon_widget.icons['run']
-        self.save_button = self.icon_widget.icons['save']
-        self.open_button = self.icon_widget.icons['open']
-        self.mode_button = self.icon_widget.icons['mode']
+        self.new_file_button = self.icon_widget.icons['new_file'].wdgt
+        self.run_button = self.icon_widget.icons['run'].wdgt
+        self.save_button = self.icon_widget.icons['save'].wdgt
+        self.open_button = self.icon_widget.icons['open'].wdgt
+        self.mode_button = self.icon_widget.icons['mode'].wdgt
         self.new_file_button.bind("<1>", self.new_file)
         self.run_button.bind("<1>", self.run_module)
         self.mode_button.bind("<1>", self.change_mode)
@@ -138,6 +155,7 @@ class Application:
 
     def key_pressed(self, event=None):
         #print("Key pressed, key = " + str(event.keysym))
+        self.key_pressed_timer = False
 
         if event.keysym == "Control_L" or event.keysym == "Control_R":
             self.icon_widget.show_texts()
