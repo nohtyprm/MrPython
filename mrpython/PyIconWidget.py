@@ -68,26 +68,22 @@ class PyIconWidget(Frame):
         self.icons['run'].wdgt.image = icon_run_gif
 
         # Packing the labels
-        self.icons['new_file'].wdgt.grid(row=0, column=0, ipadx=7,
+        sep = Label(self)
+        sep.grid(row=0, column=0, ipadx=7, ipady=3)
+        self.icons['new_file'].wdgt.grid(row=0, column=1, ipadx=7,
                                          ipady=3)
-        self.icons['open'].wdgt.grid(row=0, column=1, ipadx=7,
+        self.icons['open'].wdgt.grid(row=0, column=2, ipadx=7,
                                      ipady=3)
-        self.icons['save'].wdgt.grid(row=0, column=2, ipadx=7,
+        self.icons['save'].wdgt.grid(row=0, column=3, ipadx=7,
                                      ipady=3)
-        self.icons['mode'].wdgt.grid(row=0, column=4, ipadx=7,
+        sep = Label(self)
+        sep.grid(row=0, column=4, ipadx=7, ipady=3)
+        self.icons['mode'].wdgt.grid(row=0, column=5, ipadx=7,
                                      ipady=3)
-        self.icons['run'].wdgt.grid(row=0, column=6, ipadx=7,
+        sep = Label(self)
+        sep.grid(row=0, column=6, ipadx=7, ipady=3)
+        self.icons['run'].wdgt.grid(row=0, column=7, ipadx=7,
                                     ipady=3)
-
-        self.hide_texts()
-
-    def show_texts(self):
-        for (_, icon) in self.icons.items():
-            icon.spawn_immediate()
-
-    def hide_texts(self):
-        for (_, icon) in self.icons.items():
-            icon.hide()
 
     def switch_icon_mode(self, mode):
         """ Change icon when switching mode """

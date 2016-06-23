@@ -15,9 +15,11 @@ def set_translator_locale(locale_key):
 
 
 TRANSLATOR_DICT = {
-    "New" : { 'fr': "Nouveau" },
-    "New Ctrl-N" : { 'fr': "Nouveau Ctrl-N" },
-    "Open" : { 'fr': "Ouvrir" }
+    "New Ctrl-N" : { 'fr': "Nouveau Ctrl-N" }
+    ,"Open Ctrl-O" : { 'fr': "Ouvrir Ctrl-O" }
+    ,"Save Ctrl-S" : { 'fr': "Sauvegarder Ctrl-S" }
+    ,"Mode Ctrl-M" : { 'fr': "Mode Ctrl-M" }
+    ,"Run Ctrl-R" : { 'fr': "Interpréter Ctrl-R" }
 }
 
 def tr(msg):

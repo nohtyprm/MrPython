@@ -41,17 +41,6 @@ class ToolTip( Toplevel ):
         self.wdgt.bind( '<Enter>', self.spawn, '+' )                            # Add bindings to the widget.  This will NOT override bindings that the widget already has
         self.wdgt.bind( '<Leave>', self.hide, '+' )
         self.wdgt.bind( '<Motion>', self.move, '+' )
-        
-    def spawn_immediate( self, event=None ):
-        """
-        Spawn the ToolTip.  This simply makes the ToolTip eligible for display.
-        Usually this is caused by entering the widget
-        
-        Arguments:
-          event: The event that called this funciton
-        """
-        self.visible = 1
-        self.after( int( 30 ), self.show )                       # The after function takes a time argument in miliseconds
 
     def spawn( self, event=None ):
         """

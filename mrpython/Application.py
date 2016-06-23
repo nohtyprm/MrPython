@@ -3,7 +3,7 @@ from tkinter import Tk, sys
 from PyEditor import PyEditor
 import Bindings
 
-import translate
+from translate import tr, set_translator_locale
 
 class Application:
     """
@@ -27,7 +27,7 @@ class Application:
                     break
 
         if language is not None:
-            translate.set_translator_locale(language)
+            set_translator_locale(language)
 
         self.root = Tk()
         self.root.title("MrPython")
@@ -40,10 +40,6 @@ class Application:
         self.change_mode()
         self.apply_bindings()
         self.root.protocol('WM_DELETE_WINDOW', self.close_all_event)
-
-        self.key_pressed_timer = False
-
-
 
     def run(self):
         """ Run the application """
@@ -62,10 +58,6 @@ class Application:
         self.mode_button.bind("<1>", self.change_mode)
         self.save_button.bind("<1>", self.save)
         self.open_button.bind("<1>", self.open)
-
-        # Control hit
-        self.root.bind("<KeyPress>", self.key_pressed)
-        self.root.bind("<KeyRelease>", self.key_released)
 
         # File
         self.root.bind("<Control-n>", self.new_file)
@@ -143,39 +135,15 @@ class Application:
             self.mode = "full"
         else:
             self.mode = "student"
-        self.icon_widget.switch_icon_mode(self.mode)
-        self.console.change_mode(self.mode)
-        self.status_bar.change_mode(self.mode)
+        self.icon_widget.switch_icon_mode(tr(self.mode))
+        self.console.change_mode(tr(self.mode))
+        self.status_bar.change_mode(tr(self.mode))
 
 
     def new_file(self, event=None):
         """ Creates a new empty editor and put it into the pyEditorList """
         file_editor = PyEditor(self.editor_list)
         self.editor_list.add(file_editor, text=file_editor.get_file_name())
-
-    def key_pressed(self, event=None):
-        #print("Key pressed, key = " + str(event.keysym))
-        self.key_pressed_timer = False
-
-        if event.keysym == "Control_L" or event.keysym == "Control_R":
-            self.icon_widget.show_texts()
-            if not self.key_pressed_timer:
-                self.key_pressed_timer=True
-                self.root.after(5000, self.key_pressed_timeout)
-
-    def key_pressed_timeout(self):
-        if self.key_pressed_timer:
-            # print("Timeout!")
-            self.icon_widget.hide_texts()
-            self.key_pressed_timer=False
-
-    def key_released(self, event=None):
-        #print("Key released event = " + str(event))
-        self.key_pressed_timer=False
-
-        if event.keysym == "Control_L" or event.keysym == "Control_R":
-            self.icon_widget.hide_texts()
-
 
     def open(self, event=None):
         """ Open a file in the text editor """
