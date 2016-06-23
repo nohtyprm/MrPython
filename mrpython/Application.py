@@ -15,7 +15,7 @@ class Application:
     def __init__(self):
         """ Set up some information like, set up the interfaces """
         self.root = Tk()
-        self.root.title("MrPython")        
+        self.root.title("MrPython")
         self.mode = "full"
         self.main_view = MainView(self)
         self.editor_list = self.main_view.editor_widget.py_notebook
@@ -26,6 +26,7 @@ class Application:
         self.apply_bindings()
         self.root.protocol('WM_DELETE_WINDOW', self.close_all_event)
 
+        self.key_pressed_timer = False
 
     def run(self):
         """ Run the application """
@@ -34,16 +35,21 @@ class Application:
 
     def apply_bindings(self, keydefs=None):
         """ Bind the actions to the related event methods """
-        self.new_file_button = self.icon_widget.icon_new_file_label
-        self.run_button = self.icon_widget.icon_run_label
-        self.save_button = self.icon_widget.icon_save_label
-        self.open_button = self.icon_widget.icon_open_label
-        self.mode_button = self.icon_widget.icon_mode_label
+        self.new_file_button = self.icon_widget.icons['new_file']
+        self.run_button = self.icon_widget.icons['run']
+        self.save_button = self.icon_widget.icons['save']
+        self.open_button = self.icon_widget.icons['open']
+        self.mode_button = self.icon_widget.icons['mode']
         self.new_file_button.bind("<1>", self.new_file)
         self.run_button.bind("<1>", self.run_module)
         self.mode_button.bind("<1>", self.change_mode)
         self.save_button.bind("<1>", self.save)
         self.open_button.bind("<1>", self.open)
+
+        # Control hit
+        self.root.bind("<KeyPress>", self.key_pressed)
+        self.root.bind("<KeyRelease>", self.key_released)
+
         # File
         self.root.bind("<Control-n>", self.new_file)
         self.root.bind('<Control-o>', self.open)
@@ -105,8 +111,6 @@ class Application:
 
 
     #def maybe_save_run(self, event=None):
-        
-
 
     def save(self, event=None):
         """ Save the current file (and display it in the status bar) """
@@ -129,9 +133,31 @@ class Application:
 
     def new_file(self, event=None):
         """ Creates a new empty editor and put it into the pyEditorList """
-        file_editor = PyEditor(self.editor_list)        
+        file_editor = PyEditor(self.editor_list)
         self.editor_list.add(file_editor, text=file_editor.get_file_name())
-		
+
+    def key_pressed(self, event=None):
+        #print("Key pressed, key = " + str(event.keysym))
+
+        if event.keysym == "Control_L" or event.keysym == "Control_R":
+            self.icon_widget.show_texts()
+            if not self.key_pressed_timer:
+                self.key_pressed_timer=True
+                self.root.after(5000, self.key_pressed_timeout)
+
+    def key_pressed_timeout(self):
+        if self.key_pressed_timer:
+            # print("Timeout!")
+            self.icon_widget.hide_texts()
+            self.key_pressed_timer=False
+
+    def key_released(self, event=None):
+        #print("Key released event = " + str(event))
+        self.key_pressed_timer=False
+
+        if event.keysym == "Control_L" or event.keysym == "Control_R":
+            self.icon_widget.hide_texts()
+
 
     def open(self, event=None):
         """ Open a file in the text editor """
@@ -179,4 +205,4 @@ class Application:
 
 if __name__ == "__main__":
     app = Application()
-    app.run()  
+    app.run()
