@@ -41,6 +41,8 @@ class Console:
         self.arrows = Label(self.frame_input, text=" >>> ")
         self.input_console = Text(self.frame_input, background='#775F57',
                                   height=1, state='disabled', relief=FLAT)
+        self.input_console.bind('<Control-Key-Return>', self.evaluate_action)
+        self.input_console.bind('<Return>', self.evaluate_action)
         #self.frame_input.config(borderwidth=1, relief=GROOVE)
         self.eval_button = Button(self.frame_input, text="Eval",
                                   command=self.evaluate_action, width=7,
@@ -58,7 +60,7 @@ class Console:
         #sys.stdout = self.stdout
         #sys.stderr = self.stderr
         #sys.stdin = self.stdin
-        # The current Python mode        
+        # The current Python mode 
         self.mode = "student"
 
         self.reading = False
@@ -100,13 +102,17 @@ class Console:
         self.switch_input_status(False)
 
 
-    def evaluate_action(self):
+    def evaluate_action(self, *args):
         """ Evaluate the expression in the input console """
         output_file = open('interpreter_output', 'w+')
         original_stdout = sys.stdout
         sys.stdout = output_file
-        text, result = self.interpreter.run_evaluation(self.input_console.get(1.0, END))
+        expr = self.input_console.get(1.0, "end")
+        while expr and (expr[0] == "\n"):
+            expr = expr[1:]
+        text, result = self.interpreter.run_evaluation(expr)
         self.input_console.delete(1.0, END)
+        self.input_console.config(height=1)
         self.write(text, tags=(result))
         sys.stdout = original_stdout
         output_file.close()
@@ -146,7 +152,7 @@ class Console:
             self.switch_input_status(True)
         else:
             self.switch_input_status(False)
-        
+
 
     def no_file_to_run_message(self):
         self.reset_output()

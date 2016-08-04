@@ -9,10 +9,10 @@ class ToolTip( Toplevel ):
     To apply a ToolTip to any Tkinter widget, simply pass the widget to the
     ToolTip constructor
     """ 
-    def __init__( self, wdgt, msg=None, msgFunc=None, delay=1, follow=True ):
+    def __init__( self, wdgt, msg=None, msgFunc=None, delay=0.5, follow=True ):
         """
         Initialize the ToolTip
-        
+
         Arguments:
           wdgt: The widget this ToolTip is assigned to
           msg:  A static string message assigned to the ToolTip
