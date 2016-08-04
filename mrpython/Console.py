@@ -75,6 +75,8 @@ class Console:
         self.io = IOBinding.IOBinding(self)
         self.begin()
         self.configure_color_tags()
+        self.switch_input_status(True)
+        self.interpreter = None
 
 
     def configure_color_tags(self):
@@ -99,7 +101,7 @@ class Console:
             the new mode """
         self.mode = mode
         self.reset_output()
-        self.switch_input_status(False)
+        #self.switch_input_status(False)
 
 
     def evaluate_action(self, *args):
@@ -110,12 +112,19 @@ class Console:
         expr = self.input_console.get(1.0, "end")
         while expr and (expr[0] == "\n"):
             expr = expr[1:]
+        local_interpreter = False
+        if self.interpreter is None:
+            self.interpreter = PyInterpreter(self.app.mode, "<<console>>", expr)
+            local_interpreter = True
         text, result = self.interpreter.run_evaluation(expr)
         self.input_console.delete(1.0, END)
         self.input_console.config(height=1)
         self.write(text, tags=(result))
         sys.stdout = original_stdout
         output_file.close()
+
+        if local_interpreter:
+            self.interpreter = None
 
 
     def switch_input_status(self, on):
@@ -149,9 +158,13 @@ class Console:
         output_file.close()
         # Enable or disable the evaluation bar according to the execution status
         if result == 'run':
-            self.switch_input_status(True)
+            pass
+            #self.switch_input_status(True)
         else:
-            self.switch_input_status(False)
+            pass
+            #self.switch_input_status(False)
+
+        self.interpreter = None
 
 
     def no_file_to_run_message(self):

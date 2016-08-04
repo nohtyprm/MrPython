@@ -82,13 +82,19 @@ class ImgCanvas(Canvas):
                 x1, y1, x2, y2, color = elem[1:]
                 self.draw_ellipse(x1, y1, x2, y2, color)
             else:
-                raise ValueError("Cannot draw image element: unsupported '{}' type".format(elem[0]))
+                raise ValueError("Cannot draw image element: unsupported '{}' type (elem={})".format(elem[0], elem))
 
 
 CANVAS_WIDGET = None
 
 def show_image(img):
     global CANVAS_WIDGET
+    if CANVAS_WIDGET:
+        try:
+            CANVAS_WIDGET.delete(ALL)
+        except:
+            CANVAS_WIDGET = None
+
     if not CANVAS_WIDGET:
         myTop = Toplevel(width=580, height=320)
         myTop.title("Image")
@@ -97,9 +103,10 @@ def show_image(img):
         mycanvas = ImgCanvas(myframe,width=580, height=320, background="white", highlightthickness=0)
         mycanvas.pack(fill=BOTH, expand=YES, padx=8, pady=8)
         CANVAS_WIDGET = mycanvas
-    else:
-        CANVAS_WIDGET.delete(ALL)
+
 
     # the frame around the draw area
     CANVAS_WIDGET.create_rectangle(0, 0, 580, 320)
     CANVAS_WIDGET.draw_image(img)
+    CANVAS_WIDGET.addtag_all("all")
+

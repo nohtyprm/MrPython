@@ -8,6 +8,18 @@ import traceback
 import studentlib.gfx.image
 import studentlib.gfx.img_canvas
 
+def install_locals(locs):
+    locals = { k:v for (k,v) in locs.items() }
+    locals['draw_line'] = studentlib.gfx.image.draw_line
+    locals['draw_triangle'] = studentlib.gfx.image.draw_triangle
+    locals['fill_triangle'] = studentlib.gfx.image.fill_triangle
+    locals['draw_ellipse'] = studentlib.gfx.image.draw_ellipse
+    locals['fill_ellipse'] = studentlib.gfx.image.fill_ellipse
+    locals['overlay'] = studentlib.gfx.image.overlay
+    locals['show_image'] = studentlib.gfx.img_canvas.show_image
+    return locals
+
+
 class StudentRunner:
     """
     Runs a code under the student mode
@@ -55,9 +67,8 @@ class StudentRunner:
 
     def run(self, locals):
         """ Run the code, add the execution errors to the rapport, if any """
+        locals = install_locals(locals)
         code = compile(self.source, self.filename, 'exec')
-        locals['draw_line'] = studentlib.gfx.image.draw_line
-        locals['show_image'] = studentlib.gfx.img_canvas.show_image
         try:
             result = exec(code, locals, locals)
         except NameError as err:
@@ -83,6 +94,7 @@ class StudentRunner:
 
     def evaluate(self, expr, locals):
         """ Lanches the evaluation with the locals dict built before """
+        locals = install_locals(locals)
         try:
             result = eval(expr, locals, locals)
         except IndentationError as err:
