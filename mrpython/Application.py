@@ -5,6 +5,8 @@ import Bindings
 
 from translate import tr, set_translator_locale
 
+import StudentRunner
+
 class Application:
     """
     The main class of the application
@@ -30,7 +32,9 @@ class Application:
             set_translator_locale(language)
 
         self.root = Tk()
+        StudentRunner.TK_ROOT = self.root
         self.root.title("MrPython")
+
         self.mode = "full"
         self.main_view = MainView(self)
         self.editor_list = self.main_view.editor_widget.py_notebook

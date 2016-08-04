@@ -50,7 +50,7 @@ class ImgCanvas(Canvas):
                              self.x(x2), self.y(y2),
                              self.x(x3), self.y(y3)),
                             fill=color)
-                            
+
     def fill_ellipse(self, x1, y1, x2, y2, color):
         self.create_oval((self.x(x1), self.y(y1),
                           self.x(x2), self.y(y2)),
@@ -83,3 +83,23 @@ class ImgCanvas(Canvas):
                 self.draw_ellipse(x1, y1, x2, y2, color)
             else:
                 raise ValueError("Cannot draw image element: unsupported '{}' type".format(elem[0]))
+
+
+CANVAS_WIDGET = None
+
+def show_image(img):
+    global CANVAS_WIDGET
+    if not CANVAS_WIDGET:
+        myTop = Toplevel(width=580, height=320)
+        myTop.title("Image")
+        myframe = Frame(myTop, width=580, height=320)
+        myframe.pack(fill=BOTH, expand=YES)
+        mycanvas = ImgCanvas(myframe,width=580, height=320, background="white", highlightthickness=0)
+        mycanvas.pack(fill=BOTH, expand=YES, padx=8, pady=8)
+        CANVAS_WIDGET = mycanvas
+    else:
+        CANVAS_WIDGET.delete(ALL)
+
+    # the frame around the draw area
+    CANVAS_WIDGET.create_rectangle(0, 0, 580, 320)
+    CANVAS_WIDGET.draw_image(img)

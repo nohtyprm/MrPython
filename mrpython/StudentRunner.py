@@ -5,15 +5,25 @@ import tokenize
 import sys
 import traceback
 
+import studentlib.gfx.image
+import studentlib.gfx.img_canvas
+
 class StudentRunner:
     """
     Runs a code under the student mode
     """
 
     def __init__(self, filename, source):
+        global TK_ROOT
         self.filename = filename
         self.source = source
         self.report = RunReport()
+        self.tk_root = TK_ROOT
+        ## This is a hack so let's check...
+        try:
+            self.tk_root.nametowidget('.')
+        except e:
+            raise ValueError("TK Root is not set (please report)")
 
 
     def get_report(self):
@@ -43,10 +53,11 @@ class StudentRunner:
             else:
                 return False
 
-
     def run(self, locals):
         """ Run the code, add the execution errors to the rapport, if any """
         code = compile(self.source, self.filename, 'exec')
+        locals['draw_line'] = studentlib.gfx.image.draw_line
+        locals['show_image'] = studentlib.gfx.img_canvas.show_image
         try:
             result = exec(code, locals, locals)
         except NameError as err:
@@ -97,7 +108,6 @@ class StudentRunner:
             self.report.add_execution_error('zero_division', lineno)
         else:
             self.report.set_result(result)
-            
 
     def check_rules(self):
         """ Check if the code follows the class rules """
@@ -106,7 +116,6 @@ class StudentRunner:
         if not self.check_specifications():
             return False
         return True
-                        
 
     def check_specifications(self):
         """ Is there a valid specification for each function ? """
