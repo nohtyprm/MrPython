@@ -36,15 +36,21 @@ class MainView:
         self.view = Frame(self.root, background="white", width=900)
         # Create the widgets
         self.create_icon_widget(self.view)
-        self.create_editor_widget(self.view)
-        self.create_console(self.view)
+        pw = PanedWindow(self.view, orient=VERTICAL)
+        self.create_editor_widget(pw)
+        self.create_console(pw)
         self.create_status_bar(self.view, self.editor_widget.py_notebook)
         # Packing
         self.view.pack(fill=BOTH, expand=1)
         self.icon_widget.pack(fill=BOTH)
-        self.editor_widget.pack(fill=BOTH, expand=1)
-        self.console.frame_output.pack(fill=BOTH)
-        self.console.frame_input.pack(fill=BOTH)
+        pw.add(self.editor_widget)
+        #self.editor_widget.pack(fill=BOTH, expand=1)
+        pw.add(self.console.frame_output)
+        #self.console.frame_output.pack(fill=BOTH)
+        pw.add(self.console.frame_input)
+        #self.console.frame_input.pack(fill=BOTH)
+        pw.pack(fill=BOTH, expand=1)
+
         self.status_bar.pack(fill=BOTH)
 
 
@@ -52,16 +58,13 @@ class MainView:
         """ Create the status bar on the bottom """
         self.status_bar = StatusBar(parent, notebook)
 
-
     def create_icon_widget(self, parent):
         """ Create the icon menu on the top """
         self.icon_widget = PyIconWidget(parent, self.root)
 
-
     def create_editor_widget(self, parent):
         """ Create the editor area : notebook, line number widget """
         self.editor_widget = PyEditorWidget(parent)
-
 
     def create_console(self, parent):
         """ Create the interactive interface in the bottom """
