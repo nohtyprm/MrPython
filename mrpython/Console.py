@@ -164,7 +164,7 @@ class Console:
             pass
             #self.switch_input_status(False)
 
-        self.interpreter = None
+        # self.interpreter = None
 
 
     def no_file_to_run_message(self):

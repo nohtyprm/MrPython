@@ -8,8 +8,8 @@ import traceback
 import studentlib.gfx.image
 import studentlib.gfx.img_canvas
 
-def install_locals(locs):
-    locals = { k:v for (k,v) in locs.items() }
+def install_locals(locals):
+    #locals = { k:v for (k,v) in locs.items() }
     locals['draw_line'] = studentlib.gfx.image.draw_line
     locals['draw_triangle'] = studentlib.gfx.image.draw_triangle
     locals['fill_triangle'] = studentlib.gfx.image.fill_triangle
