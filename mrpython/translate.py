@@ -23,7 +23,10 @@ TRANSLATOR_DICT = {
     ,"Run Ctrl-R" : { 'fr': "Interpréter Ctrl-R" }
     # modeline
     ,"student" : { 'fr': "étudiant" }
-    ,"full" : { 'fr': "complet" }
+    ,"full" : { 'fr': "expert" }
+    # interprète
+    ,"Evaluating: " : { 'fr': "Evaluation de : " }
+    ,"Interpretation of: " : { 'fr' : "Interprétation de : " }
 }
 
 def tr(msg):

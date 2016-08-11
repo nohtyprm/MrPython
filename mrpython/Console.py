@@ -1,6 +1,8 @@
 from platform import python_version
 from tkinter import *
 from PyInterpreter import PyInterpreter
+from configHandler import MrPythonConf
+from translate import tr
 import io
 import rpc
 
@@ -92,7 +94,7 @@ class Console:
         self.output_console.config(state=NORMAL)
         self.output_console.delete(1.0, END)
         self.begin()
-        self.write("Current mode : %s mode\n\n" % (self.mode))
+        self.write("MrPython v.Mode '" + tr(self.mode) + "'")
         self.output_console.config(state=DISABLED)
 
 

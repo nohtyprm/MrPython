@@ -1,5 +1,7 @@
 from StudentRunner import StudentRunner
 from FullRunner import FullRunner
+from translate import tr
+
 import tokenize
 
 class PyInterpreter:
@@ -7,7 +9,7 @@ class PyInterpreter:
     This class aims at running the code and checking process, and builds
     a report that will be sent to the Console
     """
-    
+
     def __init__(self, mode, filename, source=None):
         self.filename = filename
         if source is None:
@@ -29,8 +31,8 @@ class PyInterpreter:
             runner = FullRunner(self.filename, self.source)
         result = runner.evaluate(expr, self.locals)
         self.report = runner.get_report()
-        begin_report = "=== Rapport d'évaluation de '" + expr[:-1] + "' ===\n"
-        end_report = "\n=== Fin du rapport d'évaluation ===\n\n"
+        begin_report = "=== " + tr("Evaluating: ") + "'" + expr[:-1] + "' ===\n"
+        end_report = "\n" + ('=' * len(begin_report)) + "\n\n"
         if self.mode == "student":
             text, result = self.build_report_text_student()
             return (begin_report + text + end_report, result)
@@ -40,7 +42,7 @@ class PyInterpreter:
             else:
                 result = 'error'
             return (begin_report + self.build_report_text_full() + end_report, result)
-        
+ 
 
     def execute(self):
         """ Execute the runner corresponding to the chosen Python mode """
@@ -51,8 +53,9 @@ class PyInterpreter:
             runner = FullRunner(self.filename, self.source)
         result = runner.execute(self.locals)
         self.report = runner.get_report()
-        begin_report = "=== Rapport d'exécution de " + self.filename + " ===\n"
-        end_report = "\n=== Fin du rapport d'exécution ===\n\n"
+        import os
+        begin_report = "=== " + tr("Interpretation of: ") + "'" + os.path.basename(self.filename) + "' ===\n"
+        end_report = "\n" + ('=' * len(begin_report)) + "\n\n"
         if self.mode == "student":
             text, result = self.build_report_text_student()
             return (begin_report + text + end_report, result)
