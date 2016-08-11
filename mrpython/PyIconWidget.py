@@ -68,7 +68,7 @@ class PyIconWidget(Frame):
         self.icons['run'].wdgt.image = icon_run_gif
 
         # Packing the labels
-        sep = Label(self)
+        sep = Label(self, background="white")
         sep.grid(row=0, column=0, ipadx=7, ipady=3)
         self.icons['new_file'].wdgt.grid(row=0, column=1, ipadx=7,
                                          ipady=3)
@@ -76,11 +76,11 @@ class PyIconWidget(Frame):
                                      ipady=3)
         self.icons['save'].wdgt.grid(row=0, column=3, ipadx=7,
                                      ipady=3)
-        sep = Label(self)
+        sep = Label(self, background="white")
         sep.grid(row=0, column=4, ipadx=7, ipady=3)
         self.icons['mode'].wdgt.grid(row=0, column=5, ipadx=7,
                                      ipady=3)
-        sep = Label(self)
+        sep = Label(self, background="white")
         sep.grid(row=0, column=6, ipadx=7, ipady=3)
         self.icons['run'].wdgt.grid(row=0, column=7, ipadx=7,
                                     ipady=3)

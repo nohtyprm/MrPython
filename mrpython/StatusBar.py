@@ -1,5 +1,6 @@
 from tkinter import *
 from platform import python_version
+from translate import tr
 
 class StatusBar(Frame):
     """
@@ -38,7 +39,8 @@ class StatusBar(Frame):
         """ Display the saved file in the save_label """
         if self.displaying_save:
             self.after_cancel(self.callback_id)
-        display_text = "   Saving file '" + filename + "'"
+        import os
+        display_text = "   " + tr("Saving file") + " '" + os.path.basename(filename) + "'"
         self.save_label.config(text=display_text)
         self.displaying_save = True
         # Then clear the text after a few seconds
@@ -59,17 +61,14 @@ class StatusBar(Frame):
         if self.notebook.index("end") > 0:
             index = self.notebook.get_current_editor().index(INSERT)
             line, col = index.split('.')
-            position = "Li " + line + ", Col " + col
+            ncol = int(col) + 1
+            position = "Li " + line + ", Col " + str(ncol)
         self.position_label.config(text=position)
         self.after(self.UPDATE_PERIOD_POSITION, self.update_position)
 
 
     def change_mode(self, mode):
         """ Change the current mode displayed in the mode_label """
-        display_text = ""
-        if mode == "full":
-            display_text = "Full Python"
-        else:
-            display_text = "Student Python"
+        display_text = "mode " + tr(mode)
         self.mode_label.config(text=display_text)
-        
+

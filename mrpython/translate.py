@@ -27,6 +27,8 @@ TRANSLATOR_DICT = {
     # interprète
     ,"Evaluating: " : { 'fr': "Evaluation de : " }
     ,"Interpretation of: " : { 'fr' : "Interprétation de : " }
+    # status
+    ,"Saving file" : { 'fr' : "Enregistre" }
 }
 
 def tr(msg):
