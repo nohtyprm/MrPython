@@ -137,18 +137,20 @@ class StudentRunner:
 
     def check_asserts(self):
         """ Are there asserts at the end of the source code ? """
-        stmt_list = self.AST.body
-        test = False
-        for node in stmt_list:
-            if not isinstance(node, ast.Assert):
-                if test:
-                    test = False
-            else:
-                test = True
-        if not test:
-            self.report.asserts_not_valid()
-            return False
-        else:
-            return True
+        # TODO : a finer check is needed
+        return True
+        # stmt_list = self.AST.body
+        # test = False
+        # for node in stmt_list:
+        #     if not isinstance(node, ast.Assert):
+        #         if test:
+        #             test = False
+        #     else:
+        #         test = True
+        # if not test:
+        #     self.report.asserts_not_valid()
+        #     return False
+        # else:
+        #     return True
 
 
