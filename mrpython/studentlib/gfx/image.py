@@ -51,7 +51,15 @@ def overlay(*images):
     # TODO : check arguments
     objects = ()
     for img in images:
-        objects += ((img.objects),)
+        objects += img.objects
+
+    return Image(objects)
+
+def underlay(*images):
+    # TODO : check arguments
+    objects = ()
+    for img in images[::-1]:
+        objects += img.objects
 
     return Image(objects)
 
