@@ -29,20 +29,15 @@ class PyInterpreter:
             runner = StudentRunner(self.filename, self.source)
         else:
             runner = FullRunner(self.filename, self.source)
-        result = runner.evaluate(expr, self.locals)
-        self.report = runner.get_report()
+
+        ok = runner.evaluate(expr, self.locals)
+        report = runner.get_report()
         begin_report = "=== " + tr("Evaluating: ") + "'" + expr[:-1] + "' ===\n"
+        report.set_header(begin_report)
         end_report = "\n" + ('=' * len(begin_report)) + "\n\n"
-        if self.mode == "student":
-            text, result = self.build_report_text_student()
-            return (begin_report + text + end_report, result)
-        else:
-            if result == True:
-                result = 'run'
-            else:
-                result = 'error'
-            return (begin_report + self.build_report_text_full() + end_report, result)
- 
+        report.set_footer(end_report)
+
+        return (ok, report)
 
     def execute(self):
         """ Execute the runner corresponding to the chosen Python mode """
@@ -51,60 +46,14 @@ class PyInterpreter:
             runner = StudentRunner(self.filename, self.source)
         else:
             runner = FullRunner(self.filename, self.source)
-        result = runner.execute(self.locals)
-        self.report = runner.get_report()
+
+        ok = runner.execute(self.locals)
+
+        report = runner.get_report()
         import os
         begin_report = "=== " + tr("Interpretation of: ") + "'" + os.path.basename(self.filename) + "' ===\n"
+        report.set_header(begin_report)
         end_report = "\n" + ('=' * len(begin_report)) + "\n\n"
-        if self.mode == "student":
-            text, result = self.build_report_text_student()
-            return (begin_report + text + end_report, result)
-        else:
-            if result == True:
-                result = 'run'
-            else:
-                result = 'error'
-            return (begin_report + self.build_report_text_full() + end_report, result)
+        report.set_footer(end_report)
 
-
-    def build_report_text_student(self):
-        """ Build the output text that will be displayed into the Console
-            and return it with the status (error, no error) """
-        text = ""
-        if self.report.compilation_errors:
-            error = self.report.compilation_errors
-            if error[0] == 'indentation':
-                text += "=> Ligne " + str(error[1]) + " : erreur d'indentation"
-            elif error[0] == 'syntax':
-                text += "=> Ligne " + str(error[1]) + " : erreur de syntaxe\n"
-                text = text + str(error[3])
-                for i in range(0, error[2] - 1):
-                    text += " "
-                text += "^"
-            return (text, 'error')
-        if self.report.convention_errors:
-            for error in self.report.convention_errors:
-                if error[0] == 'asserts':
-                    text += "=> Il n'y a pas de jeu de tests à la fin du code source\n"
-                if error[0] == 'specifications':
-                    text += "=> Les fonctions doivent avoir des spécifications valides\n"
-            return (text, 'error')
-        if self.report.execution_errors:
-            error = self.report.execution_errors
-            if error[0] == 'name':
-                text += "=> Ligne " + str(error[1]) + " : la variable '"
-                text += str(error[2]) + "' n'est pas définie"
-            if error[0] == 'zero_division':
-                text += "=> Ligne " + str(error[1]) + " : Division par zéro"
-            return (text, 'error')
-        # No error
-        text += str(self.report.result)
-        return (text, 'run')
-
-
-    def build_report_text_full(self):
-        """ Build the output text that will be displayed into the Console
-            and return it with the status (error, no error) """
-        return str(self.report.result)
-
-
+        return (ok, report)

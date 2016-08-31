@@ -16,6 +16,7 @@ def install_locals(locals):
     locals['draw_ellipse'] = studentlib.gfx.image.draw_ellipse
     locals['fill_ellipse'] = studentlib.gfx.image.fill_ellipse
     locals['overlay'] = studentlib.gfx.image.overlay
+    locals['underlay'] = studentlib.gfx.image.underlay
     locals['show_image'] = studentlib.gfx.img_canvas.show_image
     return locals
 
@@ -52,76 +53,99 @@ class StudentRunner:
             self.AST = ast.parse(self.source, self.filename)
         # Handle the different kinds of compilation errors
         except IndentationError as err:
-            self.report.add_compile_error('indentation', err.lineno, err.offset)
+            self.report.add_compilation_error('error', "Erreur d'indentation", err.lineno, err.offset)
             return False
         except SyntaxError as err:
-            self.report.add_compile_error('syntax', err.lineno, err.offset, err.text)
+            self.report.add_compilation_error('error', "Erreur de compilation", err.lineno, err.offset, details=err.text)
             return False
-        else: # No compilation errors here
-            # Check whether the source code respects the class conventions
-            if self.check_rules():
-                self.run(locals) # Run the code if it passed all the convention tests
-                return True
-            else:
-                return False
+        except Exception as err:
+            typ, exc, tb = sys.exc_info()
+            self.report.add_compilation_error('error', str(typ))
+            return False
 
-    def run(self, locals):
-        """ Run the code, add the execution errors to the rapport, if any """
-        locals = install_locals(locals)
-        code = compile(self.source, self.filename, 'exec')
+        # No compilation error here
+
+        # perform the local checks
+        if not self.check_rules(self.report):
+            return Flase
+        else:
+            return self.run(locals) # Run the code if it passed all the convention tests
+
+    def _extract_error_details(self, err):
+        err_str = err.args[0]
+        start = err_str.find("'") + 1
+        end = err_str.find("'", start + 1)
+        details = err_str[start:end]
+        return details
+
+    def _exec_or_eval(self, mode, code, globs, locs):
+        assert mode=='exec' or mode=='eval'
         try:
-            result = exec(code, locals, locals)
+            if mode=='exec':
+                result = exec(code, globs, locs)
+            elif mode=='eval':
+                result = eval(code, globs, locs)
+        except TypeError as err:
+            a, b, tb = sys.exc_info()
+            filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
+            err_str = self._extract_error_details(err)
+            self.report.add_execution_error('error', 'Erreur de typage', lineno, details=err_str)
+            return (False, None)
         except NameError as err:
             a, b, tb = sys.exc_info() # Get the traceback object
             # Extract the information for the traceback corresponding to the error
             # inside the source code : [0] refers to the result = exec(code)
             # traceback, [1] refers to the last error inside code
             filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
-            err_str = err.args[0]
-            start = err_str.find("'") + 1
-            end = err_str.find("'", start + 1)
-            name = err_str[start:end]
-            self.report.add_execution_error('name', lineno, details=name)
+            err_str = self._extract_error_details(err)
+            self.report.add_execution_error('error', 'Erreur de nommage', lineno, details=err_str)
+            return (False, None)
         except ZeroDivisionError:
             a, b, tb = sys.exc_info()
             filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
-            self.report.add_execution_error('zero_division', lineno)
-        else:
-            sys.stdout.seek(0)
-            result = sys.stdout.read()
-            self.report.set_result(result)
+            self.report.add_execution_error('error', 'Division par zéro', lineno)
+            return (False, None)
+        except Exception as err:
+            a, b, tb = sys.exc_info() # Get the traceback object
+            # Extract the information for the traceback corresponding to the error
+            # inside the source code : [0] refers to the result = exec(code)
+            # traceback, [1] refers to the last error inside code
+            filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
+            err_str = self._extract_error_details(self, err)
+            self.report.add_execution_error('error', str(a), lineno, details=err_str)
+            return (False, None)
+
+        return (True, result)
+
+    
+    def run(self, locals):
+        """ Run the code, add the execution errors to the rapport, if any """
+        locals = install_locals(locals)
+        code = compile(self.source, self.filename, 'exec')
+
+        (ok, result) = self._exec_or_eval('exec', code, locals, locals)
+        if not ok:
+            return False
+
+        # if no error get the output
+        sys.stdout.seek(0)
+        result = sys.stdout.read()
+        self.report.set_result(result)
+
+        return True
 
 
     def evaluate(self, expr, locals):
         """ Lanches the evaluation with the locals dict built before """
         locals = install_locals(locals)
-        try:
-            result = eval(expr, locals, locals)
-        except IndentationError as err:
-            self.report.add_compile_error('indentation', err.lineno, err.offset)
+        (ok, result) = self._exec_or_eval('eval', expr, locals, locals)
+        if not ok:
             return False
-        except SyntaxError as err:
-            self.report.add_compile_error('syntax', err.lineno, err.offset, err.text)
-            return False
-        except NameError as err:
-            a, b, tb = sys.exc_info() # Get the traceback object
-            # Extract the information for the traceback corresponding to the error
-            # inside the source code : [0] refers to the result = exec(code)
-            # traceback, [1] refers to the last error inside code
-            filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
-            err_str = err.args[0]
-            start = err_str.find("'") + 1
-            end = err_str.find("'", start + 1)
-            name = err_str[start:end]
-            self.report.add_execution_error('name', lineno, details=name)
-        except ZeroDivisionError:
-            a, b, tb = sys.exc_info()
-            filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
-            self.report.add_execution_error('zero_division', lineno)
         else:
             self.report.set_result(result)
+            return True
 
-    def check_rules(self):
+    def check_rules(self, report):
         """ Check if the code follows the class rules """
         if not self.check_asserts():
             return False

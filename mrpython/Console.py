@@ -108,6 +108,24 @@ class Console:
         self.reset_output()
         #self.switch_input_status(False)
 
+    def write_report(self, status, report):
+        tag = 'run'
+        if not status:
+            tag = 'error'
+
+        self.write(report.header, tags=(tag))
+        if not status:
+            for error in report.convention_errors:
+                self.write(str(error), tags=(error.severity))
+            for error in report.compilation_errors:
+                self.write(str(error), tags=(error.severity))
+            for error in report.execution_errors:
+                self.write(str(error), tags=(error.severity))
+        else:
+            self.write(report.result, tags=('normal'))
+
+        self.write(report.footer, tags=(tag))
+
 
     def evaluate_action(self, *args):
         """ Evaluate the expression in the input console """
@@ -121,10 +139,13 @@ class Console:
         if self.interpreter is None:
             self.interpreter = PyInterpreter(self.app.mode, "<<console>>", expr)
             local_interpreter = True
-        text, result = self.interpreter.run_evaluation(expr)
+        ok, report = self.interpreter.run_evaluation(expr)
+
         self.input_console.delete(1.0, END)
         self.input_console.config(height=1)
-        self.write(text, tags=(result))
+
+        self.write_report(ok, report)
+
         sys.stdout = original_stdout
         output_file.close()
 
@@ -157,8 +178,10 @@ class Console:
         output_file = open('interpreter_output', 'w+')
         original_stdout = sys.stdout
         sys.stdout = output_file
-        text, result = self.interpreter.execute()
-        self.write(text, tags=(result))
+        ok, report = self.interpreter.execute()
+
+        self.write_report(ok, report)
+
         sys.stdout = original_stdout
         output_file.close()
         # Enable or disable the evaluation bar according to the execution status
