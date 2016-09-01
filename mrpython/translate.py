@@ -25,8 +25,15 @@ TRANSLATOR_DICT = {
     ,"student" : { 'fr': "étudiant" }
     ,"full" : { 'fr': "expert" }
     # interprète
+    ,"Error" : { 'fr': "Erreur" }
+    ,"Warning" : { 'fr': "Attention" }
     ,"Evaluating: " : { 'fr': "Evaluation de : " }
     ,"Interpretation of: " : { 'fr' : "Interprétation de : " }
+    ,"Bad indentation" : { 'fr' : "Mauvaise indentation" }
+    ,"Syntax error" : { 'fr' : "Erreur de syntaxe" }
+    ,"Type error" : { 'fr' : "Erreur de typage" }
+    ,"Name error (unitialized variable?)" : { 'fr': "Erreur de nommage (variable non initialisée ?)" }
+    ,"Division by zero" : { 'fr' : "Division par zéro" }
     # status
     ,"Saving file" : { 'fr' : "Enregistre" }
 }

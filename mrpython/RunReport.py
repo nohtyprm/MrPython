@@ -1,4 +1,6 @@
 
+from translate import tr
+
 class ErrorReport:
     def __init__(self, severity, err_type, line, offset, details):
         self.severity = severity # 'info' 'warning' 'error'    (red, orange, red)
@@ -7,14 +9,21 @@ class ErrorReport:
         self.offset = offset
         self.details = details
 
+    def error_details(self):
+        return "==> {}{}".format(self.err_type,
+                                   ": {}".format(self.details) if self.details and self.details!=""
+                                   else "")
+
     def __str__(self):
         s = ""
         if self.severity == 'warning':
-            s = "Warning{}".format(": line {}\n".format(self.line) if self.line else "")
-            s = s + "  ==> {}".format(self.details)
+            s = "{}{}".format(tr("Warning"),
+                              ": line {}\n".format(self.line) if self.line else "")
+            s = s + self.error_details()
         elif self.severity == 'error':
-            s = "Error{}".format(": line {}\n".format(self.line) if self.line else "")
-            s = s + "  ==> {}".format(self.details)
+            s = "{}{}".format(tr("Error"),
+                              ": line {}\n".format(self.line) if self.line else "")
+            s = s + self.error_details()
         else:
             s = self.details
 

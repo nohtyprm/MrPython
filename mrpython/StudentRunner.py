@@ -5,6 +5,8 @@ import tokenize
 import sys
 import traceback
 
+from translate import tr
+
 import studentlib.gfx.image
 import studentlib.gfx.img_canvas
 
@@ -53,14 +55,14 @@ class StudentRunner:
             self.AST = ast.parse(self.source, self.filename)
         # Handle the different kinds of compilation errors
         except IndentationError as err:
-            self.report.add_compilation_error('error', "Erreur d'indentation", err.lineno, err.offset)
+            self.report.add_compilation_error('error', tr("Bad indentation"), err.lineno, err.offset)
             return False
         except SyntaxError as err:
-            self.report.add_compilation_error('error', "Erreur de compilation", err.lineno, err.offset, details=err.text)
+            self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=err.text)
             return False
         except Exception as err:
             typ, exc, tb = sys.exc_info()
-            self.report.add_compilation_error('error', str(typ))
+            self.report.add_compilation_error('error', str(typ), err.lineno, err.offset, details=str(err))
             return False
 
         # No compilation error here
@@ -89,7 +91,7 @@ class StudentRunner:
             a, b, tb = sys.exc_info()
             filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
             err_str = self._extract_error_details(err)
-            self.report.add_execution_error('error', 'Erreur de typage', lineno, details=err_str)
+            self.report.add_execution_error('error', tr("Type error"), lineno, details=str(err))
             return (False, None)
         except NameError as err:
             a, b, tb = sys.exc_info() # Get the traceback object
@@ -98,12 +100,12 @@ class StudentRunner:
             # traceback, [1] refers to the last error inside code
             filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
             err_str = self._extract_error_details(err)
-            self.report.add_execution_error('error', 'Erreur de nommage', lineno, details=err_str)
+            self.report.add_execution_error('error', tr("Name error (unitialized variable?)"), lineno, details=err_str)
             return (False, None)
         except ZeroDivisionError:
             a, b, tb = sys.exc_info()
             filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
-            self.report.add_execution_error('error', 'Division par zéro', lineno)
+            self.report.add_execution_error('error', tr("Division by zero"), lineno)
             return (False, None)
         except Exception as err:
             a, b, tb = sys.exc_info() # Get the traceback object
@@ -112,12 +114,12 @@ class StudentRunner:
             # traceback, [1] refers to the last error inside code
             filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
             err_str = self._extract_error_details(self, err)
-            self.report.add_execution_error('error', str(a), lineno, details=err_str)
+            self.report.add_execution_error('error', str(err), lineno, details=str(err))
             return (False, None)
 
         return (True, result)
 
-    
+
     def run(self, locals):
         """ Run the code, add the execution errors to the rapport, if any """
         locals = install_locals(locals)

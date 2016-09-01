@@ -185,7 +185,7 @@ class Console:
         sys.stdout = original_stdout
         output_file.close()
         # Enable or disable the evaluation bar according to the execution status
-        if result == 'run':
+        if ok:
             pass
             #self.switch_input_status(True)
         else:
