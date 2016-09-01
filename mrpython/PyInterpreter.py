@@ -52,8 +52,18 @@ class PyInterpreter:
         report = runner.get_report()
         import os
         begin_report = "=== " + tr("Interpretation of: ") + "'" + os.path.basename(self.filename) + "' ===\n"
+        len_begin_report = len(begin_report)
+
+        # enable?
+        # if self.mode == 'student':
+        #     begin_report += "# Automatic importation of graphic library\n"
+        #     begin_report += "from studentlib.gfx.image import (draw_line, draw_triangle, fill_triangle\n"
+        #     begin_report += "                                  , draw_ellipse, fill_ellipse\n"
+        #     begin_report += "                                  , overlay, underlay)\n"
+        #     begin_report += "from studentlib.gfx.img_canvas import show_image\n\n"
+
         report.set_header(begin_report)
-        end_report = "\n" + ('=' * len(begin_report)) + "\n\n"
+        end_report = "\n" + ('=' * len_begin_report) + "\n\n"
         report.set_footer(end_report)
 
         return (ok, report)
