@@ -107,14 +107,18 @@ class StudentRunner:
             filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
             self.report.add_execution_error('error', tr("Division by zero"), lineno)
             return (False, None)
+        except AssertionError:
+            a, b, tb = sys.exc_info()
+            filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
+            self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno)
+            return (False, None)
         except Exception as err:
             a, b, tb = sys.exc_info() # Get the traceback object
             # Extract the information for the traceback corresponding to the error
             # inside the source code : [0] refers to the result = exec(code)
             # traceback, [1] refers to the last error inside code
             filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
-            err_str = self._extract_error_details(self, err)
-            self.report.add_execution_error('error', str(err), lineno, details=str(err))
+            self.report.add_execution_error('error', str(a), lineno, details=str(err))
             return (False, None)
 
         return (True, result)

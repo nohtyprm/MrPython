@@ -34,6 +34,7 @@ TRANSLATOR_DICT = {
     ,"Type error" : { 'fr' : "Erreur de typage" }
     ,"Name error (unitialized variable?)" : { 'fr': "Erreur de nommage (variable non initialisée ?)" }
     ,"Division by zero" : { 'fr' : "Division par zéro" }
+    ,"Assertion error (failed test?)" : { 'fr' : "Erreur d'assertion (test invalide ?)" }
     # status
     ,"Saving file" : { 'fr' : "Enregistre" }
 }

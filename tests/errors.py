@@ -16,3 +16,6 @@
 
 ## TypeError
 #2 + "hello"
+
+## AssertionError
+assert True == False
