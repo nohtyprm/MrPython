@@ -1,6 +1,6 @@
 from tkinter import *
 
-CANVAS_DEFAULT_RATIO = 4.0 / 3.0
+CANVAS_DEFAULT_RATIO = 4.0 / 4.0
 
 # a subclass of Canvas for dealing with resizing of windows
 class ImgCanvas(Canvas):
@@ -96,17 +96,17 @@ def show_image(img):
             CANVAS_WIDGET = None
 
     if not CANVAS_WIDGET:
-        myTop = Toplevel(width=580, height=320)
+        myTop = Toplevel(width=480, height=480)
         myTop.title("Image")
-        myframe = Frame(myTop, width=580, height=320)
+        myframe = Frame(myTop, width=480, height=480)
         myframe.pack(fill=BOTH, expand=YES)
-        mycanvas = ImgCanvas(myframe,width=580, height=320, background="white", highlightthickness=0)
+        mycanvas = ImgCanvas(myframe,width=480, height=480, background="white", highlightthickness=0)
         mycanvas.pack(fill=BOTH, expand=YES, padx=8, pady=8)
         CANVAS_WIDGET = mycanvas
 
 
     # the frame around the draw area
-    CANVAS_WIDGET.create_rectangle(0, 0, 580, 320)
+    CANVAS_WIDGET.create_rectangle(0, 0, 480, 480)
     CANVAS_WIDGET.draw_image(img)
     CANVAS_WIDGET.addtag_all("all")
 
