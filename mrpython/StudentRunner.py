@@ -89,7 +89,7 @@ class StudentRunner:
                 result = eval(code, globs, locs)
         except TypeError as err:
             a, b, tb = sys.exc_info()
-            filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
+            filename, lineno, file_type, line = traceback.extract_tb(tb)[-1]
             err_str = self._extract_error_details(err)
             self.report.add_execution_error('error', tr("Type error"), lineno, details=str(err))
             return (False, None)
@@ -98,18 +98,21 @@ class StudentRunner:
             # Extract the information for the traceback corresponding to the error
             # inside the source code : [0] refers to the result = exec(code)
             # traceback, [1] refers to the last error inside code
-            filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
+            filename, lineno, file_type, line = traceback.extract_tb(tb)[-1]
             err_str = self._extract_error_details(err)
             self.report.add_execution_error('error', tr("Name error (unitialized variable?)"), lineno, details=err_str)
             return (False, None)
         except ZeroDivisionError:
             a, b, tb = sys.exc_info()
-            filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
-            self.report.add_execution_error('error', tr("Division by zero"), lineno)
+            filename, lineno, file_type, line = traceback.extract_tb(tb)[-1]
+            self.report.add_execution_error('error', tr("Division by zero"), lineno if mode=='exec' else None)
             return (False, None)
         except AssertionError:
             a, b, tb = sys.exc_info()
-            filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
+            lineno=None
+            traceb = traceback.extract_tb(tb)
+            if len(traceb) > 1:
+                filename, lineno, file_type, line = traceb[-1]
             self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno)
             return (False, None)
         except Exception as err:
@@ -117,8 +120,11 @@ class StudentRunner:
             # Extract the information for the traceback corresponding to the error
             # inside the source code : [0] refers to the result = exec(code)
             # traceback, [1] refers to the last error inside code
-            filename, lineno, file_type, line = traceback.extract_tb(tb)[1]
-            self.report.add_execution_error('error', str(a), lineno, details=str(err))
+            lineno=None
+            traceb = traceback.extract_tb(tb)
+            if len(traceb) > 1:
+                filename, lineno, file_type, line = traceb[-1]
+            self.report.add_execution_error('error', a.__name__, lineno, details=str(err))
             return (False, None)
 
         return (True, result)
