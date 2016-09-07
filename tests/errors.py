@@ -14,8 +14,13 @@
 ## NameError
 #print(undef)
 
+def name_error_inside(bla):
+    return bla + bli
+
+name_error_inside(42)
+
 ## TypeError
 #2 + "hello"
 
 ## AssertionError
-assert True == False
+#assert True == False

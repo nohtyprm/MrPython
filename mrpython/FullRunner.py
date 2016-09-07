@@ -5,6 +5,8 @@ import tokenize
 import sys
 import traceback
 
+import tempfile
+
 class FullRunner:
     """
     Runs a code under the full mode
@@ -24,32 +26,33 @@ class FullRunner:
     def execute(self, locals):
         """ Run the code """
         basic_interpreter = InteractiveInterpreter(locals=locals)
-        error_output = open('interpreter_error', 'w+')
-        original_error = sys.stderr
-        sys.stderr = error_output
-        try:
-            code = compile(self.source, self.filename, 'exec')
-        except:
-            InteractiveInterpreter.showsyntaxerror(self.filename)
-            sys.stderr.seek(0)
-            result = sys.stderr.read()
-            self.report.set_result(result)
-            return False
-        else: # No compilation errors here
-            result = basic_interpreter.runcode(code)            
-            sys.stderr.seek(0)
-            result = sys.stderr.read()
-            if result:
-                self.report.set_result(result)
+
+        with tempfile.TemporaryFile(mode='w+', prefix='interpreter_error') as error_output:
+        
+            original_error = sys.stderr
+            sys.stderr = error_output
+            try:
+                code = compile(self.source, self.filename, 'exec')
+            except:
+                InteractiveInterpreter.showsyntaxerror(self.filename)
+                sys.stderr.seek(0)
+                result = sys.stderr.read()
+                self.report.add_compilation_error('error', err_type='SyntaxError', details=result)
                 return False
-            else:
-                sys.stdout.seek(0)
-                result = sys.stdout.read()
-                self.report.set_result(result)
-                return True
-        finally:
-            sys.stderr = original_error
-            error_output.close()
+            else: # No compilation errors here
+                result = basic_interpreter.runcode(code)
+                sys.stderr.seek(0)
+                result = sys.stderr.read()
+                if result:
+                    self.report.add_compilation_error('error', err_type='SyntaxError', details=result)
+                    return False
+                else:
+                    sys.stdout.seek(0)
+                    result = sys.stdout.read()
+                    self.report.set_result(result)
+                    return True
+            finally:
+                sys.stderr = original_error
 
 
     def evaluate(self, expr, locals):
