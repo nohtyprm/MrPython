@@ -24,23 +24,27 @@ class Console:
                             'warning':'orange'
                           }
 
-    def __init__(self, parent, app):
+    def __init__(self, output_parent, input_parent, app):
         """
         Create and configure the shell (the text widget that gives informations
         and the interactive shell)
         """
         self.app = app
         # Creating output console
-        self.frame_output = Frame(parent)
+        self.frame_output = Frame(output_parent)
         self.scrollbar = Scrollbar(self.frame_output)
-        self.scrollbar.pack(side=RIGHT, fill=Y)
+        self.scrollbar.grid(row=0, column=1, sticky=(N, S))
         self.output_console = Text(self.frame_output, height=15, state='disabled', 
                                    yscrollcommand=self.scrollbar.set)
-        #self.frame_output.config(borderwidth=1, relief=GROOVE)
-        self.output_console.pack(side=LEFT, fill=BOTH, expand=1)
+        self.frame_output.config(borderwidth=1, relief=GROOVE)
+        self.output_console.grid(row=0, column=0, sticky=(N, S, E, W))
         self.scrollbar.config(command=self.output_console.yview)
+
+        self.frame_output.rowconfigure(0, weight=1)
+        self.frame_output.columnconfigure(0, weight=1)
+
         # Creating input console
-        self.frame_input = Frame(parent)
+        self.frame_input = Frame(input_parent)
         self.arrows = Label(self.frame_input, text=" >>> ")
         self.input_console = Text(self.frame_input, background='#775F57',
                                   height=1, state='disabled', relief=FLAT)
@@ -51,10 +55,13 @@ class Console:
                                   command=self.evaluate_action, width=7,
                                   state='disabled')
         self.arrows.config(borderwidth=1, relief=RIDGE)
-        self.arrows.pack(side=LEFT, fill=Y)
-        self.input_console.pack(side=LEFT, expand=1, fill=BOTH)
-        self.eval_button.pack(side=LEFT, fill=Y)
-		# Redirect the Python output, input and error stream to the console
+        self.arrows.grid(row=0, column=0)
+        self.input_console.grid(row=0, column=1, sticky="ew")
+        self.eval_button.grid(row=0, column=2)
+
+        self.frame_input.columnconfigure(1, weight=1)
+
+	# Redirect the Python output, input and error stream to the console
         import IOBinding
         self.stdin = PseudoInputFile(self, "error", IOBinding.encoding)
         self.stdout = PseudoOutputFile(self, "error", IOBinding.encoding)

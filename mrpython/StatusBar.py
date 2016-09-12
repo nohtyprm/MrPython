@@ -25,10 +25,13 @@ class StatusBar(Frame):
         self.save_label = Label(self, text="", borderwidth=1, relief=SUNKEN,
                                 justify=LEFT, anchor=W, background="#e1e1e1",
                                 foreground="#101010")
-        self.python_label.pack(side=RIGHT, ipadx=8, ipady=3)
-        self.position_label.pack(side=RIGHT, ipadx=8, ipady=3)
-        self.mode_label.pack(side=RIGHT, ipadx=8, ipady=3)
-        self.save_label.pack(side=RIGHT, expand=1, fill=X, ipadx=15, ipady=3)
+        self.python_label.grid(row=0, column=3, ipadx=8, ipady=3)
+        self.position_label.grid(row=0, column=2, ipadx=8, ipady=3)
+        self.mode_label.grid(row=0, column=1, ipadx=8, ipady=3)
+        self.save_label.grid(row=0, column=0, ipadx=15, ipady=3, sticky="ew")
+
+        self.columnconfigure(0, weight=1)
+
         self.notebook = notebook
         self.update_position()
         self.displaying_save = False

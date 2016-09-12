@@ -22,10 +22,14 @@ class PyEditorWidget(Frame):
                                 takefocus=0, bd=0, background='#E8E8E8',
                                 foreground='#404040', relief=FLAT,
                                 borderwidth=0)
-        empty_frame_space.pack(side=TOP)
-        self.line_widget.pack(side=BOTTOM, fill='y', expand=1)
-        left_frame.pack(side=LEFT, fill='y')
-        self.py_notebook.pack(side=LEFT, fill=BOTH, expand=1)
+        empty_frame_space.grid(row=0, column=0)
+        self.line_widget.grid(row=1, column=0, sticky=(N, S))
+        left_frame.grid(row=0, column=0, stick=(N, S))
+        self.py_notebook.grid(row=0, column=1, sticky=(N, S, E, W))
+
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+
         self.update_line_numbers()
 
 
