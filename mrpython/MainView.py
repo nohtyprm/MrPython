@@ -35,24 +35,32 @@ class MainView:
         """ Create the window : editor and shell interfaces, menus """
         self.view = Frame(self.root, background="white", width=900)
         # Create the widgets
+
+        # 1) the toolbar
         self.create_icon_widget(self.view)
-        pw = PanedWindow(self.view, orient=VERTICAL)
+        self.icon_widget.grid(row=0, column=0, sticky=(W, E))
+
+        # 2) editor and output
+        pw = PanedWindow(self.view, orient=VERTICAL, showhandle=True)
         self.create_editor_widget(pw)
-        self.create_status_bar(self.view, self.editor_widget.py_notebook)
-        # Packing
-        self.view.pack(fill=BOTH, expand=1)
-        self.icon_widget.pack(fill=BOTH)
         pw.add(self.editor_widget)
-        #self.editor_widget.pack(fill=BOTH, expand=1)
-        self.console_view = Frame(self.view)
-        self.create_console(self.console_view)
-        self.console.frame_output.pack(fill=BOTH, expand=1)
-        self.console.frame_input.pack(fill=X)
-        pw.add(self.console_view)
-        pw.pack(fill=BOTH, expand=1)
 
-        self.status_bar.pack(fill=BOTH)
+        # 3) console (with output and input)
+        self.create_console(pw, self.view)
 
+        pw.add(self.console.frame_output)
+        pw.grid(row=1, column=0, sticky=(N, S, E, W))
+
+        self.console.frame_input.grid(row=2, column=0, sticky=(E, W))
+
+        # 4) status bar
+
+        self.create_status_bar(self.view, self.editor_widget.py_notebook)
+        self.status_bar.grid(row=3, column=0, sticky=(E, W))
+
+        self.view.rowconfigure(1, weight=1)
+        self.view.columnconfigure(0, weight=1)
+        self.view.pack(fill=BOTH, expand=1)
 
     def create_status_bar(self, parent, notebook):
         """ Create the status bar on the bottom """
@@ -66,7 +74,7 @@ class MainView:
         """ Create the editor area : notebook, line number widget """
         self.editor_widget = PyEditorWidget(parent)
 
-    def create_console(self, parent):
+    def create_console(self, output_parent, input_parent):
         """ Create the interactive interface in the bottom """
-        self.console = Console(parent, self.app)
+        self.console = Console(output_parent, input_parent, self.app)
 
