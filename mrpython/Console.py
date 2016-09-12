@@ -129,7 +129,7 @@ class Console:
             for error in report.execution_errors:
                 self.write(str(error), tags=(error.severity))
         else:
-            self.write(report.result, tags=('normal'))
+            self.write(str(report.result), tags=('normal'))
 
         self.write(report.footer, tags=(tag))
 
