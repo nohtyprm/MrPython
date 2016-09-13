@@ -69,7 +69,7 @@ class StudentRunner:
 
         # perform the local checks
         if not self.check_rules(self.report):
-            return Flase
+            return False
         else:
             return self.run(locals) # Run the code if it passed all the convention tests
 

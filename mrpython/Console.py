@@ -46,8 +46,9 @@ class Console:
         # Creating input console
         self.frame_input = Frame(input_parent)
         self.arrows = Label(self.frame_input, text=" >>> ")
-        self.input_console = Text(self.frame_input, background='#775F57',
-                                  height=1, state='disabled', relief=FLAT)
+        self.input_console = Entry(self.frame_input, background='#775F57',
+                                  #height=1,
+                                   state='disabled', relief=FLAT)
         self.input_console.bind('<Control-Key-Return>', self.evaluate_action)
         self.input_console.bind('<Return>', self.evaluate_action)
         #self.frame_input.config(borderwidth=1, relief=GROOVE)
@@ -139,17 +140,17 @@ class Console:
         output_file = open('interpreter_output', 'w+')
         original_stdout = sys.stdout
         sys.stdout = output_file
-        expr = self.input_console.get(1.0, "end")
-        while expr and (expr[0] == "\n"):
-            expr = expr[1:]
+        expr = self.input_console.get()
+        # while expr and (expr[0] == "\n"):
+        #     expr = expr[1:]
         local_interpreter = False
         if self.interpreter is None:
             self.interpreter = PyInterpreter(self.app.mode, "<<console>>", expr)
             local_interpreter = True
         ok, report = self.interpreter.run_evaluation(expr)
 
-        self.input_console.delete(1.0, END)
-        self.input_console.config(height=1)
+        self.input_console.delete(0, END)
+        #self.input_console.config(height=1)
 
         self.write_report(ok, report)
 

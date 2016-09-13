@@ -32,7 +32,7 @@ class PyInterpreter:
 
         ok = runner.evaluate(expr, self.locals)
         report = runner.get_report()
-        begin_report = "=== " + tr("Evaluating: ") + "'" + expr[:-1] + "' ===\n"
+        begin_report = "=== " + tr("Evaluating: ") + "'" + expr + "' ===\n"
         report.set_header(begin_report)
         end_report = "\n" + ('=' * len(begin_report)) + "\n\n"
         report.set_footer(end_report)
