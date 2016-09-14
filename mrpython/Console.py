@@ -96,6 +96,7 @@ class Console:
         self.output_console.tag_config('error', foreground='red')
         self.output_console.tag_config('normal', foreground='black')
         self.output_console.tag_config('warning', foreground='orange')
+        self.output_console.tag_config('stdout', foreground='gray')
 
 
     def reset_output(self):
@@ -130,7 +131,9 @@ class Console:
             for error in report.execution_errors:
                 self.write(str(error), tags=(error.severity))
         else:
-            self.write(str(report.result), tags=('normal'))
+            self.write(str(report.output), tags=('stdout'))
+            if report.result is not None:
+                self.write(str(report.result), tags=('normal'))
 
         self.write(report.footer, tags=(tag))
 

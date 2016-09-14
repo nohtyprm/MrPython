@@ -34,6 +34,7 @@ class StudentRunner:
         self.source = source
         self.report = RunReport()
         self.tk_root = TK_ROOT
+        self.running = True
         ## This is a hack so let's check...
         try:
             self.tk_root.nametowidget('.')
@@ -82,6 +83,7 @@ class StudentRunner:
 
     def _exec_or_eval(self, mode, code, globs, locs):
         assert mode=='exec' or mode=='eval'
+
         try:
             if mode=='exec':
                 result = exec(code, globs, locs)
@@ -126,6 +128,8 @@ class StudentRunner:
                 filename, lineno, file_type, line = traceb[-1]
             self.report.add_execution_error('error', a.__name__, lineno, details=str(err))
             return (False, None)
+        finally:
+            self.running = False
 
         return (True, result)
 
@@ -142,7 +146,7 @@ class StudentRunner:
         # if no error get the output
         sys.stdout.seek(0)
         result = sys.stdout.read()
-        self.report.set_result(result)
+        self.report.set_output(result)
 
         return True
 
@@ -154,6 +158,9 @@ class StudentRunner:
         if not ok:
             return False
         else:
+            sys.stdout.seek(0)
+            outp = sys.stdout.read()
+            self.report.set_output(outp)
             self.report.set_result(result)
             return True
 

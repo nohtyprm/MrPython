@@ -103,6 +103,7 @@ class Application:
         self.root.bind('<Control-Key-Return>', self.run_source)
         # File change in notebook
         self.root.bind('<<NotebookTabChanged>>', self.update_title)
+
         # Bind the keys
         if keydefs is None:
             keydefs = Bindings.default_keydefs

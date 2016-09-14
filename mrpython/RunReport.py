@@ -42,6 +42,7 @@ class RunReport:
         self.execution_errors = []
 
         self.result = None
+        self.output = ""
 
         self.header = ""
         self.footer = ""
@@ -54,6 +55,10 @@ class RunReport:
 
     def add_execution_error(self, severity, err_type, line=None, offset=None, details=""):
         self.execution_errors.append(ErrorReport(severity, err_type, line, offset, details))
+
+    def set_output(self, output):
+        """Set the (standard) output of an execution."""
+        self.output = output
 
     def set_result(self, result):
         """ Set the result of the execution : no error occured """
