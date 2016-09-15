@@ -7,6 +7,89 @@ from translate import tr
 import io
 import rpc
 
+class ConsoleHistory:
+    def __init__(self, history_capacity=100):
+        assert history_capacity > 0
+        assert history_capacity < 10000
+        self.history_capacity = history_capacity
+        self.clear()
+
+    def record(self, txt):
+        #print("[History] record: " + txt)
+        if not txt:
+            return
+
+        if self.history_size == self.history_capacity:
+            self.history = self.history[1:]
+            self.history_size -= 1
+
+        self.history.append(txt)
+        self.history_size += 1
+        self.history_pos = self.history_size - 1
+
+        print(self)
+
+    def move_past(self):
+        if self.history_pos > 0:
+            entry = self.history[self.history_pos]
+            self.history_pos -= 1
+            # print("[Move past]: " + entry)
+            # print(self)
+
+            return entry
+        elif self.history_pos == 0:
+            entry = self.history[self.history_pos]
+            # print("[Move past] (last): " + entry)
+            # print(self)
+
+            return entry
+        else:
+            # print("[Move past]: no history...")
+            # print(self)
+            return None
+
+    def move_future(self):
+        if self.history_pos < self.history_size - 1:
+            self.history_pos += 1
+            entry = self.history[self.history_pos]
+            # print("[Move future]: " + entry)
+            # print(self)
+            return entry
+        elif self.history_pos == self.history_size - 1:
+            # print("[Move future]: last...")
+            # print(self)
+            return ""
+        else:
+            # print("[Move future]: no history...")
+            # print(self)
+            return None
+
+    def clear(self):
+        self.history = []
+        self.history_size = 0
+        self.history_pos = -1
+
+    def __str__(self):
+        str = "History:["
+        i = 0
+        for entry in self.history:
+            if i == self.history_pos:
+                str += "<"
+            str += "'{}'".format(entry)
+            if i == self.history_pos:
+                str += ">"
+
+            if i < self.history_size:
+                str += ", "
+
+            i += 1
+
+        str += "]"
+
+        return str
+
+
+
 class Console:
     """
     Interactive console of MrPython, consisting of two widgets : output and input
@@ -49,8 +132,10 @@ class Console:
         self.input_console = Entry(self.frame_input, background='#775F57',
                                   #height=1,
                                    state='disabled', relief=FLAT)
-        self.input_console.bind('<Control-Key-Return>', self.evaluate_action)
         self.input_console.bind('<Return>', self.evaluate_action)
+        self.input_history = ConsoleHistory()
+        self.input_console.bind('<Up>', self.history_up_action)
+        self.input_console.bind('<Down>', self.history_down_action)
         #self.frame_input.config(borderwidth=1, relief=GROOVE)
         self.eval_button = Button(self.frame_input, text="Eval",
                                   command=self.evaluate_action, width=7,
@@ -152,6 +237,9 @@ class Console:
             local_interpreter = True
         ok, report = self.interpreter.run_evaluation(expr)
 
+        if ok:
+            self.input_history.record(expr)
+
         self.input_console.delete(0, END)
         #self.input_console.config(height=1)
 
@@ -163,6 +251,17 @@ class Console:
         if local_interpreter:
             self.interpreter = None
 
+    def history_up_action(self, event=None):
+        entry = self.input_history.move_past()
+        if entry is not None:
+            self.input_console.delete(0, END)
+            self.input_console.insert(0, entry)
+
+    def history_down_action(self, event=None):
+        entry = self.input_history.move_future()
+        if entry is not None:
+            self.input_console.delete(0, END)
+            self.input_console.insert(0, entry)
 
     def switch_input_status(self, on):
         """ Enable or disable the evaluation bar and button """
