@@ -218,7 +218,7 @@ class Console:
         else:
             self.write(str(report.output), tags=('stdout'))
             if report.result is not None:
-                self.write(str(report.result), tags=('normal'))
+                self.write(repr(report.result), tags=('normal'))
 
         self.write(report.footer, tags=(tag))
 
