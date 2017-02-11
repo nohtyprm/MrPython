@@ -24,6 +24,8 @@ class PyEditorWidget(Frame):
                                 borderwidth=0)
         empty_frame_space.grid(row=0, column=0)
         self.line_widget.grid(row=1, column=0, sticky=(N, S))
+        left_frame.rowconfigure(1, weight=1)
+
         left_frame.grid(row=0, column=0, stick=(N, S))
         self.py_notebook.grid(row=0, column=1, sticky=(N, S, E, W))
 
