@@ -26,12 +26,7 @@ class PyEditorWidget(Frame):
         self.line_widget.grid(row=1, column=0, sticky=(N, S))
         left_frame.grid(row=0, column=0, stick=(N, S))
         self.py_notebook.grid(row=0, column=1, sticky=(N, S, E, W))
-        
-        #AJOUT
-        left_frame.rowconfigure(1, weight=1)
-        bouton=Button(empty_frame_space, text="X", command=self.py_notebook.close_current_editor)
-        bouton.pack()
-        
+
         self.rowconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
 
