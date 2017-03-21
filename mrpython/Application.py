@@ -114,7 +114,14 @@ class Application:
 
     def update_title(self, event=None):
         """ Give the title the current filename """
-        new_title = self.editor_list.tab(self.editor_list.index("current"), "text")
+        #print("editor list: ", self.editor_list.index("current"))
+        try:
+            new_title = self.editor_list.tab(self.editor_list.index("current"), "text")
+        except:
+            new_title = "MrPython"
+            self.root.title(new_title)
+            return
+            
         directory = ""
         if self.editor_list.get_current_editor().io.filename:
             directory = self.editor_list.get_current_editor().io.filename
