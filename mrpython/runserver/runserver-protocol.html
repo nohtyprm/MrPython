@@ -1,0 +1,115 @@
+<h1 id="protocole-client-serveur">Protocole Client Serveur</h1>
+<h2 id="format-des-messages">Format des messages</h2>
+<h3 id="en-tête-du-message">En-tête du message</h3>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">{
+   <span class="st">&quot;session_id&quot;</span> : uuid <span class="co"># identifiant de la session (session = instance de l&#39;interprète)</span>
+  , <span class="st">&quot;msg_id&quot;</span> : uuid <span class="co"># identifiant unique du message</span>
+  , <span class="st">&quot;msg_type : str # type de message (évaluation, etc.)</span>
+<span class="st">  , &quot;</span>protocol_version<span class="st">&quot;: str # exemple : &quot;</span><span class="fl">0.1</span><span class="st">&quot;</span>
+<span class="st">  , &quot;</span>content<span class="st">&quot; : json, # contenu du message </span>
+<span class="st">}</span></code></pre></div>
+<h2 id="structure-data">Structure &quot;data&quot;</h2>
+<p>Encodage des valeurs retournées par le RunServer:</p>
+<pre><code>{ &quot;data&quot;: [ { &quot;mime&quot; : str  # type mime du résultat (ex. text, text/html,
+                            # image/png, etc.)
+              &quot;value&quot; : str # encodage des données
+            } ... ] }</code></pre>
+<h2 id="evaluation-dune-expression">Evaluation d'une expression</h2>
+<h3 id="emission-par-mrpython">1. Emission par MrPython</h3>
+<pre><code>{...
+  &quot;msg_type&quot;: &quot;eval&quot;
+  &quot;content&quot;: {
+               &quot;expr&quot;: str # expression à évaluer
+               &quot;mode&quot;: &quot;student&quot; | &quot;full&quot;
+             }
+ }
+               </code></pre>
+<h3 id="retour-par-runserver">2. Retour par RunServer</h3>
+<ul>
+<li><p>variante 1 : succès</p>
+<pre><code>{...
+&quot;msg_type&quot;: &quot;eval_success&quot;
+  &quot;content&quot;: {
+               &quot;data&quot;: data # valeur(s) retournées (cf. structure &quot;data&quot;)
+               &quot;stdout&quot; : str # sorties standard
+               &quot;stderr&quot; : str # sorties erreur
+               &quot;report&quot; : [ ... cf. &quot;error&quot; (mais que des warnings) ]
+             }
+}</code></pre></li>
+<li><p>variante 2 : erreur</p>
+<pre><code>{...
+&quot;msg_type&quot;: &quot;eval_error&quot;
+  &quot;content&quot;: {
+               &quot;report&quot;:  [ 
+                 { &quot;error_type&quot;: &quot;exception&quot; | &quot;student&quot;
+               &quot;traceback&quot;: tb # cf. module traceback (décodage de toutes les infos potentiellement utile sur l&#39;erreur) pour les erreurs &quot;exception&quot;
+               # ou alors, pour les erreurs &quot;student&quot;
+               &quot;infos&quot;:  { &quot;student_error_type&quot;: str
+                            &quot;severity&quot; : &quot;error&quot; | &quot;warning&quot;
+                                &quot;description&quot;: json # en fonction du type d&#39;erreur
+                          } ... ]
+              } 
+}
+</code></pre></li>
+</ul>
+<h2 id="exécution-dun-programme">Exécution d'un programme</h2>
+<h3 id="emission-par-mrpython-1">1. Emission par MrPython</h3>
+<pre><code>{...
+  &quot;msg_type&quot;: &quot;exec&quot;
+  &quot;content&quot;: {
+               &quot;source&quot;: str # code source à éxecuter
+               &quot;mode&quot;: &quot;student&quot; | &quot;full&quot;
+             }
+ }
+               </code></pre>
+<h3 id="retour-par-runserver-1">2. Retour par RunServer</h3>
+<ul>
+<li><p>variante 1 : succès</p>
+<pre><code>{...
+&quot;msg_type&quot;: &quot;exec_success&quot;
+  &quot;content&quot;: {
+               &quot;data&quot;: data # valeur(s) retournées (cf. structure &quot;data&quot;)
+               &quot;stdout&quot; : str # sorties standard
+               &quot;stderr&quot; : str # sorties erreur
+               &quot;report&quot; : [ ... cf. &quot;error&quot; (mais que des warnings) ]
+             }
+ }</code></pre></li>
+<li><p>variante 2 : erreur</p>
+<pre><code>{...
+&quot;msg_type&quot;: &quot;exec_error&quot;
+  &quot;content&quot;: {
+               &quot;report&quot;:  [ 
+                 { &quot;error_type&quot;: &quot;exception&quot; | &quot;student&quot;
+               &quot;traceback&quot;: tb # cf. module traceback (décodage de toutes les infos potentiellement utile sur l&#39;erreur) pour les erreurs &quot;exception&quot;
+               # ou alors, pour les erreurs &quot;student&quot;
+               &quot;infos&quot;:  { &quot;student_error_type&quot;: str
+                            &quot;severity&quot; : &quot;error&quot; | &quot;warning&quot;
+                                &quot;description&quot;: json # en fonction du type d&#39;erreur
+                          } ... ]
+              } 
+}</code></pre></li>
+</ul>
+<h2 id="interruption-de-léxécution">Interruption de l'éxécution</h2>
+<h3 id="emission-par-mrpython-2">1. Emission par MrPython</h3>
+<pre><code>{...
+  &quot;msg_type&quot;: &quot;interrupt&quot;
+   
+ }</code></pre>
+<h3 id="retour-par-runserver-2">2. Retour par RunServer</h3>
+<pre><code>{...
+&quot;msg_type&quot;: &quot;interrupt_return&quot;
+ 
+}</code></pre>
+<h2 id="entrée-sur-console">Entrée sur console</h2>
+<h3 id="emission-par-runserver">1. Emission par RunServer</h3>
+<pre><code>{...
+  &quot;msg_type&quot;: &quot;input&quot;
+   
+ }</code></pre>
+<h3 id="retour-par-runserver-3">2. Retour par RunServer</h3>
+<pre><code>{...
+&quot;msg_type&quot;: &quot;input_return&quot;
+&quot;content&quot;: { 
+        &quot;chaine&quot;: str #chaine entrée sur la console
+       }     
+}</code></pre>
