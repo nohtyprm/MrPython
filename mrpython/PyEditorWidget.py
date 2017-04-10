@@ -15,16 +15,17 @@ class PyEditorWidget(Frame):
         self.line_numbers = ''
         self.py_notebook = PyEditorList(self)
         left_frame = Frame(self, background='#E8E8E8')
-        empty_frame_space = Frame(left_frame, background='#E8E8E8', height=28,
+        self.empty_frame_space = Frame(left_frame, background='#E8E8E8', height=28,
                                   borderwidth=0, relief=FLAT)
         # Creates the widget (a text one) that displays the line numbers
         self.line_widget = Text(left_frame, width=4, padx=4, state='disabled', 
                                 takefocus=0, bd=0, background='#E8E8E8',
                                 foreground='#404040', relief=FLAT,
                                 borderwidth=0)
-        empty_frame_space.grid(row=0, column=0)
+        self.empty_frame_space.grid(row=0, column=0)
         self.line_widget.grid(row=1, column=0, sticky=(N, S))
         left_frame.grid(row=0, column=0, stick=(N, S))
+        left_frame.rowconfigure(1, weight=1)
         self.py_notebook.grid(row=0, column=1, sticky=(N, S, E, W))
 
         self.rowconfigure(0, weight=1)
