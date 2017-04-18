@@ -1,0 +1,6 @@
+print('hello boys!!')
+if (True) :
+    print("c'est un bingo")
+    
+else:
+    print("c'est ni'mporte quoi!!")
