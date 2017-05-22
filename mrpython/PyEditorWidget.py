@@ -46,7 +46,7 @@ class PyEditorWidget(Frame):
         # Get the first and last visible lines
         ll, cc = text.index('@0,0').split('.')
         first = ll
-        ll, cc = text.index('@0,%d' % text.winfo_height()).split('.')
+        ll, cc = text.index('@0,%d' % text.winfo_height())  .split('.')
         last = ll
         # Build the string containing all the line numbers
         for line in range(int(first), int(last) + 1):
