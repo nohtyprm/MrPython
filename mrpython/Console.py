@@ -1,6 +1,7 @@
 from platform import python_version
 from tkinter import *
 from PyInterpreter import PyInterpreter
+from WidgetRedirector import WidgetRedirector
 
 import version
 from translate import tr
@@ -88,7 +89,13 @@ class ConsoleHistory:
 
         return str
 
-
+# from: http://tkinter.unpythonic.net/wiki/ReadOnlyText
+class ReadOnlyText(Text):
+    def __init__(self, *args, **kwargs):
+        Text.__init__(self, *args, **kwargs)
+        self.redirector = WidgetRedirector(self)
+        self.insert = self.redirector.register("insert", lambda *args, **kw: "break")
+        self.delete = self.redirector.register("delete", lambda *args, **kw: "break")
 
 class Console:
     """
@@ -117,7 +124,7 @@ class Console:
         self.frame_output = Frame(output_parent)
         self.scrollbar = Scrollbar(self.frame_output)
         self.scrollbar.grid(row=0, column=1, sticky=(N, S))
-        self.output_console = Text(self.frame_output, height=15, state='disabled', 
+        self.output_console = ReadOnlyText(self.frame_output, height=15, 
                                    yscrollcommand=self.scrollbar.set)
         self.frame_output.config(borderwidth=1, relief=GROOVE)
         self.output_console.grid(row=0, column=0, sticky=(N, S, E, W))
@@ -186,13 +193,13 @@ class Console:
 
     def reset_output(self):
         """ Clear all the output console """
-        self.output_console.config(state=NORMAL)
+        #self.output_console.config(state=NORMAL)
         self.output_console.delete(1.0, END)
         self.begin()
 
         self.write("MrPython v.{} -- mode {}\n".format(version.version_string(),
                                                        tr(self.mode)))
-        self.output_console.config(state=DISABLED)
+        #self.output_console.config(state=DISABLED)
 
 
     def change_mode(self, mode):
@@ -326,9 +333,9 @@ class Console:
             self.output_console.mark_gravity("iomark", "right")
             if isinstance(s, (bytes, bytes)):
                 s = s.decode(IOBinding.encoding, "replace")
-            self.output_console.configure(state='normal')
+            #self.output_console.configure(state='normal')
             self.output_console.insert("iomark", s, tags)
-            self.output_console.configure(state='disabled')
+            #self.output_console.configure(state='disabled')
             self.output_console.see("iomark")
             self.output_console.update()
             self.output_console.mark_gravity("iomark", "left")

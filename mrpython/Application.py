@@ -113,15 +113,22 @@ class Application:
 
 
     def update_title(self, event=None):
-        """ Give the title the current filename """
-        new_title = self.editor_list.tab(self.editor_list.index("current"), "text")
-        directory = ""
-        if self.editor_list.get_current_editor().io.filename:
-            directory = self.editor_list.get_current_editor().io.filename
-        if directory != "":
-            new_title += " (" + directory + ")"
-        new_title += " - MrPython"
-        self.root.title(new_title)
+            """ Give the title the current filename """
+            #print("editor list: ", self.editor_list.index("current"))
+            try:
+                new_title = self.editor_list.tab(self.editor_list.index("current"), "text")
+            except:
+                new_title = "MrPython"
+                self.root.title(new_title)
+                return
+                
+            directory = ""
+            if self.editor_list.get_current_editor().io.filename:
+                directory = self.editor_list.get_current_editor().io.filename
+            if directory != "":
+                new_title += " (" + directory + ")"
+            new_title += " - MrPython"
+            self.root.title(new_title)
 
 
     #def maybe_save_run(self, event=None):
@@ -148,20 +155,20 @@ class Application:
     def new_file(self, event=None):
         """ Creates a new empty editor and put it into the pyEditorList """
         file_editor = PyEditor(self.editor_list)
-        self.editor_list.add(file_editor, text=file_editor.get_file_name())
+        self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
 
     def open(self, event=None):
         """ Open a file in the text editor """
         file_editor = PyEditor(self.editor_list, open=True)
         if (self.editor_list.focusOn(file_editor.long_title()) == False):
             if (file_editor.isOpen()):
-                self.editor_list.add(file_editor, text=file_editor.get_file_name())
+                self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
 
 
     def close_all_event(self, event=None):
         """ Quit all the PyEditor : called when exiting application """
         while self.editor_list.get_size() > 0:
-            reply = self.editor_list.close_current_editor()
+            reply = self.editor_list.close_current_editor(self.main_view.editor_widget)
             if reply == "cancel":
                 break
         if self.editor_list.get_size() == 0:
