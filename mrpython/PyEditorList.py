@@ -131,15 +131,12 @@ class PyEditorList(Notebook):
     #
     def close_current_editor(self,event=None):
         reply=self.get_current_editor().close(event)
-        self.sizetab -= 1
-
+        self.sizetab-=1
+        #delete the button
+        if(self.sizetab == 0):
+            self.bouton.destroy()
         if reply!="cancel":
             self.forget(self.get_current_editor())
-        else: #the suer did not close the current editor
-            self.sizetab += 1
-        #delete the button
-        if(self.sizetab <= 0):
-            self.bouton.destroy()
         return reply
 
 

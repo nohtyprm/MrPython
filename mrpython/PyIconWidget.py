@@ -23,7 +23,8 @@ class PyIconWidget(Frame):
         icon_open_gif = PhotoImage(file=expand_filename("icons/open_icon.gif"))
         self.icon_student_gif = PhotoImage(file=expand_filename("icons/student_icon.gif"))
         self.icon_pro_gif = PhotoImage(file=expand_filename("icons/pro_icon.gif"))
-        icon_run_gif = PhotoImage(file=expand_filename("icons/run_icon.gif"))
+        self.icon_stop_gif = PhotoImage(file=expand_filename("icons/stop_icon.gif"))
+        self.icon_run_gif = PhotoImage(file=expand_filename("icons/run_icon.gif"))
 
         # Creating the labels
         self.icons = dict()  # dict[str:Label]
@@ -53,7 +54,7 @@ class PyIconWidget(Frame):
                                            activebackground='#A9A9A9'),
                                      msg = tr('Mode Ctrl-M'))
 
-        self.icons['run'] = ToolTip(Label(self, image=icon_run_gif, justify=CENTER,
+        self.icons['run'] = ToolTip(Label(self, image=self.icon_run_gif, justify=CENTER,
                                           cursor="hand1", background="#e1e1e1", 
                                           relief="raised", text='',
                                           compound=None, activebackground='#A9A9A9'),
@@ -65,7 +66,7 @@ class PyIconWidget(Frame):
         self.icons['save'].wdgt.image = icon_save_gif
         self.icons['open'].wdgt.image = icon_open_gif
         self.icons['mode'].wdgt.image = self.icon_student_gif
-        self.icons['run'].wdgt.image = icon_run_gif
+        self.icons['run'].wdgt.image = self.icon_run_gif
 
         # Packing the labels
         sep = Label(self, background="white")
@@ -91,4 +92,10 @@ class PyIconWidget(Frame):
             self.icons['mode'].wdgt.config(image=self.icon_student_gif)
         elif mode == "full":
             self.icons['mode'].wdgt.config(image=self.icon_pro_gif)
-
+  
+    def switch_icon_exec(self, interruption_mode):
+        """ Change icon during execution"""
+        if(interruption_mode):
+            self.icons['run'].wdgt.config(image=self.icon_stop_gif)
+        else:
+            self.icons['run'].wdgt.config(image=self.icon_run_gif)

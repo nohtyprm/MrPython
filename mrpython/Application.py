@@ -5,7 +5,7 @@ import Bindings
 
 from translate import tr, set_translator_locale
 
-import StudentRunner
+#import StudentRunner
 
 class Application:
     """
@@ -32,7 +32,7 @@ class Application:
             set_translator_locale(language)
 
         self.root = Tk()
-        StudentRunner.TK_ROOT = self.root
+        #StudentRunner.TK_ROOT = self.root
         self.root.title("MrPython")
 
         self.mode = "full"
@@ -172,7 +172,11 @@ class Application:
             if reply == "cancel":
                 break
         if self.editor_list.get_size() == 0:
+            self.console.close_server()
             sys.exit(0)
+
+
+            
 
 
     def run_module(self, event=None):
@@ -187,6 +191,9 @@ class Application:
             self.status_bar.update_save_label(file_name)
             self.console.run(file_name)
 
+
+    def interrupt(self,event=None):
+        self.console.interrupt()
 
     # TODO: Continue ?
     def check_module(self, event=None):

@@ -1,12 +1,19 @@
 from platform import python_version
 from tkinter import *
-from PyInterpreter import PyInterpreter
 from WidgetRedirector import WidgetRedirector
+from InterpreterServer.RunServer import RunServer
+import uuid
+from multiprocessing import Process, Pipe
+import socket
 
 import version
 from translate import tr
 import io
 import rpc
+import time
+import tokenize
+import json
+
 
 class ConsoleHistory:
     def __init__(self, history_capacity=100):
@@ -28,7 +35,7 @@ class ConsoleHistory:
         self.history_size += 1
         self.history_pos = self.history_size - 1
 
-        print(self)
+        #print(self)
 
     def move_past(self):
         if self.history_pos > 0:
@@ -118,6 +125,7 @@ class Console:
         """
         Create and configure the shell (the text widget that gives informations
         and the interactive shell)
+        Starts the RunServer and connects to it
         """
         self.app = app
         # Creating output console
@@ -154,6 +162,14 @@ class Console:
 
         self.frame_input.columnconfigure(1, weight=1)
 
+        #AJOUT
+        self.interpreter = Process(target=RunServer)
+        self.interpreter.start()
+        time.sleep(1)
+        self._connect_server()
+        self.session_id = None
+        self.prot = None
+
 	# Redirect the Python output, input and error stream to the console
         import IOBinding
         self.stdin = PseudoInputFile(self, "error", IOBinding.encoding)
@@ -179,7 +195,7 @@ class Console:
         self.begin()
         self.configure_color_tags()
         self.switch_input_status(True)
-        self.interpreter = None
+        #self.interpreter = None
 
 
     def configure_color_tags(self):
@@ -231,32 +247,28 @@ class Console:
 
 
     def evaluate_action(self, *args):
-        """ Evaluate the expression in the input console """
-        output_file = open('interpreter_output', 'w+')
-        original_stdout = sys.stdout
-        sys.stdout = output_file
+        """ Sends the expression in the input_console for the server to evaluate it; waits for the result and displays it"""
+        #output_file = open('interpreter_output', 'w+')
+        #original_stdout = sys.stdout
+        #sys.stdout = output_file
         expr = self.input_console.get()
-        # while expr and (expr[0] == "\n"):
-        #     expr = expr[1:]
-        local_interpreter = False
-        if self.interpreter is None:
-            self.interpreter = PyInterpreter(self.app.mode, "<<console>>", expr)
-            local_interpreter = True
-        ok, report = self.interpreter.run_evaluation(expr)
+        while expr and (expr[0] == "\n"):
+             expr = expr[1:]
+        result = self._compute_json(expr, "", self.app.mode, "eval")   
+        docJson = json.dumps(result)
+        self.mySocket.send(docJson.encode("Utf8"))
 
-        if ok:
+        msgServeur=self.mySocket.recv(1024).decode("Utf8")
+        if(not msgServeur):
+            self.mySocket.close()
+            return
+        prot = json.loads(msgServeur)
+
+        if prot["msg_type"] == "eval_success":
             self.input_history.record(expr)
 
         self.input_console.delete(0, END)
-        #self.input_console.config(height=1)
-
-        self.write_report(ok, report)
-
-        sys.stdout = original_stdout
-        output_file.close()
-
-        if local_interpreter:
-            self.interpreter = None
+        self.write_report2(prot)
 
     def history_up_action(self, event=None):
         entry = self.input_history.move_past()
@@ -283,34 +295,119 @@ class Console:
         self.input_console.config(state=stat, background=bg)
         self.eval_button.config(state=stat)
 
+    def close_server(self):
+        '''
+        Closes connection with the server
+        '''
+        self.mySocket.close()
+
+    def _connect_server(self):
+        '''
+        Connects to the server
+        '''
+        HOST = socket.gethostname()
+        mon_fichier_config = open("config.txt", "r")
+        PORT = int(mon_fichier_config.read())
+
+        # 1) création du socket :
+        self.mySocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+ 
+        # 2) envoi d'une requête de connexion au serveur :
+        try:
+            self.mySocket.connect((HOST, PORT))
+        except socket.error:
+            sys.exit()
+
+    def _compute_json(self, source, filename, mode, exec_or_eval):
+        '''
+        Creates the message that will be sent to the server
+        '''
+        result = {}
+        if(exec_or_eval == "exec"):
+            self.session_id = uuid.uuid1().int
+            id_exec2 = uuid.uuid1().int
+            result = {"session_id" : self.session_id, "msg_id" : id_exec2,
+                      "msg_type" : exec_or_eval, "protocol_version" : 0.1,
+                      "content" : {"source" : source, "mode" : mode, "filename" :filename}}
+        elif (exec_or_eval == "eval"):
+            id_exec2 = uuid.uuid1().int
+            if(self.session_id == None):
+                self.session_id = uuid.uuid1().int
+            result = {"session_id" : self.session_id, "msg_id" : id_exec2,
+                      "msg_type" : exec_or_eval, "protocol_version" : 0.1,
+                      "content" : {"expr" : source, "mode" : mode, "filename" : filename}}
+        elif(exec_or_eval == "interrupt"):
+            id_exec2 = uuid.uuid1().int
+            result = {"session_id" : self.session_id, "msg_id" : id_exec2,
+                      "msg_type" : exec_or_eval, "protocol_version" : 0.1, "content" : {}}
+        return result
+
+    def write_report2(self, prot):
+        '''
+        Writes a report in the output console
+        '''
+        if(prot["msg_type"] == "exec_success" or prot["msg_type"] == "eval_success" ):
+            self.write(prot["content"]["report"]["header"], tags=('run'))
+            for i in prot["content"]["report"]["errors"]:
+                self.write(i["infos"]["severity"]+ ": line "+str(i["infos"]["severity"]))
+                self.write(str(i["infos"]["description"]),tags=(i["infos"]["severity"]))
+            self.write(str(prot["content"]["stdout"]), tags=("stdout"))
+            #if(prot["msg_type"] == "eval_success"):
+             #   self.write(prot["content"]["data"], tags=('normal'))
+            self.write(prot["content"]["report"]["footer"], tags = ('run'))
+        elif(prot["msg_type"] == "interrupt_success"):
+            self.write("==========================================\n", tags=('run'))
+            self.write("le programme a été correctement interrompu\n", tags=("normal"))
+            self.write("==========================================\n", tags = ('run'))
+        else:
+            self.write(prot["content"]["report"]["header"], tags=('error'))
+            for i in prot["content"]["report"]["errors"]:
+                self.write(i["infos"]["severity"]+ ": line "+str(i["infos"]["lines"]), tags=(i["infos"]["severity"]))
+                self.write(str(i["infos"]["description"]),tags=(i["infos"]["severity"]))
+            self.write(prot["content"]["report"]["footer"], tags = ('error'))
+
 
     def run(self, filename):
-        """ Run the program in the current editor : execute, print results """
+
+        """Sends a program for the server to run it; waits for the result and displays it"""
         # Reset the output first
         self.reset_output()
         # A new PyInterpreter is created each time code is run
         # It is then kept for other actions, like evaluation
-        self.interpreter = PyInterpreter(self.app.mode, filename)
-        # Change the output during execution
-        output_file = open('interpreter_output', 'w+')
-        original_stdout = sys.stdout
-        sys.stdout = output_file
-        ok, report = self.interpreter.execute()
+        # self.interpreter = PyInterpreter(self.app.mode, filename)
+        with tokenize.open(filename) as fp:
+                source = fp.read()
+        result = self._compute_json(source, filename, self.app.mode, "exec")
+        docJson = json.dumps(result)
+        self.wait, send = Pipe()
 
-        self.write_report(ok, report)
+        self.mySocket.send(docJson.encode("Utf8"))
+        self.procwait = Process(target=self.wait_and_write, args=(send,))
+        self.procwait.start()
+        intepreted = False
+        for i in range(20):
+            if(self.wait.poll(0.5)):
+                self.prot = self.wait.recv()
+                self.write_report2(self.prot)
+                intepreted = True
+                break
+        if(not intepreted):
+            self.app.icon_widget.switch_icon_exec(True) #Modifie le bouton
+            self.app.run_button.bind("<1>", self.app.interrupt) #change le bind
 
-        sys.stdout = original_stdout
-        output_file.close()
-        # Enable or disable the evaluation bar according to the execution status
-        if ok:
-            pass
-            #self.switch_input_status(True)
-        else:
-            pass
-            #self.switch_input_status(False)
-
-        # self.interpreter = None
-
+    def interrupt(self):
+        """ Sends and interrupt request to the server
+        Changes the execution button and writes a message on the output_console when it's done
+        """
+        result = self._compute_json("","","","interrupt")
+        docJson = json.dumps(result)
+        self.mySocket.send(docJson.encode("Utf8"))
+        self.procwait.join()
+        self.app.run_button.bind("<1>", self.app.run_module)
+        self.app.icon_widget.switch_icon_exec(False)
+        self.prot = self.wait.recv()
+        if(self.prot != None):
+            self.write_report2(self.prot)
 
     def no_file_to_run_message(self):
         self.reset_output()
@@ -319,13 +416,13 @@ class Console:
 
     def write(self, s, tags=()):
         """ Write into the output console """
-        if isinstance(s, str) and len(s) and max(s) > '\uffff':
+        if (isinstance(s, str) and len(s) and max(s) > '\uffff'):
             # Tk doesn't support outputting non-BMP characters
             # Let's assume what printed string is not very long,
             # find first non-BMP character and construct informative
             # UnicodeEncodeError exception.
             for start, char in enumerate(s):
-                if char > '\uffff':
+                if (char > '\uffff'):
                     break
             raise UnicodeEncodeError("UCS-2", char, start, start+1,
                                      'Non-BMP character not supported in Tk')
@@ -379,6 +476,14 @@ class Console:
     def reset_undo(self):
         self.undo.reset_undo()
 
+    def wait_and_write(self, pipe):
+        """Awaits an answer from the server and registers it"""
+        msgServeur = self.mySocket.recv(1024).decode("Utf8")
+        if(not msgServeur):
+            self.mySocket.close()
+            return
+        prot = json.loads(msgServeur)
+        pipe.send(prot)
 
 class PseudoFile(io.TextIOBase):
 
