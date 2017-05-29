@@ -4,6 +4,11 @@ from tkinter.ttk import *
 import tkinter.messagebox as tkMessageBox
 from PyEditor import PyEditor
 
+MODULE_PATH = os.path.dirname(__file__)
+
+def expand_filename(fname):
+    return MODULE_PATH + "/" + fname
+
 class PyEditorList(Notebook):
     """
     Manages the PyEditor widgets, in editor interface
@@ -22,11 +27,19 @@ class PyEditorList(Notebook):
     def get_size(self):
         return self.sizetab
 
-    def add(self, child, **kw):
+    def add(self, child, editor_widget,  **kw):
         super(PyEditorList, self).add(child, **kw)
         child.list = self
         self.select(child)
         self.sizetab += 1
+        #Add the close button
+        if(self.sizetab == 1):
+            picture = PhotoImage(file=expand_filename("icons/close.gif"))
+            self.bouton=Button(editor_widget.empty_frame_space, command=editor_widget.py_notebook.close_current_editor, image=picture)
+            self.bouton.config(image=picture)
+            self.bouton.image = picture
+            self.bouton.pack()
+        
 
     def changerFileName(self,editor):
         if editor.isOpen():
@@ -118,8 +131,11 @@ class PyEditorList(Notebook):
     #
     def close_current_editor(self,event=None):
         reply=self.get_current_editor().close(event)
+        self.sizetab-=1
+        #delete the button
+        if(self.sizetab == 0):
+            self.bouton.destroy()
         if reply!="cancel":
-            self.sizetab-=1
             self.forget(self.get_current_editor())
         return reply
 
