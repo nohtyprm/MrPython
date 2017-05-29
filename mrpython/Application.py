@@ -130,7 +130,6 @@ class Application:
             new_title += " - MrPython"
             self.root.title(new_title)
 
-
     #def maybe_save_run(self, event=None):
 
     def save(self, event=None):
