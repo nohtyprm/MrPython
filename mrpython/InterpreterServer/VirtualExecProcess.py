@@ -77,14 +77,14 @@ class VirtualExecProcess(Process):
                     retcontent["report"] = reporter.compute_report(report)
                     return retcontent, error
                 #evaluate
-                report, out_str, err_str, error = self.executor.execute(code, report,False)
+                data, report, out_str, err_str, error = self.executor.execute(code, report,False)
                 if(error==True):
                     retcontent["report"] = reporter.compute_report(report)
                     return retcontent, error
                 #retour
                 retcontent["stderr"] = err_str
                 retcontent["stdout"] = out_str
-                #retcontent["data"] = data
+                retcontent["data"] = data
                 retcontent["report"] = reporter.compute_report(report)
                 return retcontent, error
                 
@@ -104,8 +104,7 @@ class VirtualExecProcess(Process):
                     return retcontent, error
                 #check
                 if(student):
-                    ast, report = self.parser.parse(contenu["source"], report, 
-                                                    contenu["filename"])
+                    ast, report = self.parser.parse(contenu["source"], report, contenu["filename"])
                     if(ast == None):
                         error = True
                         retcontent["report"] = reporter.compute_report(report)
@@ -119,7 +118,7 @@ class VirtualExecProcess(Process):
                     return retcontent, error
 
                 #executor
-                report, out_str, err_str,error = self.executor.execute(code, report,True)
+                data, report, out_str, err_str,error = self.executor.execute(code, report,True)
                 if(error):
                     retcontent["report"] = reporter.compute_report(report)
                     return retcontent, error
@@ -135,8 +134,8 @@ class VirtualExecProcess(Process):
         '''
         report = RunReport()
         if(execute):
-            begin_report = "=== " + tr("Interpretation of: ") +\
-             os.path.basename(contenu["filename"]) + " ===\n"
+            begin_report = "=== " + tr("Interpretation of: ") + "'" +\
+             os.path.basename(contenu["filename"]) + "' ===\n"
         else:
             begin_report = "=== " + tr("Evaluating: ") + "'" + contenu["expr"] + "' ===\n"
         report.set_header(begin_report)

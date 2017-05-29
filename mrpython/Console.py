@@ -346,14 +346,18 @@ class Console:
         '''
         Writes a report in the output console
         '''
-        if(prot["msg_type"] == "exec_success" or prot["msg_type"] == "eval_success" ):
+        if(prot == {}):
+            self.write("===========================\n", tags=('error'))
+            self.write("fichier de sortie trop gros\n", tags=("normal"))
+            self.write("===========================\n", tags = ('error'))
+        elif(prot["msg_type"] == "exec_success" or prot["msg_type"] == "eval_success" ):
             self.write(prot["content"]["report"]["header"], tags=('run'))
             for i in prot["content"]["report"]["errors"]:
                 self.write(i["infos"]["severity"]+ ": line "+str(i["infos"]["severity"]))
                 self.write(str(i["infos"]["description"]),tags=(i["infos"]["severity"]))
             self.write(str(prot["content"]["stdout"]), tags=("stdout"))
-            #if(prot["msg_type"] == "eval_success"):
-             #   self.write(prot["content"]["data"], tags=('normal'))
+            if(prot["msg_type"] == "eval_success" and prot["content"]["data"] != None):
+                self.write(prot["content"]["data"], tags=('stdout'))
             self.write(prot["content"]["report"]["footer"], tags = ('run'))
         elif(prot["msg_type"] == "interrupt_success"):
             self.write("==========================================\n", tags=('run'))
@@ -482,8 +486,23 @@ class Console:
         if(not msgServeur):
             self.mySocket.close()
             return
-        prot = json.loads(msgServeur)
-        pipe.send(prot)
+        try: # The buffer is not enough big
+            prot = json.loads(msgServeur)
+            pipe.send(prot)
+        except:
+            try:
+                self.mySocket.setblocking(False)
+                while(True):
+                    data = self.mySocket.recv(1024).decode("Utf8")
+                    if(data == None):
+                        break
+
+            except:
+                self.mySocket.setblocking(True)
+                prot = json.loads("{}")
+                pipe.send(prot)
+                return
+        
 
 class PseudoFile(io.TextIOBase):
 

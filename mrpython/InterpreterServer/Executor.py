@@ -41,14 +41,14 @@ class Executor(object):
             if(exe):
                 exec(code, self.locals, self.locals)
             else:
-                eval(code, self.locals, self.locals)
+                data = eval(code, self.locals, self.locals)
         except TypeError as err:
             self.std_reset()
             a, b, tb = sys.exc_info()
             filename, lineno, file_type, line = traceback.extract_tb(tb)[-1]
             err_str = self._extract_error_details(err)
             report.add_execution_error('error', tr("Type error"), lineno, details=str(err))
-            return (report, None, None, True)
+            return (None, report, None, None, True)
         except NameError as err:
             self.std_reset()
             a, b, tb = sys.exc_info() # Get the traceback object
@@ -59,13 +59,13 @@ class Executor(object):
             err_str = self._extract_error_details(err)
             report.add_execution_error('error', tr("Name error (unitialized variable?)"),
                                        lineno, details=err_str)
-            return (report, None, None, True)
+            return (None, report, None, None, True)
         except ZeroDivisionError:
             self.std_reset()
             a, b, tb = sys.exc_info()
             filename, lineno, file_type, line = traceback.extract_tb(tb)[-1]
             report.add_execution_error('error', tr("Division by zero"), lineno)
-            return (report, None, None, True)
+            return (None, report, None, None, True)
         except AssertionError:
             self.std_reset()
             a, b, tb = sys.exc_info()
@@ -74,7 +74,7 @@ class Executor(object):
             if len(traceb) > 1:
                 filename, lineno, file_type, line = traceb[-1]
             report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno)
-            return (report, None, None, True)
+            return (None, report, None, None, True)
         except Exception as err:
             self.std_reset()
             a, b, tb = sys.exc_info() # Get the traceback object
@@ -86,16 +86,16 @@ class Executor(object):
             if (len(traceb) > 1):
                 filename, lineno, file_type, line = traceb[-1]
             report.add_execution_error('error', a.__name__, lineno, details=str(err))
-            return (report, None,None,True)
+            return (None,report, None,None,True)
         sys.stdout.seek(0) #remise à zero des deux fichier afin de les lires
         sys.stderr.seek(0)
         out_string = sys.stdout.read() # calcul de la sortie
         err_string = sys.stderr.read()
         self.std_reset()
         if(not exe):
-            return(report, out_string, err_string, False)
+            return(data, report, out_string, err_string, False)
         else:
-            return(report, out_string, err_string, False)
+            return(None, report, out_string, err_string, False)
 
     def std_redirect(self):
         self.fst_stdout = sys.stdout
