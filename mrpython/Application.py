@@ -155,14 +155,14 @@ class Application:
     def new_file(self, event=None):
         """ Creates a new empty editor and put it into the pyEditorList """
         file_editor = PyEditor(self.editor_list)
-        self.editor_list.add(file_editor, text=file_editor.get_file_name())
+        self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
 
     def open(self, event=None):
         """ Open a file in the text editor """
         file_editor = PyEditor(self.editor_list, open=True)
         if (self.editor_list.focusOn(file_editor.long_title()) == False):
             if (file_editor.isOpen()):
-                self.editor_list.add(file_editor, text=file_editor.get_file_name())
+                self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
 
 
     def close_all_event(self, event=None):
