@@ -34,10 +34,11 @@ class PyEditorList(Notebook):
         #Add the close button
         if(self.sizetab == 1):
             picture = PhotoImage(file=expand_filename("icons/close.gif"))
-            self.close_btn=Button(editor_widget.empty_frame_space, command=editor_widget.py_notebook.close_current_editor, image=picture)
+            self.close_btn=Button(editor_widget.empty_frame_space, command=editor_widget.py_notebook.close_current_editor
+                                  , image=picture)
             #self.close_btn.config(image=picture)
             self.close_btn.image = picture
-            self.close_btn.pack()
+            self.close_btn.pack(fill=None, expand=0)
 
     def changerFileName(self,editor):
         if editor.isOpen():
