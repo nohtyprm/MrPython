@@ -132,7 +132,7 @@ class PyEditorList(Notebook):
         reply=self.get_current_editor().close(event)
         if reply!="cancel":
             self.sizetab-=1
-            if(self.sizetab == 1):
+            if(self.sizetab == 0):
                 self.close_btn.destroy()
             self.forget(self.get_current_editor())
         return reply
