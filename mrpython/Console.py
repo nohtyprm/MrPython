@@ -1,6 +1,6 @@
 from platform import python_version
 from tkinter import *
-from PyInterpreter import PyInterpreter
+from PyInterpreter import InterpreterProxy
 from WidgetRedirector import WidgetRedirector
 
 import version
@@ -181,7 +181,6 @@ class Console:
         self.switch_input_status(True)
         self.interpreter = None
 
-
     def configure_color_tags(self):
         """ Set the colors for the specific tags """
         self.output_console.tag_config('run', foreground='green')
@@ -228,35 +227,29 @@ class Console:
                 self.write(repr(report.result), tags=('normal'))
 
         self.write(report.footer, tags=(tag))
-
-
+        
     def evaluate_action(self, *args):
         """ Evaluate the expression in the input console """
-        output_file = open('interpreter_output', 'w+')
-        original_stdout = sys.stdout
-        sys.stdout = output_file
         expr = self.input_console.get()
-        # while expr and (expr[0] == "\n"):
-        #     expr = expr[1:]
         local_interpreter = False
         if self.interpreter is None:
-            self.interpreter = PyInterpreter(self.app.mode, "<<console>>", expr)
+            self.interpreter = InterpreterProxy(self.app.root, self.app.mode, "<<console>>")
             local_interpreter = True
-        ok, report = self.interpreter.run_evaluation(expr)
 
-        if ok:
-            self.input_history.record(expr)
+        # the call back
+        def callback(ok, report):
+            if ok:
+                self.input_history.record(expr)
 
-        self.input_console.delete(0, END)
-        #self.input_console.config(height=1)
+            self.input_console.delete(0, END)
+            self.write_report(ok, report)
 
-        self.write_report(ok, report)
+            if local_interpreter:
+                self.interpreter.kill()
+                self.interpreter = None
 
-        sys.stdout = original_stdout
-        output_file.close()
-
-        if local_interpreter:
-            self.interpreter = None
+        # non-blocking call
+        self.interpreter.run_evaluation(expr, callback)
 
     def history_up_action(self, event=None):
         entry = self.input_history.move_past()
@@ -282,35 +275,31 @@ class Console:
             bg = '#775F57'
         self.input_console.config(state=stat, background=bg)
         self.eval_button.config(state=stat)
-
-
+        
     def run(self, filename):
         """ Run the program in the current editor : execute, print results """
         # Reset the output first
         self.reset_output()
         # A new PyInterpreter is created each time code is run
         # It is then kept for other actions, like evaluation
-        self.interpreter = PyInterpreter(self.app.mode, filename)
-        # Change the output during execution
-        output_file = open('interpreter_output', 'w+')
-        original_stdout = sys.stdout
-        sys.stdout = output_file
-        ok, report = self.interpreter.execute()
+        if self.interpreter is not None:
+            self.interpreter.kill()
+            
+        self.interpreter = InterpreterProxy(self.app.root, self.app.mode, filename)
 
-        self.write_report(ok, report)
+        def callback(ok, report):
+            self.write_report(ok, report)
 
-        sys.stdout = original_stdout
-        output_file.close()
-        # Enable or disable the evaluation bar according to the execution status
-        if ok:
-            pass
-            #self.switch_input_status(True)
-        else:
-            pass
-            #self.switch_input_status(False)
+            # Enable or disable the evaluation bar according to the execution status
+            if ok:
+                pass
+                #self.switch_input_status(True)
+            else:
+                pass
+                #self.switch_input_status(False)
 
-        # self.interpreter = None
-
+        # non-blocking call
+        self.interpreter.execute(callback)
 
     def no_file_to_run_message(self):
         self.reset_output()

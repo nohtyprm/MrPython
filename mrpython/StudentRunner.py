@@ -28,12 +28,11 @@ class StudentRunner:
     Runs a code under the student mode
     """
 
-    def __init__(self, filename, source):
-        global TK_ROOT
+    def __init__(self, tk_root, filename, source):
         self.filename = filename
         self.source = source
         self.report = RunReport()
-        self.tk_root = TK_ROOT
+        self.tk_root = tk_root
         self.running = True
         ## This is a hack so let's check...
         try:

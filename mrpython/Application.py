@@ -5,7 +5,7 @@ import Bindings
 
 from translate import tr, set_translator_locale
 
-import StudentRunner
+import multiprocessing as mp
 
 class Application:
     """
@@ -32,7 +32,7 @@ class Application:
             set_translator_locale(language)
 
         self.root = Tk()
-        StudentRunner.TK_ROOT = self.root
+        
         self.root.title("MrPython")
 
         self.mode = "full"
@@ -202,5 +202,6 @@ class Application:
         self.console.runit(file_name)
 
 if __name__ == "__main__":
+    mp.set_start_method('spawn')
     app = Application()
     app.run()
