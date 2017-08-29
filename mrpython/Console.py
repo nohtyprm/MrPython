@@ -235,6 +235,7 @@ class Console:
         if self.interpreter is None:
             self.interpreter = InterpreterProxy(self.app.root, self.app.mode, "<<console>>")
             local_interpreter = True
+            self.app.running_interpreter_proxy = self.interpreter
 
         # the call back
         def callback(ok, report):
@@ -247,6 +248,8 @@ class Console:
             if local_interpreter:
                 self.interpreter.kill()
                 self.interpreter = None
+                self.app.running_interpreter_proxy = None
+
 
         # non-blocking call
         self.interpreter.run_evaluation(expr, callback)
@@ -284,8 +287,11 @@ class Console:
         # It is then kept for other actions, like evaluation
         if self.interpreter is not None:
             self.interpreter.kill()
+            self.app.running_interpreter_proxy = None
+
             
         self.interpreter = InterpreterProxy(self.app.root, self.app.mode, filename)
+        self.app.running_interpreter_proxy = self.interpreter
 
         def callback(ok, report):
             self.write_report(ok, report)
