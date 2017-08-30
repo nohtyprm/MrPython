@@ -103,6 +103,7 @@ def show_image(img):
         mycanvas = ImgCanvas(myframe,width=480, height=480, background="white", highlightthickness=0)
         mycanvas.pack(fill=BOTH, expand=YES, padx=8, pady=8)
         CANVAS_WIDGET = mycanvas
+        CANVAS_WIDGET.update()
 
 
     # the frame around the draw area

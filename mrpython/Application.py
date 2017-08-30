@@ -5,7 +5,7 @@ import Bindings
 
 from translate import tr, set_translator_locale
 
-import StudentRunner
+import multiprocessing as mp
 
 class Application:
     """
@@ -32,7 +32,7 @@ class Application:
             set_translator_locale(language)
 
         self.root = Tk()
-        StudentRunner.TK_ROOT = self.root
+        
         self.root.title("MrPython")
 
         self.mode = "full"
@@ -44,6 +44,8 @@ class Application:
         self.change_mode()
         self.apply_bindings()
         self.root.protocol('WM_DELETE_WINDOW', self.close_all_event)
+
+        self.running_interpreter_proxy = None
 
     def run(self):
         """ Run the application """
@@ -167,11 +169,16 @@ class Application:
 
     def close_all_event(self, event=None):
         """ Quit all the PyEditor : called when exiting application """
+
+        print("[EXIT] now ...")
         while self.editor_list.get_size() > 0:
             reply = self.editor_list.close_current_editor()
             if reply == "cancel":
                 break
         if self.editor_list.get_size() == 0:
+            if self.running_interpreter_proxy and self.running_interpreter_proxy.process.is_alive():                
+                self.running_interpreter_proxy.process.terminate()
+                self.running_interpreter_proxy.process.join()
             sys.exit(0)
 
 
@@ -202,5 +209,6 @@ class Application:
         self.console.runit(file_name)
 
 if __name__ == "__main__":
+    mp.set_start_method('spawn')
     app = Application()
     app.run()
