@@ -28,7 +28,7 @@ class ConsoleHistory:
         self.history_size += 1
         self.history_pos = self.history_size - 1
 
-        print(self)
+        #print(self)
 
     def move_past(self):
         if self.history_pos > 0:

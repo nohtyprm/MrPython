@@ -170,7 +170,7 @@ class Application:
     def close_all_event(self, event=None):
         """ Quit all the PyEditor : called when exiting application """
 
-        print("[EXIT] now ...")
+        print("MrPython says 'bye bye!' ...")
         while self.editor_list.get_size() > 0:
             reply = self.editor_list.close_current_editor()
             if reply == "cancel":
