@@ -78,6 +78,7 @@ def run_process(comm, mode, filename):
 
     root.title(tr("Interpretation."))
     root.after(10, run_loop)
+    root.withdraw()
     root.mainloop()
     
         
