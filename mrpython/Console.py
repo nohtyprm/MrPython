@@ -321,8 +321,10 @@ class Console:
                 pass
                 #self.switch_input_status(True)
             else:
-                pass
-                #self.switch_input_status(False)
+                # kill the interpreter
+                self.interpreter.kill()
+                self.interpreter = None
+                self.app.running_interpreter_proxy = None
 
             self.app.icon_widget.disable_icon_running()
             self.app.running_interpreter_callback = None
