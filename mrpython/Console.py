@@ -237,8 +237,16 @@ class Console:
             local_interpreter = True
             self.app.running_interpreter_proxy = self.interpreter
 
+        callback_called = False
+            
         # the call back
         def callback(ok, report):
+            nonlocal callback_called
+            if callback_called:
+                return
+            else:
+                callback_called = True
+            
             if ok:
                 self.input_history.record(expr)
 
@@ -250,8 +258,10 @@ class Console:
                 self.interpreter = None
                 self.app.running_interpreter_proxy = None
 
+            self.app.icon_widget.disable_icon_running()
 
         # non-blocking call
+        self.app.icon_widget.enable_icon_running(callback)
         self.interpreter.run_evaluation(expr, callback)
 
     def history_up_action(self, event=None):
