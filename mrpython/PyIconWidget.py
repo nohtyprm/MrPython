@@ -86,8 +86,9 @@ class PyIconWidget(Frame):
         self.icons['run'].wdgt.grid(row=0, column=7, ipadx=7,
                                     ipady=3)
 
-    def enable_icon_running(self, callback):
+    def enable_icon_running(self):
         self.icons['run'].wdgt.config(image=self.icon_stop_gif)
+
 
     def disable_icon_running(self):
         self.icons['run'].wdgt.config(image=self.icon_run_gif)

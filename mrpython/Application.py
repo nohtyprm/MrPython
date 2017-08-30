@@ -7,6 +7,8 @@ from translate import tr, set_translator_locale
 
 import multiprocessing as mp
 
+from RunReport import RunReport
+
 class Application:
     """
     The main class of the application
@@ -46,6 +48,7 @@ class Application:
         self.root.protocol('WM_DELETE_WINDOW', self.close_all_event)
 
         self.running_interpreter_proxy = None
+        self.running_interpreter_callback = None
 
     def run(self):
         """ Run the application """
@@ -184,6 +187,20 @@ class Application:
 
     def run_module(self, event=None):
         """ Run the code : give the file name and code will be run from the source file """
+
+        # already running
+        if self.running_interpreter_callback:
+            if self.running_interpreter_proxy and self.running_interpreter_proxy.process.is_alive():
+                report = RunReport()
+                report.set_header("\n====== STOP ======\n")
+                report.add_execution_error('error', tr('User interruption'))
+                report.set_footer("\n==================\n")
+                self.running_interpreter_callback(False, report)
+            self.running_interpreter_callback = None
+            return
+
+        # not (yet) running
+        
         if self.editor_list.get_size() == 0:
             self.main_view.console.no_file_to_run_message()
             return
