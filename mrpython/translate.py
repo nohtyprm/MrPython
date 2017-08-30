@@ -35,6 +35,7 @@ TRANSLATOR_DICT = {
     ,"Name error (unitialized variable?)" : { 'fr': "Erreur de nommage (variable non initialisée ?)" }
     ,"Division by zero" : { 'fr' : "Division par zéro" }
     ,"Assertion error (failed test?)" : { 'fr' : "Erreur d'assertion (test invalide ?)" }
+    ,"User interruption" : { 'fr' : "Interruption par l'utilisateur"}
     # status
     ,"Saving file" : { 'fr' : "Enregistre" }
 }

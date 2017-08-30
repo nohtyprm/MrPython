@@ -237,8 +237,16 @@ class Console:
             local_interpreter = True
             self.app.running_interpreter_proxy = self.interpreter
 
+        callback_called = False
+            
         # the call back
         def callback(ok, report):
+            nonlocal callback_called
+            if callback_called:
+                return
+            else:
+                callback_called = True
+            
             if ok:
                 self.input_history.record(expr)
 
@@ -250,8 +258,12 @@ class Console:
                 self.interpreter = None
                 self.app.running_interpreter_proxy = None
 
+            self.app.icon_widget.disable_icon_running()
+            self.app.running_interpreter_callback = None
 
         # non-blocking call
+        self.app.icon_widget.enable_icon_running()
+        self.app.running_interpreter_callback = callback
         self.interpreter.run_evaluation(expr, callback)
 
     def history_up_action(self, event=None):
@@ -293,7 +305,15 @@ class Console:
         self.interpreter = InterpreterProxy(self.app.root, self.app.mode, filename)
         self.app.running_interpreter_proxy = self.interpreter
 
+        callback_called = False
+        
         def callback(ok, report):
+            nonlocal callback_called
+            if callback_called:
+                return
+            else:
+                callback_called = True
+            
             self.write_report(ok, report)
 
             # Enable or disable the evaluation bar according to the execution status
@@ -301,10 +321,17 @@ class Console:
                 pass
                 #self.switch_input_status(True)
             else:
-                pass
-                #self.switch_input_status(False)
+                # kill the interpreter
+                self.interpreter.kill()
+                self.interpreter = None
+                self.app.running_interpreter_proxy = None
 
+            self.app.icon_widget.disable_icon_running()
+            self.app.running_interpreter_callback = None
+                
         # non-blocking call
+        self.app.icon_widget.enable_icon_running()
+        self.app.running_interpreter_callback = callback
         self.interpreter.execute(callback)
 
     def no_file_to_run_message(self):
