@@ -318,13 +318,14 @@ class Console:
 
             # Enable or disable the evaluation bar according to the execution status
             if ok:
-                pass
+                self.input_console.focus_set()
                 #self.switch_input_status(True)
             else:
                 # kill the interpreter
                 self.interpreter.kill()
                 self.interpreter = None
                 self.app.running_interpreter_proxy = None
+                
 
             self.app.icon_widget.disable_icon_running()
             self.app.running_interpreter_callback = None
