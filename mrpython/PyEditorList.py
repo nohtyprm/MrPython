@@ -214,9 +214,9 @@ class PyEditorList(Notebook):
     def increase_font_size_event(self, event=None):
         edit = self.get_current_editor()
         if edit:
-            edit.change_font_size(lambda s: s + 2)
+            edit.change_font_size(self.parent.line_widget, lambda s: s + 2)
 
     def decrease_font_size_event(self, event=None):
         edit = self.get_current_editor()
         if edit:
-            edit.change_font_size(lambda s: s - 2)
+            edit.change_font_size(self.parent.line_widget, lambda s: s - 2)
