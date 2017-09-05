@@ -15,7 +15,7 @@ def fact(n):
 
     return r
 
-fact(50000)
+fact(10)
 
 
 

@@ -102,6 +102,8 @@ class Application:
         self.root.bind('<<tabify-region>>', self.editor_list.tabify_region_event)
         self.root.bind('<<untabify-region>>', self.editor_list.untabify_region_event)
         self.root.bind('<<toggle-tabs>>', self.editor_list.toggle_tabs_event)
+        self.root.bind('<Control-plus>', self.editor_list.increase_font_size_event)
+        self.root.bind('<Control-minus>', self.editor_list.decrease_font_size_event)
         # Code execution
         self.root.bind('<<check-module>>', self.check_module)
         self.root.bind('<Control-r>', self.run_module)

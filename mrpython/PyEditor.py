@@ -3,6 +3,8 @@ import string
 import platform
 import tkinter.messagebox as tkMessageBox
 import tkinter.simpledialog as tkSimpleDialog
+from tkinter.font import Font, nametofont
+
 from tkinter import *
 from configHandler import MrPythonConf
 from Search import SearchDialog
@@ -108,6 +110,10 @@ class PyEditor(Text):
         self.saved_change_hook()
         self.askyesno = tkMessageBox.askyesno
         self.askinteger = tkSimpleDialog.askinteger
+
+        # specific font
+        self.font = nametofont(self.cget('font')).copy()
+        self.configure(font=self.font)
 
     def apply_bindings(self,keydefs=None):
         self.bind("<<smart-backspace>>",self.smart_backspace_event)
@@ -376,6 +382,13 @@ class PyEditor(Text):
             line = lines[pos]
             lines[pos] = '##' + line
         self.set_region(head, tail, chars, lines)
+
+    
+    def change_font_size(self, change_fun):
+        fsize = self.font.cget('size')
+        self.font.configure(size=change_fun(fsize))
+        #edit.configure(font=font)
+        
 
     #
     # Event propre au pyEditor
