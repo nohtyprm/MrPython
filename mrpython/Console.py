@@ -1,5 +1,6 @@
 from platform import python_version
 from tkinter import *
+from tkinter.font import Font, nametofont
 from PyInterpreter import InterpreterProxy
 from WidgetRedirector import WidgetRedirector
 
@@ -124,8 +125,13 @@ class Console:
         self.frame_output = Frame(output_parent)
         self.scrollbar = Scrollbar(self.frame_output)
         self.scrollbar.grid(row=0, column=1, sticky=(N, S))
+
+        
+        
         self.output_console = ReadOnlyText(self.frame_output, height=15, 
                                    yscrollcommand=self.scrollbar.set)
+
+        
         self.frame_output.config(borderwidth=1, relief=GROOVE)
         self.output_console.grid(row=0, column=0, sticky=(N, S, E, W))
         self.scrollbar.config(command=self.output_console.yview)
@@ -180,6 +186,10 @@ class Console:
         self.configure_color_tags()
         self.switch_input_status(True)
         self.interpreter = None
+
+    def change_font(self, nfont):
+        self.output_console.configure(font=nfont)
+        self.input_console.configure(font=nfont)
 
     def configure_color_tags(self):
         """ Set the colors for the specific tags """

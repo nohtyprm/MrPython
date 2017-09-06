@@ -384,10 +384,11 @@ class PyEditor(Text):
         self.set_region(head, tail, chars, lines)
 
     
-    def change_font_size(self, line_widget, change_fun):
+    def change_font_size(self, console, line_widget, change_fun):
         fsize = self.font.cget('size')
         self.font.configure(size=change_fun(fsize))
         line_widget.configure(font=self.font)
+        console.change_font(self.font)
         #edit.configure(font=font)
         
 
