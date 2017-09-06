@@ -7,9 +7,7 @@ def set_translator_locale(locale_key):
     global TRANSLATOR_LOCALE_KEY
     if locale_key not in AVAILABLE_LOCALE_KEYS:
         print("Warning: locale key '{}' not available, will use default")
-        locale_key = None
-    elif locale_key == "en":
-        locale_key = None  # default
+        locale_key = 'fr'
 
     TRANSLATOR_LOCALE_KEY = locale_key
 
@@ -36,6 +34,10 @@ TRANSLATOR_DICT = {
     ,"Division by zero" : { 'fr' : "Division par zéro" }
     ,"Assertion error (failed test?)" : { 'fr' : "Erreur d'assertion (test invalide ?)" }
     ,"User interruption" : { 'fr' : "Interruption par l'utilisateur"}
+    # Erreurs de conventions
+    ,"Missing tests" : { 'fr' : "Tests manquants"}
+    ,"Untested functions: " : { 'fr' : "Fonctions non-testées : "}
+    ,"All functions tested (good)" : { 'fr' : "Toutes les fonctions sont testées (bien)"}
     # status
     ,"Saving file" : { 'fr' : "Enregistre" }
 }
@@ -47,7 +49,7 @@ def tr(msg):
     #print("locale key = " + str(TRANSLATOR_LOCALE_KEY))
 
     if TRANSLATOR_LOCALE_KEY is None:
-        return msg
+        TRANSLATOR_LOCALE_KEY = 'fr'  # Hack !
 
     vals = TRANSLATOR_DICT.get(msg, None)
 

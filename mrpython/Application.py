@@ -66,12 +66,14 @@ class Application:
         self.run_button.bind("<1>", self.run_module)
         self.mode_button.bind("<1>", self.change_mode)
         self.save_button.bind("<1>", self.save)
+        self.save_button.bind("<3>", self.editor_list.save_as)
         self.open_button.bind("<1>", self.open)
 
         # File
         self.root.bind("<Control-n>", self.new_file)
         self.root.bind('<Control-o>', self.open)
         self.root.bind('<Control-s>', self.save)
+        self.root.bind('<Control-S>', self.editor_list.save_as)
         self.root.bind("<Control-m>", self.change_mode)
         self.root.bind('<<save-window-as-file>>', self.editor_list.save_as)
         self.root.bind('<<save-copy-of-window-as-file>>',
