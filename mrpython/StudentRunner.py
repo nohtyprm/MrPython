@@ -22,7 +22,6 @@ def install_locals(locals):
     locals['show_image'] = studentlib.gfx.img_canvas.show_image
     return locals
 
-
 class StudentRunner:
     """
     Runs a code under the student mode
@@ -34,6 +33,7 @@ class StudentRunner:
         self.report = RunReport()
         self.tk_root = tk_root
         self.running = True
+        
         ## This is a hack so let's check...
         try:
             self.tk_root.nametowidget('.')
@@ -51,6 +51,7 @@ class StudentRunner:
             compile and execute """
         # Compile the code and get the AST from it, which will be used for all
         # the conventions checkings that need to be done
+
         try:
             self.AST = ast.parse(self.source, self.filename)
         # Handle the different kinds of compilation errors
@@ -179,20 +180,42 @@ class StudentRunner:
 
     def check_asserts(self):
         """ Are there asserts at the end of the source code ? """
-        # TODO : a finer check is needed
+        
+        defined_funs = set()
+        funcalls = set()
+        for node in self.AST.body:
+            #print("node: {}".format(node))
+            if isinstance(node, ast.Assert):
+                #print("assert found: {}".format(node))
+                call_visit = FunCallsVisitor()
+                call_visit.visit(node)
+                funcalls.update(call_visit.funcalls)
+            elif isinstance(node, ast.FunctionDef):
+                defined_funs.add(node.name)
+
+        #print("defined funs = {}".format(defined_funs))
+        #print("funcalls = {}".format(funcalls))
+
+        missing = defined_funs.difference(funcalls)
+
+        if missing:
+            self.report.add_convention_error('warning', tr('Missing tests')
+                                             , details="\n" + tr('Untested functions: ')
+                                             + "{}".format(missing) + "\n")
+        elif defined_funs:
+            # all the functions are tested at least once
+            self.report.add_convention_error('run', tr('All functions tested'), details="==> " + tr("All functions tested (good)") + "\n")
+
         return True
-        # stmt_list = self.AST.body
-        # test = False
-        # for node in stmt_list:
-        #     if not isinstance(node, ast.Assert):
-        #         if test:
-        #             test = False
-        #     else:
-        #         test = True
-        # if not test:
-        #     self.report.asserts_not_valid()
-        #     return False
-        # else:
-        #     return True
 
+class FunCallsVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.funcalls = set()
 
+    def visit_children(self, node):
+        super(FunCallsVisitor, self).generic_visit(node)
+
+    def visit_Call(self, node):
+        #print("Function name = {}".format(node.func.id))
+        self.funcalls.add(node.func.id)
+        self.visit_children(node)

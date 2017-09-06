@@ -224,9 +224,10 @@ class Console:
             tag = 'error'
 
         self.write(report.header, tags=(tag))
+        for error in report.convention_errors:
+            self.write(str(error), tags=(error.severity))
+
         if not status:
-            for error in report.convention_errors:
-                self.write(str(error), tags=(error.severity))
             for error in report.compilation_errors:
                 self.write(str(error), tags=(error.severity))
             for error in report.execution_errors:
