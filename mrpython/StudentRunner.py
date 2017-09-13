@@ -226,6 +226,7 @@ class FunCallsVisitor(ast.NodeVisitor):
         super(FunCallsVisitor, self).generic_visit(node)
 
     def visit_Call(self, node):
-        #print("Function name = {}".format(node.func.id))
-        self.funcalls.add(node.func.id)
+        if hasattr(node.func, "id"):
+            #print("Function name = {}".format(node.func.id))
+            self.funcalls.add(node.func.id)
         self.visit_children(node)
