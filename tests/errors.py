@@ -41,3 +41,9 @@ def type_error(bly):
 
 ## AssertionError
 #assert True == False
+
+## erreur duplication de variable
+def f(x, x):
+    return x
+
+

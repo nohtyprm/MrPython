@@ -66,7 +66,7 @@ class StudentRunner:
             self.report.add_compilation_error('error', str(typ), err.lineno, err.offset, details=str(err))
             return False
 
-        # No compilation error here
+        # No parsing error here
 
         # perform the local checks
         if not self.check_rules(self.report):
@@ -137,7 +137,17 @@ class StudentRunner:
     def run(self, locals):
         """ Run the code, add the execution errors to the rapport, if any """
         locals = install_locals(locals)
-        code = compile(self.source, self.filename, 'exec')
+        code = None
+        try:
+            code = compile(self.source, self.filename, 'exec')            
+        except SyntaxError as err:
+            self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=str(err))
+            return False
+        except Exception as err:
+            typ, exc, tb = sys.exc_info()
+            self.report.add_compilation_error('error', str(typ), err.lineno, err.offset, details=str(err))
+            
+            return False
 
         (ok, result) = self._exec_or_eval('exec', code, locals, locals)
         if not ok:
