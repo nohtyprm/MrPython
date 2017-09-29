@@ -29,6 +29,9 @@ class ErrorReport:
 
         return s
 
+    def __repr__(self):
+        return str(self)
+
 
 class RunReport:
     """
@@ -69,4 +72,16 @@ class RunReport:
 
     def set_footer(self, footer):
         self.footer = footer
+
+    def __str__(self):
+        return """
+Report:
+ ==> convention errors = {}
+ ==> compilation errors = {}
+ ==> execution errors = {}
+ ==> output = {}
+""".format(self.convention_errors,
+           self.compilation_errors,
+           self.execution_errors,
+           self.output)
 

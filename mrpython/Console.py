@@ -233,6 +233,9 @@ class Console:
             for error in report.execution_errors:
                 self.write(str(error), tags=(error.severity))
         else:
+            for error in report.execution_errors:
+                self.write(str(error), tags=(error.severity))
+
             self.write(str(report.output), tags=('stdout'))
             if report.result is not None:
                 self.write(repr(report.result), tags=('normal'))
@@ -324,7 +327,8 @@ class Console:
                 return
             else:
                 callback_called = True
-            
+
+            #print("[console] CALLBACK: exec ok ? {}  report={}".format(ok, report))
             self.write_report(ok, report)
 
             # Enable or disable the evaluation bar according to the execution status

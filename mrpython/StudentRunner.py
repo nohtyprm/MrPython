@@ -116,7 +116,7 @@ class StudentRunner:
             if len(traceb) > 1:
                 filename, lineno, file_type, line = traceb[-1]
             self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno)
-            return (False, None)
+            return (True, None)
         except Exception as err:
             a, b, tb = sys.exc_info() # Get the traceback object
             # Extract the information for the traceback corresponding to the error
@@ -150,15 +150,15 @@ class StudentRunner:
             return False
 
         (ok, result) = self._exec_or_eval('exec', code, locals, locals)
-        if not ok:
-            return False
+        #if not ok:
+        #    return False
 
         # if no error get the output
         sys.stdout.seek(0)
         result = sys.stdout.read()
         self.report.set_output(result)
 
-        return True
+        return ok
 
 
     def evaluate(self, expr, locals):

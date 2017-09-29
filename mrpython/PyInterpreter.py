@@ -43,6 +43,7 @@ class InterpreterProxy:
         def timer_callback():
             if self.comm.poll():
                 ok, report = self.comm.recv()
+                # print("[proxy] RECV: exec ok ? {}  report={}".format(ok, report))
                 callback(ok, report)
             else:
                 self.root.after(RUN_POLL_DELAY, timer_callback)
@@ -72,6 +73,7 @@ def run_process(comm, mode, filename):
             comm.send((ok, report))
         elif command == 'exec':
             ok, report = interp.execute()
+            # print("[interp] exec ok ? {}  report={}".format(ok, report))
             comm.send((ok, report))
 
         root.after(10, run_loop)
