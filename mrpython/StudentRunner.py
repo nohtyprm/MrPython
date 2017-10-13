@@ -13,12 +13,18 @@ import studentlib.gfx.img_canvas
 def install_locals(locals):
     #locals = { k:v for (k,v) in locs.items() }
     locals['draw_line'] = studentlib.gfx.image.draw_line
+    locals['line'] = studentlib.gfx.image.draw_line
     locals['draw_triangle'] = studentlib.gfx.image.draw_triangle
+    locals['triangle'] = studentlib.gfx.image.draw_triangle
     locals['fill_triangle'] = studentlib.gfx.image.fill_triangle
+    locals['filled_triangle'] = studentlib.gfx.image.fill_triangle
     locals['draw_ellipse'] = studentlib.gfx.image.draw_ellipse
+    locals['ellipse'] = studentlib.gfx.image.draw_ellipse
     locals['fill_ellipse'] = studentlib.gfx.image.fill_ellipse
+    locals['filled_ellipse'] = studentlib.gfx.image.fill_ellipse
     locals['overlay'] = studentlib.gfx.image.overlay
     locals['underlay'] = studentlib.gfx.image.underlay
+    locals['empty_image'] = studentlib.gfx.image.empty_image
     locals['show_image'] = studentlib.gfx.img_canvas.show_image
     return locals
 
