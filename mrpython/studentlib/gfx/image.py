@@ -47,6 +47,9 @@ def fill_ellipse(x0, y0, x1, y1, color="black"):
     # TODO: check arguments
     return Image((('fill-ellipse', x0, y0, x1, y1, color),))
 
+def empty_image():
+    return Image((('empty-image', True),))
+
 def overlay(*images):
     # TODO : check arguments
     objects = ()

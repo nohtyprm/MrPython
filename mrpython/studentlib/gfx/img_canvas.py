@@ -81,6 +81,8 @@ class ImgCanvas(Canvas):
             elif elem[0] == 'draw-ellipse':
                 x1, y1, x2, y2, color = elem[1:]
                 self.draw_ellipse(x1, y1, x2, y2, color)
+            elif elem[0] == 'empty-image':
+                pass # nothing to do
             else:
                 raise ValueError("Cannot draw image element: unsupported '{}' type (elem={})".format(elem[0], elem))
 
