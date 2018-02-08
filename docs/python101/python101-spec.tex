@@ -1,0 +1,97 @@
+
+\documentclass[a4paper]{article}
+
+\usepackage{geometry}
+\usepackage{fancyhdr}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\renewcommand{\headrulewidth}{0.4pt}
+\lhead{Sorbonne Université -- Informatique}
+\pagestyle{fancy}
+\rhead{\thepage}
+\fancyfoot{}
+
+\newenvironment{program}{
+\begin{sffamily}
+\begin{scriptsize}
+\begin{tabbing}}
+{\end{tabbing}
+\end{scriptsize}
+\end{sffamily}}
+
+\newcommand{\kw}[1]{\textsf{\textbf{#1}}}
+\newcommand{\cmt}[1]{\textsf{\textit{#1}}}
+\newcommand{\code}[1]{\begin{sffamily}#1\end{sffamily}}
+\newcommand{\pindent}{\hspace{2em}\=}
+
+\newcommand{\defs}{\stackrel{{\scriptscriptstyle \mathsf{def}}}{=}}
+\newcommand{\defmin}{\stackrel{{\scriptscriptstyle \mathsf{min}}}{=}}
+\newcommand{\colcol}{\coloncolon}
+
+\begin{document}
+
+\setlength{\parskip}{1ex}
+\setlength{\parindent}{0mm}
+
+
+\title{Python101 language specification}
+
+\author{Alexandre Doussot, Christian Trublereau, Frédéric Peschanski\\
+Sorbonne Université}
+
+\date{\today}
+
+\maketitle
+\begin{abstract}
+TODO
+\end{abstract}
+
+\thispagestyle{fancy}
+
+\section{Introduction}
+
+TODO
+
+\section{Syntax}
+
+TODO
+
+\subsection{Programs}
+
+TODO
+
+\begin{program}
+\cmt{\# imports ...}\\
+$\cdots$\\
+\kw{def} function$_1$(arg$_{1_1}$, \ldots, arg$_{1_m}$):\\
+\pindent \cmt{\# function$_1$ body}\\
+\\
+$\cdots$ \\
+\\
+\kw{def} function$_n$(arg$_{n_1}$, \ldots, arg$_{n_m}$):\\
+\> \cmt{\# function$_n$ body}\\
+\\
+$\cdots$\\
+\cmt{\# tests ...} \\
+\end{program}
+
+\subsection{Functions}
+
+TODO
+
+\subsection{Instructions}
+
+TODO
+
+\subsection{Expressions}
+
+TODO
+
+\section{Type system}
+
+TODO
+
+
+\end{document}
