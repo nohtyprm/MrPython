@@ -8,27 +8,36 @@ class AssignAggregator(ast.NodeVisitor):
     def visit_Assign(self, node):
         self.assigns.append(node)
 
+class Type():
+    def __init__(self, kind, lineno=None):
+        self.kind = kind
+        # Useful for parse information
+        self.lineno = lineno
+
+    def __repr__(self):
+        res = "Type(\"" + self.kind + "\""
+        if self.lineno:
+            res += ", " + str(self.lineno)
+        return res + ")"
+
 def get_annotations(filename):
+    ''' string -> (id -> Type)
+        Returns a dictionary of type information from a
+        file name.
+    '''
+    type_dict = {}
     file = open(filename)
     # Build a list of all lines for easy access to specific line
     code = file.readlines()
     # Get back to start of file for ast parsing
     file.seek(0)
+
     walker = AssignAggregator()
-    walker.visit(ast.parse(file.read()))
-    type_annotation_lines = [code[node.lineno - 2] for node in walker.assigns]
-    return type_annotation_lines
-
-def build_type_dict(type_annotation_lines):
-    ''' Use a popparser to parse type annotations'''
-    type_dict = {}
     parser = TypeAnnotationParser()
-    parse_results = [parser.parse_from_string(code)\
-                        for code in type_annotation_lines]
-
-    for result in parse_results:
-        # Note that we reject every ill-formed annotation in the
-        # process of removing non-annotation lines.
-        if not result.iserror:
-            type_dict[result.content.id] = result.content.type
+    walker.visit(ast.parse(file.read()))
+    for assign in walker.assigns:
+        parse_result = parser.parse_from_string(code[assign.lineno - 2])
+        if not parse_result.iserror:
+            var_type = Type(parse_result.content.type, assign.lineno)
+            type_dict[parse_result.content.name] = var_type
     return type_dict
