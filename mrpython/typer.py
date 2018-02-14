@@ -26,18 +26,20 @@ def get_annotations(filename):
         file name.
     '''
     type_dict = {}
-    file = open(filename)
-    # Build a list of all lines for easy access to specific line
-    code = file.readlines()
-    # Get back to start of file for ast parsing
-    file.seek(0)
+    with open(filename) as file:
+        # Build a list of all lines for easy access to specific line
+        code = file.readlines()
+        # Get back to start of file for ast parsing
+        file.seek(0)
 
-    walker = AssignAggregator()
-    parser = TypeAnnotationParser()
-    walker.visit(ast.parse(file.read()))
+        walker = AssignAggregator()
+        parser = TypeAnnotationParser()
+        walker.visit(ast.parse(file.read()))
+
     for assign in walker.assigns:
         parse_result = parser.parse_from_string(code[assign.lineno - 2])
         if not parse_result.iserror:
             var_type = Type(parse_result.content.type, assign.lineno)
             type_dict[parse_result.content.name] = var_type
+
     return type_dict

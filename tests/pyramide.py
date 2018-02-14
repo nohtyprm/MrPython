@@ -8,6 +8,9 @@ def filled_rectangle(x, y, largeur, hauteur, couleur):
         spécifiées.
     """
 
+    # toto : str
+    toto = "42"
+    
     return overlay(filled_triangle(x, y, x + largeur, y, x + largeur, y + hauteur, couleur),
                    filled_triangle(x + largeur, y + hauteur, x, y + hauteur, x, y, couleur))
 
