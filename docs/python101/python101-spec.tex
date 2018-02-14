@@ -13,6 +13,9 @@
 \rhead{\thepage}
 \fancyfoot{}
 
+\usepackage{proof}
+\usepackage{colonequals}
+
 \newenvironment{program}{
 \begin{sffamily}
 \begin{scriptsize}
@@ -29,6 +32,8 @@
 \newcommand{\defs}{\stackrel{{\scriptscriptstyle \mathsf{def}}}{=}}
 \newcommand{\defmin}{\stackrel{{\scriptscriptstyle \mathsf{min}}}{=}}
 \newcommand{\colcol}{\coloncolon}
+
+\newcommand{\yield}{\colcol\!>}
 
 \begin{document}
 
@@ -91,7 +96,10 @@ TODO
 
 \section{Type system}
 
-TODO
+
+$\infer[\text{(not)}]%
+{\Delta;\Gamma \vdash \kw{not}~e \yield \kw{bool}}%
+{\Delta;\Gamma \vdash e \colcol \kw{bool} & \kw{not}:\kw{bool}\rightarrow\kw{bool}\in \Delta}$
 
 
 \end{document}
