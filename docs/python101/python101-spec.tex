@@ -96,10 +96,42 @@ TODO
 
 \section{Type system}
 
+\vspace{1\baselineskip}
+
+$\infer[\text{(true)}]%
+{\Delta;\Gamma \vdash \kw{True} \yield \kw{bool}}%
+{}$
+
+\vspace{3\baselineskip}
+
+$\infer[\text{(false)}]%
+{\Delta;\Gamma \vdash \kw{False} \yield \kw{bool}}%
+{}$
+
+\vspace{3\baselineskip}
+
+
+$\infer[\text{(var)}]%
+{\Delta;\Gamma, \kw{x:t}~ \vdash x \yield \kw{t}}%
+{}$
+
+\vspace{3\baselineskip}
 
 $\infer[\text{(not)}]%
 {\Delta;\Gamma \vdash \kw{not}~e \yield \kw{bool}}%
 {\Delta;\Gamma \vdash e \colcol \kw{bool} & \kw{not}:\kw{bool}\rightarrow\kw{bool}\in \Delta}$
+
+\vspace{3\baselineskip}
+
+$\infer[\text{(and)}]%
+{\Delta;\Gamma \vdash \kw{and}~\textrm{e}_\textrm{1},~\textrm{e}_\textrm{2} \yield \kw{bool}}%
+{\Delta;\Gamma \vdash \textrm{e}_\textrm{1} \colcol \kw{bool}~~ \Delta;\Gamma \vdash\textrm{e}_\textrm{2} \colcol \kw{bool} & \kw{and}:\kw{bool}\times\kw{bool}\rightarrow\kw{bool}\in \Delta}$
+
+\vspace{3\baselineskip}
+
+$\infer[\text{(app)}]%
+{\Delta;\Gamma \vdash f(\textrm{e}_\textrm{1},...,\textrm{e}_\textrm{n}) \yield \kw{t}}%
+{\Delta;\Gamma \vdash \textrm{e}_\textrm{1} \colcol \kw{t}_\kw{1}~...~ \Delta;\Gamma \vdash \textrm{e}_\textrm{n} \colcol \kw{t}_\kw{n} & f:\kw{t}_\kw{1}\times ... \times\kw{t}_\kw{n}\rightarrow\kw{t}\in \Delta}$
 
 
 \end{document}
