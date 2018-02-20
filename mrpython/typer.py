@@ -12,6 +12,7 @@ class AssignAggregator(ast.NodeVisitor):
     def visit_FunctionDef(self, node):
         self.func_name = node.name
         self.assigns[self.func_name] = []
+        self.generic_visit(node)
 
 class Type():
     def __init__(self, kind, lineno=None):
@@ -28,6 +29,9 @@ class Type():
         return self.kind == self.kind and\
         self.lineno == other.lineno
 
+    def is_of(self, kind):
+        return self.kind == kind
+
     def __repr__(self):
         res = "Type(\"" + self.kind + "\""
         if self.lineno:
@@ -41,10 +45,9 @@ def get_annotations_from_ast(tree, codelines):
         in order to get back the annotation.
     '''
     type_dict = {}
-    walker = AssignAggregator()
     parser = TypeAnnotationParser()
+    walker = AssignAggregator()
     walker.visit(tree)
-
     for func_name in walker.assigns:
         type_dict[func_name] = {}
         for assign in walker.assigns[func_name]:

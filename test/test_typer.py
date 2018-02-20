@@ -14,5 +14,20 @@ x = int
         self.assertTrue(local_dict['y'].class_eq(Type("lolz", 2)))
         self.assertEqual(local_dict['x'], Type('int', 4))
 
+    def test_function_env(self):
+        code = """
+def first():
+    # x : int
+    x = 3
+
+def second():
+    # x : float
+    x = 3.0
+"""
+        dict = get_annotations(code)
+        print(dict)
+        self.assertTrue(dict["first"]["x"].is_of("int"))
+        self.assertTrue(dict["second"]["x"].is_of("float"))
+
 if __name__ == '__main__':
     unittest.main()
