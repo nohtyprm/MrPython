@@ -1,10 +1,14 @@
 import ast
-from mrpython.type_annotation_parser import TypeAnnotationParser
+from mrpython.typechecking.warnings import *
+from mrpython.typechecking.type_annotation_parser\
+    import TypeAnnotationParser
+
 
 class AssignAggregator(ast.NodeVisitor):
     def __init__(self):
         self.func_name = '__main__'
         self.assigns = {'__main__': []}
+        self.warnings = []
 
     def visit_Assign(self, node):
         self.assigns[self.func_name].append(node)
@@ -48,15 +52,22 @@ def get_annotations_from_ast(tree, codelines):
     parser = TypeAnnotationParser()
     walker = AssignAggregator()
     walker.visit(tree)
+    warnings = walker.warnings
     for func_name in walker.assigns:
         type_dict[func_name] = {}
         for assign in walker.assigns[func_name]:
+            if len(assign.targets) > 1:
+                warnings.append(MultipleAssignment(assign.lineno))
             parse_result = parser.parse_from_string(codelines[assign.lineno - 2])
             if not parse_result.iserror:
                 var_type = Type(parse_result.content.type, assign.lineno - 1)
                 type_dict[func_name][parse_result.content.name] = var_type
+            for var in assign.targets:
+                if var.id not in type_dict[func_name]:
+                    warnings.append(TypeAnnotationNotFound(var.id, assign.lineno))
 
-    return type_dict
+
+    return type_dict, warnings
 
 def get_annotations(code_str):
     ''' String -> Type Dict
