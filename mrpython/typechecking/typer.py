@@ -2,7 +2,7 @@ import ast
 from mrpython.typechecking.warnings import *
 from mrpython.typechecking.type_annotation_parser\
     import TypeAnnotationParser
-
+from typing import NamedTuple
 
 class AssignAggregator(ast.NodeVisitor):
     def __init__(self):
@@ -42,8 +42,12 @@ class Type():
             res += ", " + str(self.lineno)
         return res + ")"
 
+class TypecheckResult(NamedTuple):
+    type_dict: dict
+    warnings: list
+
 def get_annotations_from_ast(tree, codelines):
-    ''' ast -> string list -> Type dict)
+    ''' ast -> string list -> TypeCheckedResult(dict[str, dict[str, Type]], warnings list))
         Returns a dictionary of type information from an
         ast and a list of lines of code. The latter is needed
         in order to get back the annotation.
@@ -52,26 +56,43 @@ def get_annotations_from_ast(tree, codelines):
     parser = TypeAnnotationParser()
     walker = AssignAggregator()
     walker.visit(tree)
+    # Get warnings processed by the visitor
     warnings = walker.warnings
     for func_name in walker.assigns:
         type_dict[func_name] = {}
         for assign in walker.assigns[func_name]:
+            assign_id = assign.targets[0].id
+            lineno = assign.lineno
+            # FIXME: This probably shouldn't be processed here
             if len(assign.targets) > 1:
-                warnings.append(MultipleAssignment(assign.lineno))
-            parse_result = parser.parse_from_string(codelines[assign.lineno - 2])
+                warnings.append(MultipleAssignment(lineno))
+
+            parse_result = parser.parse_from_string(codelines[lineno - 2])
             if not parse_result.iserror:
-                var_type = Type(parse_result.content.type, assign.lineno - 1)
-                type_dict[func_name][parse_result.content.name] = var_type
+                var_type = Type(parse_result.content.type, lineno - 1)
+                var_id = parse_result.content.name
+                # Annotation id different from assign id
+                if (assign_id != var_id):
+                    warn = WrongAnnotation(assign_id, var_id, lineno - 1)
+                    warnings.append(warn)
+
+                # Duplicate annotation warning
+                if var_id in type_dict[func_name].keys():
+                    first_lineno = type_dict[func_name][var_id].lineno
+                    warn = DuplicateAnnotation(var_id, first_lineno, lineno - 1)
+                    warnings.append(warn)
+
+                type_dict[func_name][var_id] = var_type
+            # Variable not annoted warning
             for var in assign.targets:
                 if var.id not in type_dict[func_name]:
                     warnings.append(TypeAnnotationNotFound(var.id, assign.lineno))
 
-
-    return type_dict, warnings
+    return TypecheckResult(type_dict, warnings)
 
 def get_annotations(code_str):
-    ''' String -> Type Dict
-        Returns a type dictionnary from a code string.
+    ''' String -> TypeCheckedResult(dict[str, dict[str, Type]], warnings list))
+        Returns a TypeCheckedResult from a code string.
         If two type annotations refer to the same variable,
         the previous annotations is erased.
         '''
