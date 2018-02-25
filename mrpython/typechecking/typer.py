@@ -47,6 +47,15 @@ class TypeEnum(Enum):
     BOOL = 1
     INT = 2
 
+
+class FunctionType():
+    ''' We don't need to be recursive as there is no
+        higher order functions in python 103.
+    '''
+    def __init__(self, params, ret):
+        self.params = params
+        self.ret = ret
+
 class TypecheckResult(NamedTuple):
     type_dict: dict
     warnings: list

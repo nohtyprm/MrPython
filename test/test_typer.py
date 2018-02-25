@@ -1,7 +1,9 @@
 import unittest
-from mrpython.typechecking.typer import get_annotations, Type, TypecheckResult
+from mrpython.typechecking.typer import get_annotations, Type, TypecheckResult, TypeEnum
 from mrpython.typechecking.warnings import TypeAnnotationNotFound,\
 DuplicateAnnotation, WrongAnnotation
+from mrpython.typechecking.typecheck_visitor import TypeChecker, TypeMismatchError
+import ast
 
 class TestTypeChecking(unittest.TestCase):
 
@@ -63,6 +65,28 @@ y = 3
         warnings = get_annotations(code).warnings
         expected_warning = WrongAnnotation("y", "x", 2)
         self.assertIn(expected_warning, warnings)
+
+    def test_type_checker(self):
+        chk = TypeChecker()
+        node = ast.parse("True")
+        chk.visit(node)
+        self.assertTrue(chk.return_type == TypeEnum.BOOL)
+        node = ast.parse("False")
+        chk.visit(node)
+        self.assertTrue(chk.return_type == TypeEnum.BOOL)
+        node = ast.parse("True and False")
+        chk.visit(node)
+        self.assertTrue(chk.return_type == TypeEnum.BOOL)
+        self.assertTrue(len(chk.warnings) == 0)
+
+    def test_type_checker_warnings(self):
+        chk = TypeChecker()
+        node = ast.parse("True and None")
+        chk.visit(node)
+        warnings = [isinstance(warn, TypeMismatchError) for warn in chk.warnings]
+        self.assertIn(True, warnings)
+
+    # FIXME: Add some more tests
 
 if __name__ == '__main__':
     unittest.main()
