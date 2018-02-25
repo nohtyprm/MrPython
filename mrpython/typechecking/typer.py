@@ -3,6 +3,7 @@ from mrpython.typechecking.warnings import *
 from mrpython.typechecking.type_annotation_parser\
     import TypeAnnotationParser
 from typing import NamedTuple
+from enum import Enum
 
 class AssignAggregator(ast.NodeVisitor):
     def __init__(self):
@@ -41,6 +42,10 @@ class Type():
         if self.lineno:
             res += ", " + str(self.lineno)
         return res + ")"
+
+class TypeEnum(Enum):
+    BOOL = 1
+    INT = 2
 
 class TypecheckResult(NamedTuple):
     type_dict: dict
