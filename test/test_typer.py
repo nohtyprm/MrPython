@@ -1,9 +1,15 @@
+
+if __name__ == "__main__":
+    import sys
+    sys.path.append("../")
+
 import unittest
 from mrpython.typechecking.typer import get_annotations, Type, TypecheckResult, TypeEnum
 from mrpython.typechecking.warnings import TypeAnnotationNotFound,\
 DuplicateAnnotation, WrongAnnotation
 from mrpython.typechecking.typecheck_visitor import TypeChecker, TypeMismatchError
 import ast
+
 
 class TestTypeChecking(unittest.TestCase):
 
