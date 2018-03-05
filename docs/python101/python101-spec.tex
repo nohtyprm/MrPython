@@ -1,4 +1,3 @@
-
 \documentclass[a4paper]{article}
 
 \usepackage{geometry}
@@ -8,7 +7,7 @@
 \usepackage{amssymb}
 
 \renewcommand{\headrulewidth}{0.4pt}
-\lhead{Sorbonne Université -- Informatique}
+\lhead{Sorbonne Universit\' e -- Informatique}
 \pagestyle{fancy}
 \rhead{\thepage}
 \fancyfoot{}
@@ -33,7 +32,7 @@
 \newcommand{\defmin}{\stackrel{{\scriptscriptstyle \mathsf{min}}}{=}}
 \newcommand{\colcol}{\coloncolon}
 
-\newcommand{\yield}{\colcol\!>}
+\newcommand{\yield}{\Rrightarrow}
 
 \begin{document}
 
@@ -43,8 +42,8 @@
 
 \title{Python101 language specification}
 
-\author{Alexandre Doussot, Christopher Trublereau, Frédéric Peschanski\\
-Sorbonne Université}
+\author{Alexandre Doussot, Christopher Trublereau, Fr\' ed\' eric Peschanski\\
+Sorbonne Universit\' e}
 
 \date{\today}
 
@@ -132,6 +131,26 @@ $\infer[\text{(and)}]%
 $\infer[\text{(app)}]%
 {\Delta;\Gamma \vdash f(\textrm{e}_\textrm{1},...,\textrm{e}_\textrm{n}) \yield \kw{t}}%
 {\Delta;\Gamma \vdash \textrm{e}_\textrm{1} \colcol \kw{t}_\kw{1}~...~ \Delta;\Gamma \vdash \textrm{e}_\textrm{n} \colcol \kw{t}_\kw{n} & f:\kw{t}_\kw{1}\times ... \times\kw{t}_\kw{n}\rightarrow\kw{t}\in \Delta}$
+
+\vspace{3\baselineskip}
+
+$\infer[\text{(max)}]%
+{\Delta;\Gamma \vdash \kw{max}~\textrm{e}_\textrm{1},~\textrm{e}_\textrm{2} \yield \kw{Number}}%
+{\Delta;\Gamma \vdash \textrm{e}_\textrm{1} \colcol \kw{Number}~~ \Delta;\Gamma \vdash\textrm{e}_\textrm{2} \colcol \kw{Number} & \kw{max}:\kw{Number}\times\kw{Number}\rightarrow\kw{Number}\in \Delta}$
+
+
+\vspace{3\baselineskip}
+
+$\infer[\text{(Number)}]%
+{\Delta;\Gamma \vdash \kw{Number} \yield \kw{NumberInt}}%
+{}$
+
+
+\vspace{3\baselineskip}
+
+$\infer[\text{(NumberInt)}]%
+{\Delta;\Gamma \vdash \kw{NumberInt} \yield \kw{int}}%
+{}$
 
 
 \end{document}
