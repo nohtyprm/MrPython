@@ -135,22 +135,55 @@ $\infer[\text{(app)}]%
 \vspace{3\baselineskip}
 
 $\infer[\text{(max)}]%
-{\Delta;\Gamma \vdash \kw{max}~\textrm{e}_\textrm{1},~\textrm{e}_\textrm{2} \yield \kw{Number}}%
-{\Delta;\Gamma \vdash \textrm{e}_\textrm{1} \colcol \kw{Number}~~ \Delta;\Gamma \vdash\textrm{e}_\textrm{2} \colcol \kw{Number} & \kw{max}:\kw{Number}\times\kw{Number}\rightarrow\kw{Number}\in \Delta}$
-
-
-\vspace{3\baselineskip}
-
-$\infer[\text{(Number)}]%
-{\Delta;\Gamma \vdash \kw{Number} \yield \kw{NumberInt}}%
-{}$
-
+{\Delta;\Gamma \vdash \kw{def}~\kw{max}(\textrm{x},\textrm{y}) \colcol \{(mx = x);(if~y>=x); (return~mx)\} ~ \kw{Number/int}\times\kw{Number/int}\rightarrow\kw{Number/int}}%
+{\Delta;\Gamma \vdash \textrm{x} \colcol \textrm{Number/int}~~ \Delta;\Gamma \vdash\textrm{y} \colcol \textrm{Number/int}&&
+\Delta;\Gamma \vdash\textrm{mx} \colcol \textrm{Number/int}}$
 
 \vspace{3\baselineskip}
 
-$\infer[\text{(NumberInt)}]%
-{\Delta;\Gamma \vdash \kw{NumberInt} \yield \kw{int}}%
+\subsection{Rules for max}
+
+\vspace{2\baselineskip}
+
+$\infer[\text{(var x)}]%
+{\Delta;\Gamma~ \kw{x}:\kw{Number/int}~ \vdash \kw{x} \yield \kw{Number/int} \vdash\Delta}%
 {}$
+
+\vspace{2\baselineskip}
+
+$\infer[\text{(var y)}]%
+{\Delta;\Gamma~ \kw{y}:\kw{Number/int}~ \vdash \kw{y} \yield \kw{Number/int} \vdash\Delta}%
+{}$
+
+\vspace{2\baselineskip}
+
+$\infer[\text{(var mx)}]%
+{\Delta;\Gamma~ \kw{mx}:\kw{Number/int}~ \vdash \kw{mx} \yield \kw{Number/int} \vdash\Delta}%
+{}$
+
+\vspace{2\baselineskip}
+
+$\infer[\text{(mx = x)}]%
+{\Delta;\Gamma~\vdash \kw{mx} : \kw{T} = \kw{x} \yield \kw{Number/int}~ \vdash~\Delta,\kw{mx}:\kw{T} }%
+{\Delta; \Gamma~\vdash \kw{x}\colcol\kw{T}}$
+
+\vspace{2\baselineskip}
+
+$\infer[\text{(if x \textgreater= y)}]%
+{\Delta;\Gamma~\vdash \kw{if} \text{(x \textgreater= y)} \{(mx = y)\} \yield \kw{Number/int}~ \vdash\Delta_\textrm{1}}%
+{\Delta; \Gamma~\vdash \text{(x \textgreater= y)} \yield \kw{T}~\vdash\Delta ~~~~ \Delta; \Gamma~\vdash~\text{(mx = y)}\yield \kw{Number/int}~\vdash\Delta_\textrm{1}}$
+
+\vspace{2\baselineskip}
+
+$\infer[\text{(mx = y)}]%
+{\Delta;\Gamma~\vdash \kw{mx} : \kw{T} = \kw{y} \yield \kw{Number/int}~ \vdash~\Delta,\kw{mx}:\kw{T} }%
+{\Delta; \Gamma~\vdash \kw{y}\colcol\kw{T}}$
+
+\vspace{2\baselineskip}
+
+$\infer[\text{(return mx)}]%
+{\Delta;\Gamma, ~\text{return}:\kw{T}~\vdash\text{return}~\kw{mx}~\vdash \kw{Number/int}~ \vdash \Delta}%
+{\Delta; \Gamma~\vdash \kw{mx}\colcol\kw{T}}$
 
 
 \end{document}
