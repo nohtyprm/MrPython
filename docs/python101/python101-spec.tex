@@ -132,58 +132,51 @@ $\infer[\text{(app)}]%
 {\Delta;\Gamma \vdash f(\textrm{e}_\textrm{1},...,\textrm{e}_\textrm{n}) \yield \kw{t}}%
 {\Delta;\Gamma \vdash \textrm{e}_\textrm{1} \colcol \kw{t}_\kw{1}~...~ \Delta;\Gamma \vdash \textrm{e}_\textrm{n} \colcol \kw{t}_\kw{n} & f:\kw{t}_\kw{1}\times ... \times\kw{t}_\kw{n}\rightarrow\kw{t}\in \Delta}$
 
-\vspace{3\baselineskip}
+\vspace{30\baselineskip}
+
+
+\begin{tabular}{p{.5\textwidth}p{.5\textwidth}}
+
+\flushleft $\infer[\text{(var)}]%
+{~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~}%
+{}$
+
+\hspace{11\baselineskip} $\infer[\text{(var)}]%
+{~~~~~~~~~}%
+{}$
+
+$\infer[\text{(check)}]%
+{}%
+{\Delta; \Gamma \vdash x \yield \kw{int} ~~ \kw{int} = _\textrm{?} \kw{int}}$
+
+\hspace{11\baselineskip} $\infer[\text{(check)}]%
+{}%
+{y \yield \kw{int}}$
+
+$\infer[\text{(app)}]%
+{}%
+{\Delta; \Gamma \vdash x \colcol \kw{int} && \Delta; \Gamma \vdash y \colcol int \geqslant \in \Delta}$
+
+& \flushright $\infer[\text{(var)}]%
+{}%
+{y : \kw{int} \in \Gamma}$
+
+$\infer[\text{(check)}]%
+{}%
+{\Delta; \Gamma \vdash y \yield \kw{int} ~~~ \kw{int} = _\textrm{crash} T_\textrm{int}}$
+
+$\infer[\text{(assign)}]%
+{}%
+{mx : T_\textrm{int} \in \Gamma ~~~~ \Delta; \Gamma \vdash y \colcol T}$
+
+$\infer[\text{(seq+assign)}]%
+{}%
+{\Delta; \Gamma \vdash mx = y \yield \kw{NameType} \dashv \Gamma ' = \Gamma}$
+
+\end{tabular}
 
 $\infer[\text{(max)}]%
-{\Delta;\Gamma \vdash \kw{def}~\kw{max}(\textrm{x},\textrm{y}) \colcol \{(mx = x);(if~y>=x); (return~mx)\} ~ \kw{Number/int}\times\kw{Number/int}\rightarrow\kw{Number/int}}%
-{\Delta;\Gamma \vdash \textrm{x} \colcol \textrm{Number/int}~~ \Delta;\Gamma \vdash\textrm{y} \colcol \textrm{Number/int}&&
-\Delta;\Gamma \vdash\textrm{mx} \colcol \textrm{Number/int}}$
-
-\vspace{3\baselineskip}
-
-\subsection{Rules for max}
-
-\vspace{2\baselineskip}
-
-$\infer[\text{(var x)}]%
-{\Delta;\Gamma~ \kw{x}:\kw{Number/int}~ \vdash \kw{x} \yield \kw{Number/int} \vdash\Delta}%
-{}$
-
-\vspace{2\baselineskip}
-
-$\infer[\text{(var y)}]%
-{\Delta;\Gamma~ \kw{y}:\kw{Number/int}~ \vdash \kw{y} \yield \kw{Number/int} \vdash\Delta}%
-{}$
-
-\vspace{2\baselineskip}
-
-$\infer[\text{(var mx)}]%
-{\Delta;\Gamma~ \kw{mx}:\kw{Number/int}~ \vdash \kw{mx} \yield \kw{Number/int} \vdash\Delta}%
-{}$
-
-\vspace{2\baselineskip}
-
-$\infer[\text{(mx = x)}]%
-{\Delta;\Gamma~\vdash \kw{mx} : \kw{T} = \kw{x} \yield \kw{Number/int}~ \vdash~\Delta,\kw{mx}:\kw{T} }%
-{\Delta; \Gamma~\vdash \kw{x}\colcol\kw{T}}$
-
-\vspace{2\baselineskip}
-
-$\infer[\text{(if x \textgreater= y)}]%
-{\Delta;\Gamma~\vdash \kw{if} \text{(x \textgreater= y)} \{(mx = y)\} \yield \kw{Number/int}~ \vdash\Delta_\textrm{1}}%
-{\Delta; \Gamma~\vdash \text{(x \textgreater= y)} \yield \kw{T}~\vdash\Delta ~~~~ \Delta; \Gamma~\vdash~\text{(mx = y)}\yield \kw{Number/int}~\vdash\Delta_\textrm{1}}$
-
-\vspace{2\baselineskip}
-
-$\infer[\text{(mx = y)}]%
-{\Delta;\Gamma~\vdash \kw{mx} : \kw{T} = \kw{y} \yield \kw{Number/int}~ \vdash~\Delta,\kw{mx}:\kw{T} }%
-{\Delta; \Gamma~\vdash \kw{y}\colcol\kw{T}}$
-
-\vspace{2\baselineskip}
-
-$\infer[\text{(return mx)}]%
-{\Delta;\Gamma, ~\text{return}:\kw{T}~\vdash\text{return}~\kw{mx}~\vdash \kw{Number/int}~ \vdash \Delta}%
-{\Delta; \Gamma~\vdash \kw{mx}\colcol\kw{T}}$
-
+{\Delta[\geqslant : \kw{int} \times \kw{int} \rightarrow \kw{bool}]~ ; ~ \Gamma[\textrm{x}: \kw{int}, \textrm{y}: \kw{int}, \textrm{mx}: \kw{int}] ~~ \vdash ~ if(x \geqslant y)\{mx = y\} \yield \kw{NameType} ~ \dashv ~  \Gamma '}%
+{\Delta; \Gamma ~ \vdash ~ x \geqslant y \yield T_\textrm{bool} ~~~ \Delta; \Gamma ~ \vdash ~ T_\textrm{bool} = _\textrm{warning} \kw{bool} && \Delta; \Gamma ~ \vdash ~ \{mx = y\} \yield \kw{NameType} ~ \dashv ~ \Gamma '}$
 
 \end{document}
