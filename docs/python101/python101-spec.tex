@@ -124,7 +124,7 @@ $v:T$ \code{=} $e$ & first assignment (initialization with mandatory type declar
 | $f$\code{(}$e_1$\code{,}$\ldots$\code{,}$e_n$\code{)} & function call (return value is lost but printed at top-level, except \kw{None})\\
 | \code{print(}$e_1,\ldots,e_n$\code{)} & printing, the call is not type-checked but the $e_1,\ldots,e_n$'s are\\
 | \kw{assert} $e$ & assertion (generally in test-cases, $e$ is type-checked but not \kw{assert})\\
-| \kw{return} $e$ & direct return from function
+| \kw{return}$_f$ $e$ & direct return from function $f$
 \end{tabular}
 
 (methods)
@@ -275,6 +275,7 @@ Type judgements of the form:
 \item $\Gamma;\Delta \vdash e \colcol T$ \quad type-checking for expression $e$ (inputs $e$ and $T$ output yes-or-error)
 \item $\Gamma;\Delta \vdash I \dashv \Delta'$ \quad type-checking and environment update for instruction
 \item $\Gamma \vdash \kw{def} f(e_1,\ldots,e_n) : \Theta = I \dashv \Gamma'$ \quad type-checking and global environment update for definitions
+\item $T \equiv T'$ \quad type equivalence
 \end{itemize}
 
 \subsubsection{Functions}
@@ -370,7 +371,7 @@ $$
 
 $$
 \infer[(\fun{Tdict\_assign})]{\Gamma;\Delta \vdash e_1[e_2] = e_3 \dashv \Delta}
-{\Gamma;\Delta \vdash e_1 \yield \kw{dict}[T_k:T_v] & \Gamma;\Delta \vdash e_2 \colcol T_k & \Gamma;\Delta \vdash e_3 \colcol T_v}
+{\Gamma;\Delta \vdash e_1 \yield T & T \equiv \kw{dict}[T_k:T_v] & \Gamma;\Delta \vdash e_2 \colcol T_k & \Gamma;\Delta \vdash e_3 \colcol T_v}
 $$
 
 \textbf{Errors}:
@@ -411,6 +412,55 @@ $$
 \item Too many arguments in call to $f$: expecting $n$ arguments
 \item Type error in argument $e_i$ of call to $f$
 \end{itemize}
+
+$$
+\infer[(\fun{Tprint})]{\Gamma ; \Delta \vdash \mcode{print}(e_1,\ldots,e_n) \dashv \Delta}
+{\Gamma;\Delta \vdash e_1 \yield T_1 & \ldots &  \Gamma;\Delta \vdash e_n \yield T_n}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Type error in argument $e_i$ of call to \code{print}
+\end{itemize}
+
+$$
+\infer[(\fun{Tassert})]{\Gamma ; \Delta \vdash \mcode{assert}~e \dashv \Delta}
+{\Gamma;\Delta \vdash e \yield T & T \equiv \kw{bool}}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Type error in expression $e$ of \code{assert}
+\item Assertion error: type $T$ of expression $e$ is not a boolean
+\end{itemize}
+
+$$
+\infer[(\fun{Treturn})]{\Gamma ; \Delta \vdash \mcode{return}_f~e \dashv \Delta,\fun{ret}_f:U}
+{\Gamma(f)=T_1 \times \ldots T_n \rightarrow U & \Gamma;\Delta \vdash e \yield U' & U' \equiv U}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Type error in expression $e$ of \code{return} from function $f$
+\item Return type error: expecting $U$ found $U'$ which is incompatible (+ incompatibility error)
+\end{itemize}
+
+
+\subsection{Expressions}
+
+
+$$
+\infer[(\fun{TEinfer})]{\Gamma;\Delta \vdash e \colcol T}
+{\Gamma;\Delta \vdash e \yield T' & T \equiv T'}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Expecting type $T$ but found type $T'$ which is not compatible (+ incompatibility explanation)
+\end{itemize}
+
+
+TODO
 
 \section{Effect checker}
 
