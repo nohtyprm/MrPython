@@ -37,6 +37,9 @@
 
 \newcommand{\fun}[1]{\mathsf{#1}}
 
+\newcommand{\compat}{\cong}
+\newcommand{\ncompat}{\not\cong}
+
 \begin{document}
 
 \setlength{\parskip}{1ex}
@@ -203,6 +206,13 @@ $v$ & variable occurrence\\
 | $e_1$\code{[}$e_2$\code{:}$e_3$\code{:}$e_4$\code{]} & sequence slice with step\\
 \end{tabular}
 
+(iterables)
+
+\begin{tabular}{ll}
+| $e$\code{.items()} & dictionnary items iterable \\
+| \code{zip(}$e_1,\ldots,e_n$\code{)} & tupled iterable
+\end{tabular}
+
 (comprehensions)
 
 \begin{tabular}{ll}
@@ -281,7 +291,8 @@ Type judgements of the form:
 \item $\Gamma;\Delta \vdash e \colcol T$ \quad type-checking for expression $e$ (inputs $e$ and $T$ output yes-or-error)
 \item $\Gamma;\Delta \vdash I \dashv \Delta'$ \quad type-checking and environment update for instruction
 \item $\Gamma \vdash \kw{def} f(e_1,\ldots,e_n) : \Theta = I \dashv \Gamma'$ \quad type-checking and global environment update for definitions
-\item $T \equiv T'$ \quad type equivalence
+\item $T \compat T'$ \quad type compatibility
+\item $T \ncompat T'$ \quad type incompatibility
 \end{itemize}
 
 \subsubsection{Functions}
@@ -330,9 +341,11 @@ $$
 \paragraph{Initializations (first assigments)}
 
 $$
-\infer[(\fun{Tinit})]{\Gamma;\Delta \vdash v : T = e \dashv \Delta,v:T}
+\infer[(\fun{Tinit})]{\Gamma;\Delta \vdash v : T = e \dashv \Delta,v:\widehat{T}}
 {\Gamma;\Delta \vdash e \colcol T}
 $$
+
+\textbf{Remark:} type $T$ is an annotation, hence $\widehat{T}$
 
 \textbf{Errors}:
 \begin{itemize}
@@ -342,7 +355,7 @@ $$
 \end{itemize}
 
 $$
-\infer[(\fun{Tinits})]{\Gamma;\Delta \vdash v_1 : T_1, \ldots, v_n : T_n = e \dashv \Delta,v_1:T_1,\ldots,v_n:T_n}
+\infer[(\fun{Tinits})]{\Gamma;\Delta \vdash v_1 : T_1, \ldots, v_n : T_n = e \dashv \Delta,v_1:\widehat{T_1},\ldots,v_n:\widehat{T_n}}
 {\Gamma;\Delta \vdash e \colcol \kw{tuple}[T_1,\ldots,T_n]}
 $$
 
@@ -385,7 +398,7 @@ $$
 
 $$
 \infer[(\fun{Tdict\_assign})]{\Gamma;\Delta \vdash e_1[e_2] = e_3 \dashv \Delta}
-{\Gamma;\Delta \vdash e_1 \yield T & T \equiv \kw{dict}[T_k:T_v] & \Gamma;\Delta \vdash e_2 \colcol T_k & \Gamma;\Delta \vdash e_3 \colcol T_v}
+{\Gamma;\Delta \vdash e_1 \yield T & T \compat \kw{dict}[T_k:T_v] & \Gamma;\Delta \vdash e_2 \colcol T_k & \Gamma;\Delta \vdash e_3 \colcol T_v}
 $$
 
 \textbf{Errors}:
@@ -439,7 +452,7 @@ $$
 
 $$
 \infer[(\fun{Tassert})]{\Gamma ; \Delta \vdash \mcode{assert}~e \dashv \Delta}
-{\Gamma;\Delta \vdash e \yield T & T \equiv \kw{bool}}
+{\Gamma;\Delta \vdash e \yield T & T \compat \kw{bool}}
 $$
 
 \textbf{Errors}:
@@ -450,7 +463,7 @@ $$
 
 $$
 \infer[(\fun{Treturn})]{\Gamma ; \Delta \vdash \mcode{return}_f~e \dashv \Delta,\fun{ret}_f:U}
-{\Gamma(f)=T_1 \times \ldots T_n \rightarrow U & \Gamma;\Delta \vdash e \yield U' & U' \equiv U}
+{\Gamma(f)=T_1 \times \ldots T_n \rightarrow U & \Gamma;\Delta \vdash e \yield U' & U' \compat U}
 $$
 
 \textbf{Errors}:
@@ -464,7 +477,7 @@ $$
 
 $$
 \infer[(\fun{Tappend})]{\Gamma;\Delta \vdash e_1\mcode{.append}(e_2) \dashv \Delta}
-{\Gamma;\Delta \vdash e_1 \yield T & T \equiv \kw{list}\mcode{[}T'\mcode{]} & \Gamma;\Delta \vdash e_2 \colcol T'} 
+{\Gamma;\Delta \vdash e_1 \yield T & T \compat \kw{list}\mcode{[}T'\mcode{]} & \Gamma;\Delta \vdash e_2 \colcol T'} 
 $$
 
 \textbf{Errors}:
@@ -475,7 +488,7 @@ $$
 
 $$
 \infer[(\fun{Tadd})]{\Gamma;\Delta \vdash e_1\mcode{.add}(e_2) \dashv \Delta}
-{\Gamma;\Delta \vdash e_1 \yield T & T \equiv \kw{set}\mcode{[}T'\mcode{]} & \Gamma;\Delta \vdash e_2 \colcol T'} 
+{\Gamma;\Delta \vdash e_1 \yield T & T \compat \kw{set}\mcode{[}T'\mcode{]} & \Gamma;\Delta \vdash e_2 \colcol T'} 
 $$
 
 \textbf{Errors}:
@@ -525,7 +538,7 @@ $$
 
 $$
 \infer[(\fun{TEinfer})]{\Gamma;\Delta \vdash e \colcol T}
-{\Gamma;\Delta \vdash e \yield T' & T \equiv T'}
+{\Gamma;\Delta \vdash e \yield T' & T \compat T'}
 $$
 
 \textbf{Errors}:
@@ -544,7 +557,7 @@ $$
 \item Variable $v$ is not in scope
 \end{itemize}
 
-\paragraph{Atomic literals}
+\paragraph{Literals}
 
 $$
 \infer[(\fun{TEtrue})]{\Gamma;\Delta \vdash \kw{True} \yield \kw{bool}}{}
@@ -623,6 +636,122 @@ $$
 \item Dictionnary value types are not homogeneous, expression $e_i$ should be of type $T$
 \end{itemize}
 
+\paragraph{Operators}
+
+$$\left [
+  \begin{array}{l}
+    \fun{promote}(T,T) = T\\
+    \fun{promote}(\kw{int},\kw{float})=\kw{float}\\
+    \fun{promote}(\kw{float},\kw{int})=\kw{float}\\
+    \fun{promote}(\kw{int},\kw{Number})=\kw{Number}\\
+    \fun{promote}(\kw{Number},\kw{int})=\kw{Number}\\
+    \fun{promote}(\kw{float},\kw{Number})=\kw{Number}\\
+    \fun{promote}(\kw{Number},\kw{float})=\kw{Number}\\
+    \fun{promote}(T_1,T_2) = \bot \text{ otherwise}
+\end{array}
+  \right.
+  $$
+
+$$\infer[(\fun{TEadd})]{\Gamma;\Delta \vdash e_1 + e_2 \yield T}
+  {\Gamma;\Delta \vdash e_1 \yield T_1 & \Gamma;\Delta \vdash e_2 \yield T_2 & \fun{promote}(T_1,T_2)=T \neq \bot}
+  $$
+
+  Idem $\fun{TEsub},\fun{TEtimes}$
+
+$$\infer[(\fun{TEdiv})]{\Gamma;\Delta \vdash e_1 / e_2 \yield \kw{float}}
+  {\Gamma;\Delta \vdash e_1 \colcol \kw{Number} & \Gamma;\Delta \vdash e_2 \colcol \kw{Number}}
+  $$
+
+  $$\infer[(\fun{TEidiv})]{\Gamma;\Delta \vdash e_1 // e_2 \yield \kw{int}}
+  {\Gamma;\Delta \vdash e_1 \colcol \kw{Number} & \Gamma;\Delta \vdash e_2 \colcol \kw{Number}}
+  $$
+
+\paragraph{Iterables}
+
+$$
+\infer[(\fun{TEitems})]{\Gamma;\Delta e\mcode{.items}() \yield \kw{iterable}[\kw{tuple}[K,T]]}
+{\Gamma;\Delta e \colcol \kw{dict}[K:T]}
+$$
+
+$$
+\infer[(\fun{TEzip})]{\Gamma;\Delta \mcode{zip}(e_1,\ldots,e_n) \yield \kw{iterable}[\kw{tuple}[T_1,\ldots,T_n]]}
+{\Gamma;\Delta e_1 \yield T_1 & \ldots & \Gamma;\Delta e_n \yield T_n}
+$$
+
+\paragraph{Comprehensions}
+
+$$
+\infer[(\fun{TElcomprs})]{\Gamma;\Delta \vdash [e~\kw{for}~\begin{array}[t]{l}
+                                                          v_1~\kw{in}~s_1~\kw{if}~c_1\\
+                                                          \kw{for}~\begin{array}[t]{l}
+                                                            v_2~\kw{in}~s_2~\kw{if}~c_2\\
+                                                            \ldots \kw{for}~v_n~\kw{in}~s_n~\kw{if}~c_n]
+                                                          \end{array}\end{array} \yield \kw{iterable}[T]}
+{\begin{array}{l}
+  \Gamma;\Delta \vdash s_1 \colcol \kw{iterable}[T_1]\\
+  \Gamma;\Delta,v_1:T_1 \vdash s_2 \colcol \kw{iterable}[T_2]\\
+  \cdots\\
+  \Gamma;\Delta,v_1:T_1,\ldots,v_n:T_n \vdash s_n \colcol \kw{iterable}[T_n]\\
+  \end{array}
+& \begin{array}{l}
+      \Gamma;\Delta,v_1:T_1\vdash c_1 \colcol \kw{bool} \\
+      \Gamma;\Delta,v_1:T_1,v_2:T_2\vdash c_2 \colcol \kw{bool}\\
+      \cdots\\
+      \Gamma;\Delta,v_1:T_1,\ldots,v_n:T_n \vdash c_n \colcol \kw{bool}\\[8pt]
+  \Gamma;\Delta,v_1:T_1,\ldots,v_n:T_n \vdash e \yield T
+\end{array}}$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Expression $s_i$ in comprehension is not an iterable
+\item Comprehension condition $c_i$ is not a boolean
+\end{itemize}
+
+Idem $\fun{TEscomprs}$ (sets), $\fun{TEdcomprs}$ (dicts)
+
+\subsection{Type unification}
+
+TODO : should be unification, which requires type variable instantiation
+(type annotations include variables)
+
+\paragraph{Basic laws}
+
+$$
+\infer[(\fun{TCsym})]{\Xi \vdash T_1 \compat T_2 \dashv \Xi'}{\Xi \vdash T_2 \compat T_1 \dashv \Xi'}
+\quad \infer[(\fun{TCrefl})]{\Xi \vdash T \compat T \dashv \Xi}{}
+$$
+
+\paragraph{type variables}
+
+$$
+\infer[(\fun{TCvar\_inst})]{\Xi \vdash \alpha \compat T \dashv \Xi,\alpha=T}
+{\alpha\notin \Xi}
+\quad \infer[(\fun{TCvar\_eq})]{\Xi \vdash \alpha \compat T \dashv \Xi'}
+{\Xi(\alpha)=T' & \Xi \vdash T \compat T' \dashv \Xi'}
+$$
+
+\textbf{Remark}: in $\fun{TCvar\_inst}$ the variable $\alpha$ must not be an explicit annotation $\widehat{\alpha}$.
+
+\paragraph{Numeric compatibility}
+
+$$\infer[(\fun{TCnum\_int})]{\Xi \vdash \widehat{\kw{Number}}\compat \kw{int} \dashv \Xi}{}
+\quad \infer[(\fun{TCnum\_float})]{\Xi \vdash \widehat{\kw{Number}}\compat \kw{float}  \dashv \Xi}{}$$
+
+\textbf{Remark}: type \kw{Number} is declared (in explicit annotation)
+
+\paragraph{Iterables}
+
+$$\infer[(\fun{TClist})]{\Xi \vdash \kw{list}[T] \compat \kw{iterable}[T'] \dashv \Xi'}{\Xi \vdash T \compat T' \dashv \Xi'}
+\quad \infer[(\fun{TCset})]{\kw{set}[T] \compat \kw{iterable}[T']}{T \compat T'}$$
+
+$$\infer[(\fun{TCdict})]{\kw{dict}[K:T] \compat \kw{iterable}[K']}{K \compat K'}
+$$
+
+\subsection{Type incompatililby}
+
+\paragraph{Basic laws}
+
+\paragraph{Numeric errors}
 
 \section{Effect checker}
 
