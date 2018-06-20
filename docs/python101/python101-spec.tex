@@ -26,6 +26,7 @@
 \newcommand{\kw}[1]{\textsf{\textbf{#1}}}
 \newcommand{\cmt}[1]{\textsf{\textit{#1}}}
 \newcommand{\code}[1]{\begin{sffamily}#1\end{sffamily}}
+\newcommand{\mcode}[1]{\mathsf{#1}}
 \newcommand{\pindent}{\hspace{2em}\=}
 
 \newcommand{\defs}{\stackrel{{\scriptscriptstyle \mathsf{def}}}{=}}
@@ -258,95 +259,161 @@ $$\begin{array}{cc}
 \end{array}
 $$
 
-\vspace{1\baselineskip}
+\subsection{Type system}
 
-$\infer[\text{(true)}]%
-{\Delta;\Gamma \vdash \kw{True} \yield \kw{bool}}%
-{}$
+Typing environment:
 
-\vspace{3\baselineskip}
+\begin{itemize}
+  \item $\Gamma = f_1:\Theta_1,\ldots,f_n:\Theta_n$ : global static environment of functions (user-defined or primitives)
+  \item $\Delta = \widehat{x_1}:T_1,\ldots,\widehat{x_n}:T_n,v_1:U_1,\ldots,v_m:U_m$ : local dynamic environment of immutable parameters ($\widehat{x_i}$'s) and mutable local variables ($v_j$'s)
+\end{itemize}
 
-$\infer[\text{(false)}]%
-{\Delta;\Gamma \vdash \kw{False} \yield \kw{bool}}%
-{}$
+Type judgements of the form:
 
-\vspace{3\baselineskip}
+\begin{itemize}
+\item $\Gamma;\Delta \vdash e \yield T$ \quad inference for expression $e$ (input $e$ output $T$-or-error)
+\item $\Gamma;\Delta \vdash e \colcol T$ \quad type-checking for expression $e$ (inputs $e$ and $T$ output yes-or-error)
+\item $\Gamma;\Delta \vdash I \dashv \Delta'$ \quad type-checking and environment update for instruction
+\item $\Gamma \vdash \kw{def} f(e_1,\ldots,e_n) : \Theta = I \dashv \Gamma'$ \quad type-checking and global environment update for definitions
+\end{itemize}
 
+\subsubsection{Functions}
 
-$\infer[\text{(var)}]%
-{\Delta;\Gamma, \kw{x:t}~ \vdash x \yield \kw{t}}%
-{}$
+$$
+\infer[(\fun{Tfun})]{\Gamma \vdash \kw{def} f(x_1,\ldots,x_n) : T_1 \times \ldots \times T_n \rightarrow U = I \dashv \Gamma'}
+{\Gamma'=f:T_1\times \ldots \times T_n\rightarrow U & \Gamma';\widehat{x_1}:T_1,\ldots,\widehat{x_n}:T_n \vdash I \dashv \Delta' & \Delta'(\fun{ret}_f) \colcol U}
+$$
 
-\vspace{3\baselineskip}
+$$
+\infer[(\fun{Tpfun})]{\Gamma \vdash \kw{def} f(x_1,\ldots,x_n) : T_1 \times \ldots \times T_n \rightarrow U \mathsf{+} \kw{NoneType} = I \dashv \Gamma'}
+{\Gamma'=f:T_1\times \ldots \times T_n\rightarrow U & \Gamma';\widehat{x_1}:T_1,\ldots,\widehat{x_n}:T_n \vdash I \dashv \Delta' & \Delta'(\fun{ret}_f) \colcol U \lor \Delta'(\fun{ret}_f)=\kw{None}}
+$$
 
-$\infer[\text{(not)}]%
-{\Delta;\Gamma \vdash \kw{not}~e \yield \kw{bool}}%
-{\Delta;\Gamma \vdash e \colcol \kw{bool} & \kw{not}:\kw{bool}\rightarrow\kw{bool}\in \Delta}$
+\subsubsection{Instructions}
 
-\vspace{3\baselineskip}
+\paragraph{Expression in instruction position}
 
-$\infer[\text{(and)}]%
-{\Delta;\Gamma \vdash \kw{and}~\textrm{e}_\textrm{1},~\textrm{e}_\textrm{2} \yield \kw{bool}}%
-{\Delta;\Gamma \vdash \textrm{e}_\textrm{1} \colcol \kw{bool}~~ \Delta;\Gamma \vdash\textrm{e}_\textrm{2} \colcol \kw{bool} & \kw{and}:\kw{bool}\times\kw{bool}\rightarrow\kw{bool}\in \Delta}$
+$$
+\infer[(\fun{Tnone\_expr})]{\Gamma ; \Delta \vdash e \dashv \Delta}
+{\Gamma;\Delta \vdash e \yield T}
+$$
 
-\vspace{3\baselineskip}
+\paragraph{Block (non-lexical)}
 
-$\infer[\text{(app)}]%
-{\Delta;\Gamma \vdash f(\textrm{e}_\textrm{1},...,\textrm{e}_\textrm{n}) \yield \kw{t}}%
-{\Delta;\Gamma \vdash \textrm{e}_\textrm{1} \colcol \kw{t}_\kw{1}~...~ \Delta;\Gamma \vdash \textrm{e}_\textrm{n} \colcol \kw{t}_\kw{n} & f:\kw{t}_\kw{1}\times ... \times\kw{t}_\kw{n}\rightarrow\kw{t}\in \Delta}$
+$$
+\infer[(\fun{Tblock})]{\Gamma;\Delta \vdash \mcode{\{}I\mcode{\}} \dashv \Delta'}
+{\Gamma;\Delta \vdash I \dashv \Delta'}
+$$
 
-\vspace{3\baselineskip}
+\paragraph{Sequence}
 
-$\infer[\text{(max)}]%
-{\Delta;\Gamma \vdash \kw{def}~\kw{max}(\textrm{x},\textrm{y}) \colcol \{(mx = x);(if~y>=x); (return~mx)\} ~ \kw{Number/int}\times\kw{Number/int}\rightarrow\kw{Number/int}}%
-{\Delta;\Gamma \vdash \textrm{x} \colcol \textrm{Number/int}~~ \Delta;\Gamma \vdash\textrm{y} \colcol \textrm{Number/int}&&
-\Delta;\Gamma \vdash\textrm{mx} \colcol \textrm{Number/int}}$
+$$
+\infer[(\fun{Tseq})]{\Gamma;\Delta \vdash I_1;I_2 \dashv \Delta''}
+{\Gamma;\Delta \vdash I_1 \dashv \Delta' & \Gamma;\Delta'\vdash I_2 \dashv \Delta''}
+$$
 
-\vspace{3\baselineskip}
+\paragraph{Initializations (first assigments)}
 
-\subsection{Rules for max}
+$$
+\infer[(\fun{Tinit})]{\Gamma;\Delta \vdash v : T = e \dashv \Delta,v:T}
+{\Gamma;\Delta \vdash e \colcol T}
+$$
 
-\vspace{2\baselineskip}
+\textbf{Errors}:
+\begin{itemize}
+\item Initialization is not in header of function or for-each loop
+\item Variable $v$ already existing
+\item Variable $v$ is a parameter
+\end{itemize}
 
-$\infer[\text{(var x)}]%
-{\Delta;\Gamma~ \kw{x}:\kw{Number/int}~ \vdash \kw{x} \yield \kw{Number/int} \vdash\Delta}%
-{}$
+$$
+\infer[(\fun{Tinits})]{\Gamma;\Delta \vdash v_1 : T_1, \ldots, v_n : T_n = e \dashv \Delta,v_1:T_1,\ldots,v_n:T_n}
+{\Gamma;\Delta \vdash e \colcol \kw{tuple}[T_1,\ldots,T_n]}
+$$
 
-\vspace{2\baselineskip}
+\textbf{Errors}:
+\begin{itemize}
+\item Initialization is not in header of function or for-each loop
+\item Variable $v_i$ already existing
+\item Variable $v_i$ is a parameter
+\item Duplicate variable $v_i$
+\item Arity error for tuple $e$ : expecting $n$ elements
+\end{itemize}
 
-$\infer[\text{(var y)}]%
-{\Delta;\Gamma~ \kw{y}:\kw{Number/int}~ \vdash \kw{y} \yield \kw{Number/int} \vdash\Delta}%
-{}$
+\paragraph{Assignments}
 
-\vspace{2\baselineskip}
+$$
+\infer[(\fun{Tassign})]{\Gamma;\Delta \vdash v = e \dashv \Delta}
+{\Delta(v)=T  \quad \Gamma;\Delta \vdash e \colcol T}
+$$
 
-$\infer[\text{(var mx)}]%
-{\Delta;\Gamma~ \kw{mx}:\kw{Number/int}~ \vdash \kw{mx} \yield \kw{Number/int} \vdash\Delta}%
-{}$
+\textbf{Errors}:
+\begin{itemize}
+\item Local variable $v$ does not exist
+\item $v$ is a paramater and cannot be assigned
+\end{itemize}
 
-\vspace{2\baselineskip}
+$$
+\infer[(\fun{Tassigns})]{\Gamma;\Delta \vdash v_1, \ldots, v_n = e \dashv \Delta}
+{\Delta(v_1)=T_1 & \ldots & \Delta(v_n)=T_n & \Gamma;\Delta \vdash e \colcol \kw{tuple}[T_1,\ldots,T_n]}
+$$
 
-$\infer[\text{(mx = x)}]%
-{\Delta;\Gamma~\vdash \kw{mx} : \kw{T} = \kw{x} \yield \kw{Number/int}~ \vdash~\Delta,\kw{mx}:\kw{T} }%
-{\Delta; \Gamma~\vdash \kw{x}\colcol\kw{T}}$
+\textbf{Errors}:
+\begin{itemize}
+\item Variable $v_i$ does not exist
+\item $v$ is a paramater and cannot be assigned
+\item Duplicate variable $v_i$  (except for \code{\_} which can be assigned many times)
+\item Arity error for tuple $e$ : expecting $n$ elements
+\end{itemize}
 
-\vspace{2\baselineskip}
+\paragraph{Dictionnary assignment}
 
-$\infer[\text{(if x \textgreater= y)}]%
-{\Delta;\Gamma~\vdash \kw{if} \text{(x \textgreater= y)} \{(mx = y)\} \yield \kw{Number/int}~ \vdash\Delta_\textrm{1}}%
-{\Delta; \Gamma~\vdash \text{(x \textgreater= y)} \yield \kw{T}~\vdash\Delta ~~~~ \Delta; \Gamma~\vdash~\text{(mx = y)}\yield \kw{Number/int}~\vdash\Delta_\textrm{1}}$
+$$
+\infer[(\fun{Tdict\_assign})]{\Gamma;\Delta \vdash e_1[e_2] = e_3 \dashv \Delta}
+{\Gamma;\Delta \vdash e_1 \yield \kw{dict}[T_k:T_v] & \Gamma;\Delta \vdash e_2 \colcol T_k & \Gamma;\Delta \vdash e_3 \colcol T_v}
+$$
 
-\vspace{2\baselineskip}
+\textbf{Errors}:
+\begin{itemize}
+\item Expression $e_1$ is not a dictionnary
+\item Wrong dictionnary key type for $e_2$
+\item Wrong dictionnary value type for $e_3$
+\end{itemize}
 
-$\infer[\text{(mx = y)}]%
-{\Delta;\Gamma~\vdash \kw{mx} : \kw{T} = \kw{y} \yield \kw{Number/int}~ \vdash~\Delta,\kw{mx}:\kw{T} }%
-{\Delta; \Gamma~\vdash \kw{y}\colcol\kw{T}}$
+\paragraph{Conditionals}
 
-\vspace{2\baselineskip}
+$$
+\infer[(\fun{Tif})]{\Gamma;\Delta \vdash \kw{if} (e_1) I_1 \kw{else} I_2 \dashv \Delta_1 \cup \Delta_2}
+{\Gamma;\Delta \vdash e_1 \colcol \kw{bool} & \Gamma;\Delta \vdash I_1 \dashv \Delta_1 &  \Gamma;\Delta \vdash I_2 \dashv \Delta_2}
+$$
 
-$\infer[\text{(return mx)}]%
-{\Delta;\Gamma, ~\text{return}:\kw{T}~\vdash\text{return}~\kw{mx}~\vdash \kw{Number/int}~ \vdash \Delta}%
-{\Delta; \Gamma~\vdash \kw{mx}\colcol\kw{T}}$
+$$
+\infer[(\fun{Tif1})]{\Gamma;\Delta \vdash \kw{if} (e_1) I_1 \dashv \Delta_1}
+{\Gamma;\Delta \vdash e_1 \colcol \kw{bool} & \Gamma;\Delta \vdash I_1 \dashv \Delta_1}
+$$
 
+\textbf{Errors}:
+\begin{itemize}
+\item Condition $e_1$ of alternative if not a boolean
+\item Incompatible environment updates $\Delta_1$ and $\Delta_2$  (e.g. same variable, distinct type)
+\end{itemize}
+
+\paragraph{Function call (in instruction position)}
+
+$$
+\infer[(\fun{Tcall})]{\Gamma ; \Delta \vdash f(e_1,\ldots,e_n) \dashv \Delta}
+{f:T_1\times \ldots \times T_n \rightarrow U \in \Delta & \Gamma;\Delta \vdash e_1 \colcol T_1 & \ldots &  \Gamma;\Delta \vdash e_n \colcol T_n}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Not enough arguments in call to $f$: expecting $n$ arguments
+\item Too many arguments in call to $f$: expecting $n$ arguments
+\item Type error in argument $e_i$ of call to $f$
+\end{itemize}
+
+\section{Effect checker}
+
+TODO
 
 \end{document}
