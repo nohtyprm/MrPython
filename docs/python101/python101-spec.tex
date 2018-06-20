@@ -34,6 +34,8 @@
 
 \newcommand{\yield}{\Rrightarrow}
 
+\newcommand{\fun}[1]{\mathsf{#1}}
+
 \begin{document}
 
 \setlength{\parskip}{1ex}
@@ -42,7 +44,7 @@
 
 \title{Python101 language specification}
 
-\author{Alexandre Doussot, Christopher Trublereau, Fr\' ed\' eric Peschanski\\
+\author{Fr\' ed\' eric Peschanski\\
 Sorbonne Universit\' e}
 
 \date{\today}
@@ -60,40 +62,201 @@ TODO
 
 \section{Syntax}
 
-TODO
-
 \subsection{Programs}
-
-TODO
 
 \begin{program}
 \cmt{\# imports ...}\\
+\kw{import} $m_i$ \\
 $\cdots$\\
-\kw{def} function$_1$(arg$_{1_1}$, \ldots, arg$_{1_m}$):\\
-\pindent \cmt{\# function$_1$ body}\\
-\\
+\kw{def} $f_1$(x$_{1_1}$, $\ldots$, x$_{1_m}$) : $\Theta_1$ = $I_1$\\
 $\cdots$ \\
-\\
-\kw{def} function$_n$(arg$_{n_1}$, \ldots, arg$_{n_m}$):\\
-\> \cmt{\# function$_n$ body}\\
-\\
+\kw{def} $f_n$(x$_{n_1}$, $\ldots$, x$_{n_m}$)  : $\Theta_n$ = $I_n$\\
 $\cdots$\\
-\cmt{\# tests ...} \\
+\cmt{\# tests} \\
+\kw{assert} $f_1$($e_{1_1}$,$\ldots$,$e_{1_m}$) = $e_1$ \\
+$\cdots$\\
+\kw{assert} $f_n$($e_{n_1}$,$\ldots$,$e_{n_m}$) = $e_n$ \\
 \end{program}
 
 \subsection{Functions}
 
-TODO
+\begin{program}
+\kw{def} $f$($x_1$,$\ldots$,$x_n$) : $\Theta$ = $I$
+\end{program}
+
+\textbf{Remark}: $\Theta$ is functional type of $f$ (cf. below), $I$ is instruction body of function $f$.
 
 \subsection{Instructions}
 
-TODO
+\begin{tabular}{lll}
+$I,I_1,I_2,\ldots$ ::= & $e$ & expression in instruction position (value is lost) \\
+| \code{\{}$I$\code{\}} & block (\emph{not} lexical) \\
+\end{tabular}
+
+(sequence)
+
+\begin{tabular}{ll}
+| $I_1$ ; $I_2$ & sequence (indentation in Python syntax)
+\end{tabular}
+
+(assignments)
+
+\begin{tabular}{ll}
+$v:T$ \code{=} $e$ & first assignment (initialization with mandatory type declaration) \\
+| $v_1:T_1$\code{,}$\ldots$\code{,}$v_n:T_n$ \code{=} $e$ & first tupled assignment (initialization with mandatory type declaration) \\
+| $v$ \code{=} $e$ & assignment \\
+| $v_1$\code{,}$\ldots$\code{,}$v_n$ \code{=} $e$ & tupled assignment \\
+| $e_1$\code{[}$e_2$\code{] =} $e_3$ & dictionnary assignment
+\end{tabular}
+
+(conditionals)
+
+\begin{tabular}{ll}
+\kw{if}\code{(}$e$\code{)} $I$ & single branch \\
+\kw{if}\code{(}$e$\code{)} $I_1$ \kw{else} $I_2$ & alternative \\
+\end{tabular}
+
+
+(functions and primitives)
+
+\begin{tabular}{ll}
+| $f$\code{(}$e_1$\code{,}$\ldots$\code{,}$e_n$\code{)} & function call (return value is lost but printed at top-level, except \kw{None})\\
+| \code{print(}$e_1,\ldots,e_n$\code{)} & printing, the call is not type-checked but the $e_1,\ldots,e_n$'s are\\
+| \kw{assert} $e$ & assertion (generally in test-cases, $e$ is type-checked but not \kw{assert})\\
+| \kw{return} $e$ & direct return from function
+\end{tabular}
+
+(methods)
+
+\begin{tabular}{ll}
+$e$\code{.append(})$e$\code{)} & append element to list \\
+$e$\code{.add(}$e$\code{)} & add element to set\\
+\end{tabular}
+
+(loops)
+
+\begin{tabular}{ll}
+| \kw{while} $e$ \code{\{} $I$ \code{\}} & basic loop \\
+| \kw{for} $v$ \kw{in} $e$ & iteration \\
+| \kw{for} \code{(}$v_1,\ldots,v_n$\code{)} \kw{in} $e$ & tuple iteration
+\end{tabular}
 
 \subsection{Expressions}
 
-TODO
+$e,e_1,e_2,\ldots$ ::= 
+
+(literals)
+
+\begin{tabular}{ll}
+\kw{True} & truth \\
+| \kw{False} & falsity\\
+| \kw{None} & no-value\\
+| $n$ & integer constant \\
+| $x$ & floating point constant\\
+| \code{"}$s$\code{"} | \code{'}$s$\code{'} & string literal\\
+| \code{[}$e_1$\code{,}$\ldots$\code{,}$e_n$\code{]} & list literal ($n\geq 0$)\\
+| \code{(}$e_1$\code{,}$\ldots$\code{,}$e_n$\code{)} & tuple literal ($n \geq 1$)\\
+| \code{\{}$e_1$\code{,}$\ldots$\code{,}$e_n$\code{\}} & set literal ($n \geq 1$)\\
+| \code{\{}$k_1$\code{:} $e_1$\code{,}$\ldots$\code{,}$k_n$\code{:} $e_n$\code{\}} & dictionnary literal ($n \geq 0$)\\
+| \kw{set}\code{()} & 
+\end{tabular}
+
+
+(calls)
+
+\begin{tabular}{ll}
+| $f$\code{(}$e_1$\code{,}$\ldots$\code{,}$e_n$\code{)} & function call\\
+\end{tabular}
+
+(arithmetic and logic)
+
+\begin{tabular}{ll}
+| \code{(}$e$\code{)} & priority\\
+| $e_1$ \code{+} $e_2$ & addition\\
+| \code{-} $e$ & minus\\
+| $e_1$ \code{-} $e_2$ & subtraction\\
+| $e_1$ \code{*} $e_2$ & multiplication\\
+| $e_1$ \code{/} $e_2$ & division\\
+| $e_1$ \code{//} $e_2$ & integer division\\
+| $e_1$ \code{**} $e_2$ & exponentiation\\
+| $e_1$ \code{\&} $e_2$ & intersection\\
+| $e_1$ \code{|} $e_2$ & union\\
+| $e_1$ \code{==} $e_2$ & equality\\
+| $e_1$ \code{!=} $e_2$ & difference\\
+| $e_1$ \code{<} $e_2$ & lower\\
+| $e_1$ \code{>} $e_2$ & greater\\
+| $e_1$ \code{<=} $e_2$ & lower or equal\\
+| $e_1$ \code{>=} $e_2$ & greater or equal\\
+| \kw{not} $e$ & negation\\
+| $e_1$ \kw{and} $e_2$ & conjunction\\
+| $e_1$ \kw{or} $e_2$ & disjunction\\
+\end{tabular}
+
+(sequences)
+
+\begin{tabular}{ll}
+| $e_1$\code{[}$e_2$\code{]} & sequence index\\
+| $e_1$\code{[}$e_2$\code{:}$e_3$\code{]} & sequence slice\\
+| $e_1$\code{[}$e_2$\code{:}$e_3$\code{:}$e_4$\code{]} & sequence slice with step\\
+\end{tabular}
+
+(comprehensions)
+
+\begin{tabular}{ll}
+| \code{[}$e_1$ \kw{for} $v$ \kw{in} $e_2$\code{]} & simple list comprehension \\
+| \code{\{}$e_1$ \kw{for} $v$ \kw{in} $e_2$\code{\}} & simple set comprehension \\
+| \code{\{}$k_1:e_1$ \kw{for} $v$ \kw{in} $e_3$\code{\}} & simple dictionnary comprehension \\
+| \code{[}$e_1$ \kw{for} $v$ \kw{in} $e_2$ \kw{if} $e_3$\code{]} & simple list comprehension with filtering\\
+| \code{\{}$e_1$ \kw{for} $v$ \kw{in} $e_2$ \kw{if} $e_3$ \code{\}} & simple set comprehension with filtering\\
+| \code{\{}$k_1:e_1$ \kw{for} $v$ \kw{in} $e_3$ \kw{if} $e_4$ \code{\}} & simple dictionnary comprehension \\
+| \code{[}$e_1$ \kw{for} \code{(}$v_1$\code{,}$\ldots$\code{,}$v_n$ \code{)} \kw{in} $e_2$\code{]} & tupled list comprehension \\
+| \code{\{}$e_1$ \kw{for} \code{(}$v_1$\code{,}$\ldots$\code{,}$v_n$ \code{)} \kw{in} $e_2$\code{\}} & tupled set comprehension \\
+| \code{[}$e$ \kw{for} $v_1$ \kw{in} $e_1$ \kw{for} $v_2$ \kw{int} $e_2$ $\ldots$ \code{]} & nested comprehensions (+ variants)
+\end{tabular}
+
 
 \section{Type system}
+
+\subsection{Syntax of types}
+
+Atomic type expressions:
+
+\begin{tabular}{llll}
+$T, T_1, T_2,U,\ldots$ & ::= & \kw{bool} \\
+& &  | \kw{int} & arbitrary precision integer\\
+& &  | \kw{float} & floating point number\\
+& &  | \kw{Number} & generic number \\
+& &  | \kw{NoneType} & no-value type \\
+& &  | \kw{str} & character string \\
+& &  | $\alpha,\beta,\ldots$ & type variables \\
+& &  | \kw{tuple}\code{[}$T_1,T_2,\ldots,T_n$\code{]} & $n$-tuple \\
+& &  | \kw{list}\code{[}$T$\code{]} & homogeneous list\\
+& &  | \kw{set}\code{[}$T$\code{]} & homogeneous set\\
+& &  | \kw{dict}\code{[}$T$\code{:}$U$\code{]} & dictionnary \\
+\end{tabular}
+
+Functional types:
+
+\begin{tabular}{llll}
+$\Theta$ & ::= & $T_1 \times T_2 \times \ldots \times T_n \rightarrow U$ & total function \\
+  & & | $T_1 \times T_2 \times \ldots \times T_n \rightarrow U$ \code{+} \kw{NoneType} & partial function \\
+\end{tabular}
+
+Type aliases:
+
+\begin{tabular}{ll}
+\kw{type} $t$ \code{::=} $T$
+\end{tabular}
+
+\subsection{Hashable types}
+
+
+$$\begin{array}{cc}
+\infer[(H-atom)]{\fun{hashable}(T)}{T \in \{\kw{bool},\kw{int},\kw{Number},\kw{str}\}}
+&
+\infer[(H-tuple)]{\fun{hashable}(\kw{tuple}[T_1,\ldots,T_n])}{\fun{hashable}(T_1) & \cdots & \fun{hashable}(T_n)}
+\end{array}
+$$
 
 \vspace{1\baselineskip}
 
