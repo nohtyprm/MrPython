@@ -317,3 +317,13 @@ if __name__ == "__main__":
     iter2 = IterableType(tup1)
     print(iter2)
     print(repr(iter2))
+
+    print("----")
+    fun1 = FunctionType([NumberType(), IntType()], FloatType())
+    print(fun1)
+    print(repr(fun1))
+
+    print("----")
+    pfun1 = FunctionType([NumberType(), IntType()], FloatType(), partial=True)
+    print(pfun1)
+    print(repr(pfun1))
