@@ -133,7 +133,7 @@ class TupleType(TypeAST):
         return "tuple[{}]".format(",".join((str(et) for et in self.elem_types)))
     
     def __repr__(self):
-        return "TupleType({})".format(",".join((repr(et) for et in self.elem_types)))
+        return "TupleType([{}])".format(",".join((repr(et) for et in self.elem_types)))
 
 class ListType(TypeAST):
     def __init__(self, elem_type=None, annotation=None):
@@ -222,6 +222,34 @@ class IterableType(TypeAST):
     def __repr__(self):
         return "IterableType({})".format(repr(self.elem_type))
 
+
+class FunctionType:
+    def __init__(self, param_types, ret_type, partial=False, annotation=None):
+        if annotation:
+            self.annotated=True
+            self.annotation=annotation
+        else:
+            self.annotated=False
+
+        for param_type in param_types:
+            if not isinstance(param_type, TypeAST):
+                raise ValueError("Parameter type is not a TypeAST: {}".format(param_type))
+        self.param_types = param_types
+
+        if not isinstance(ret_type, TypeAST):
+            raise ValueError("Return type is not a TypeAST: {}".format(ret_type))
+        self.ret_type = ret_type
+
+        self.partial = partial
+
+    def __str__(self):
+        return "{} -> {}".format(" * ".join((str(pt) for pt in self.param_types))
+                                 , "{}{}".format(str(self.ret_type), " + NoneType" if self.partial else ""))
+
+    def __repr__(self):
+        return "FunctionType([{}], {})".format(", ".join((repr(pt) for pt in self.param_types))
+                                               , "{}, {}".format(repr(self.ret_type), "True" if self.partial else "False"))
+
 if __name__ == "__main__":
     print("## Type constructions")
 
@@ -274,6 +302,11 @@ if __name__ == "__main__":
     dict2 = DictType(tup1, list1)
     print(dict2)
     print(repr(dict2))
+
+    print("----")
+    dict3 = DictType()
+    print(dict3)
+    print(repr(dict3))
 
     print("----")
     iter1 = IterableType(TypeVariable('β'))
