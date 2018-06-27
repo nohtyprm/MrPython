@@ -26,7 +26,7 @@ class Program:
 
     def build_from_ast(self, modast):
         if not isinstance(modast, ast.Module):
-            raise ValueError("Cannot build program from AST: not a module")
+            raise ValueError("Cannot build program from AST: not a module (please report)")
         self.ast = modast
 
         for node in modast.body:
@@ -47,8 +47,9 @@ class Program:
                 self.other_top_defs.append(UnsupportedNode(node))
 
 class UnsupportedNode:
-    def __int__(self, node):
+    def __init__(self, node):
         self.ast = node
+        print("Unsupported node:", astpp.dump(node))
 
 class Import:
     def __init__(self, node):
@@ -86,9 +87,31 @@ class FunctionDef:
 class TestCase:
     def __init__(self, node):
         self.ast = node
+        #print(astpp.dump(node))
 
 
+class Assign:
+    def __init__(self, node):
+        self.ast = node
+        #print(astpp.dump(node))
 
+        if len(self.ast.targets) != 1:
+            raise ValueError("Simple assignment has multiple targets (please report)")
+
+        target = self.ast.targets[0]
+        self.var_name = target.id
+        #print("  ==> var_name =", self.var_name)
+
+        self.expr = parse_expression(self.ast.value)
+
+class Return:
+    def __init__(self, node):
+        self.ast = node
+
+
+INSTRUCTION_CLASSES = {"Assign" : Assign
+                       , "Return" : Return
+}
 
 def parse_instruction(node):
     instruction_type_name = node.__class__.__name__
@@ -99,17 +122,55 @@ def parse_instruction(node):
     else:
         return UnsupportedNode(node)
 
+class ENum:
+    def __init__(self, node):
+        self.ast = node
+        self.value = node.n
 
-class Assign:
+class EVar:
     def __init__(self, node):
         self.ast = node
 
-class Return:
-    def __init__(self, node):
+class EAdd:
+    def __init__(self, node, left, right):
         self.ast = node
+        self.left = left
+        self.right = right
 
-INSTRUCTION_CLASSES = {"Assign" : Assign
-                       , "Return" : Return}
+class EDiv:
+    def __init__(self, node, left, right):
+        self.ast = node
+        self.left = left
+        self.right = right
+
+BINOP_CLASSES = { "Add" : EAdd
+                  , "Div" : EDiv
+}
+
+def EBinOp(node):
+    #print(astpp.dump(node))
+    binop_type_name = node.op.__class__.__name__
+    #print("binop type=",binop_type_name)
+    if binop_type_name in BINOP_CLASSES:
+        left = parse_expression(node.left)
+        right = parse_expression(node.right)
+        wrap_node = BINOP_CLASSES[binop_type_name](node, left, right)
+        return wrap_node
+    else:
+        return UnsupportedNode(node)
+
+EXPRESSION_CLASSES = { "Num" : ENum
+                       , "Name" : EVar
+                       , "BinOp" : EBinOp }
+
+def parse_expression(node):
+    expression_type_name = node.__class__.__name__
+    #print("expression type=",expression_type_name)
+    if expression_type_name in EXPRESSION_CLASSES:
+        wrap_node = EXPRESSION_CLASSES[expression_type_name](node)
+        return wrap_node
+    else:
+        return UnsupportedNode(node)
 
 
 def print_ast_fields(node):
