@@ -1,0 +1,3 @@
+[submodule "mrpython/popparser"]
+	path = mrpython/popparser
+	url = https://github.com/nohtyprm/popparser
