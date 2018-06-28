@@ -39,7 +39,7 @@ class StudentRunner:
         self.report = RunReport()
         self.tk_root = tk_root
         self.running = True
-        
+
         ## This is a hack so let's check...
         try:
             self.tk_root.nametowidget('.')
@@ -152,7 +152,7 @@ class StudentRunner:
         except Exception as err:
             typ, exc, tb = sys.exc_info()
             self.report.add_compilation_error('error', str(typ), err.lineno, err.offset, details=str(err))
-            
+
             return False
 
         (ok, result) = self._exec_or_eval('exec', code, locals, locals)

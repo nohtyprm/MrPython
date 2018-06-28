@@ -27,6 +27,7 @@ def type_tokenizer():
     tokenizer.add_rule(tokens.Literal('arrow', "->"))
     tokenizer.add_rule(tokens.Literal('expr', "**"))
     tokenizer.add_rule(tokens.Char('mult', '*'))
+    tokenizer.add_rule(tokens.Char('add', '+'))
 
     # basic types
     tokenizer.add_rule(tokens.Literal('bool_type', 'bool'))
@@ -136,7 +137,18 @@ def build_typeexpr_grammar(grammar=None):
 def build_functype_grammar(grammar):
     domain_parser = parsers.List(grammar.ref('typeexpr'), sep='mult') \
                            .forget(grammar.ref('spaces'))
+
     grammar.register('domain_type', domain_parser)
+
+    range_parser = parsers.Tuple() \
+                          .element(grammar.ref('typeexpr')) \
+                          .skip(grammar.ref('spaces')) \
+                          .element(parsers.Optional(parsers.Tuple() \
+                                                    .skip(parsers.Token('add')) \
+                                                    .skip(grammar.ref('spaces')) \
+                                                    .element(parsers.Token('NoneType_type'))))
+
+    grammar.register('range_type', range_parser)
 
     functype_parser = parsers.Tuple() \
                       .element(grammar.ref('domain_type')) \
@@ -145,7 +157,30 @@ def build_functype_grammar(grammar):
                       .skip(grammar.ref('spaces')) \
                       .element(grammar.ref('range_type'))
 
-    grammar.entry = domain_parser
+    def functype_parser_xform_result(result):
+        param_types = []
+        params_content = result.content[0]
+        for param_content in params_content.content:
+            param_types.append(param_content.content)
+
+        range_content = result.content[1].content
+        #print("range content=",range_content)
+        range_type = None
+        range_type = range_content[0].content
+        #print("range_type=",range_type)
+
+        if range_content[1].content is None:
+            partial_function = False
+        else:
+            partial_function = True
+
+        result.content = FunctionType(param_types, range_type, partial_function, annotation=result)
+
+        return result
+
+    functype_parser.xform_result = functype_parser_xform_result
+
+    grammar.entry = functype_parser
 
     return grammar
 
@@ -207,4 +242,4 @@ if __name__ == "__main__":
 
     # function types
     fresult1 = type_parser.parse_functype_from_string("int * float -> bool")
-    print(repr(fresult1))
+    print(repr(fresult1.content))
