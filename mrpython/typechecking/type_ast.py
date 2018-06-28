@@ -19,13 +19,13 @@ class BoolType(TypeAST):
 
     def is_hashable(self):
         return True
-        
+
     def __str__(self):
         return "bool"
 
     def __repr__(self):
         return "BoolType()"
-    
+
 class IntType(TypeAST):
     def __init__(self, annotation=None):
         super().__init__(annotation)
