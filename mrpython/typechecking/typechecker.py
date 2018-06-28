@@ -1,6 +1,7 @@
 
 from prog_ast import *
 from type_ast import *
+from type_parser import (type_parser, function_type_parser)
 
 class TypeError:
     pass
@@ -32,8 +33,10 @@ REGISTERED_IMPORTS = {
 }
 
 MATH_IMPORTS = {
-    'math.sqrt' : 
+    'math.sqrt' : function_type_parser("Number -> float")
 }
+
+
 
 ## All the possible kinds of error follow
 
