@@ -134,7 +134,7 @@ def build_typeexpr_grammar(grammar=None):
     return grammar
 
 def build_functype_grammar(grammar):
-    domain_parser = parsers.List(grammar.ref('type_expr'), sep='mult') \
+    domain_parser = parsers.List(grammar.ref('typeexpr'), sep='mult') \
                            .forget(grammar.ref('spaces'))
     grammar.register('domain_type', domain_parser)
 
@@ -144,7 +144,8 @@ def build_functype_grammar(grammar):
                       .skip(parsers.Token('arrow')) \
                       .skip(grammar.ref('spaces')) \
                       .element(grammar.ref('range_type'))
-    grammar.entry = functype_parser
+
+    grammar.entry = domain_parser
 
     return grammar
 
@@ -203,3 +204,7 @@ if __name__ == "__main__":
 
     result11 = type_parser.parse_typeexpr_from_string("GammA")
     print(repr(result11.content))
+
+    # function types
+    fresult1 = type_parser.parse_functype_from_string("int * float -> bool")
+    print(repr(fresult1))
