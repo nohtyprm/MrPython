@@ -107,6 +107,8 @@ class Assign:
 class Return:
     def __init__(self, node):
         self.ast = node
+        #print(astpp.dump(node))
+        self.expr = parse_expression(self.ast.value)
 
 
 INSTRUCTION_CLASSES = {"Assign" : Assign
@@ -137,6 +139,18 @@ class EAdd:
         self.left = left
         self.right = right
 
+class ESub:
+    def __init__(self, node, left, right):
+        self.ast = node
+        self.left = left
+        self.right = right
+
+class EMult:
+    def __init__(self, node, left, right):
+        self.ast = node
+        self.left = left
+        self.right = right
+
 class EDiv:
     def __init__(self, node, left, right):
         self.ast = node
@@ -144,6 +158,8 @@ class EDiv:
         self.right = right
 
 BINOP_CLASSES = { "Add" : EAdd
+                  , "Sub" : ESub
+                  , "Mult" : EMult
                   , "Div" : EDiv
 }
 
@@ -159,9 +175,34 @@ def EBinOp(node):
     else:
         return UnsupportedNode(node)
 
+def parse_function_name(func_descr):
+    parts = []
+    val = func_descr
+    while isinstance(val, ast.Attribute):
+        parts.append(val.attr)
+        val = val.value
+    parts.append(val.id)
+    return ".".join(parts[::-1])
+
+class ECall:
+    def __init__(self, node):
+        self.ast = node
+        #print(astpp.dump(node))
+        self.fun_name = parse_function_name(node.func)
+        #print("function name=", self.fun_name)
+        self.arguments = []
+        for arg in self.ast.args:
+            #print(astpp.dump(arg))
+            earg = parse_expression(arg)
+            self.arguments.append(earg)
+            #print("---")
+
+
 EXPRESSION_CLASSES = { "Num" : ENum
                        , "Name" : EVar
-                       , "BinOp" : EBinOp }
+                       , "BinOp" : EBinOp
+                       , "Call" : ECall
+}
 
 def parse_expression(node):
     expression_type_name = node.__class__.__name__
