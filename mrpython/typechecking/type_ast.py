@@ -103,7 +103,7 @@ class TypeVariable(TypeAST):
 
     def is_hashable(self):
         return True
-        
+
     def __str__(self):
         return self.var_name
 
@@ -125,13 +125,13 @@ class TupleType(TypeAST):
             if not elem_type.is_hashable():
                 return False
         return True
-            
+
     def size(self):
         return len(self.elem_types)
 
     def __str__(self):
         return "tuple[{}]".format(",".join((str(et) for et in self.elem_types)))
-    
+
     def __repr__(self):
         return "TupleType([{}])".format(",".join((repr(et) for et in self.elem_types)))
 
@@ -147,13 +147,13 @@ class ListType(TypeAST):
 
     def is_emptylist(self):
         return self.elem_type is None
-        
+
     def __str__(self):
         if self.elem_type:
             return "list[{}]".format(str(self.elem_type))
         else:
             return "emptylist"
-    
+
     def __repr__(self):
         return "ListType({})".format(repr(self.elem_type))
 
@@ -169,13 +169,13 @@ class SetType(TypeAST):
 
     def is_emptyset(self):
         return self.elem_type is None
-        
+
     def __str__(self):
         if self.elem_type:
             return "set[{}]".format(str(self.elem_type))
         else:
             return "emptyset"
-        
+
     def __repr__(self):
         return "SetType({})".format(repr(self.elem_type))
 
@@ -196,13 +196,13 @@ class DictType(TypeAST):
 
     def is_emptydict(self):
         return self.key_type is None and self.value_type is None
-        
+
     def __str__(self):
         if self.key_type:
             return "dict[{}:{}]".format(str(self.key_type), str(self.value_type))
         else:
             return "emptydict"
-        
+
     def __repr__(self):
         return "DictType({},{})".format(repr(self.key_type), repr(self.value_type))
 
@@ -218,7 +218,7 @@ class IterableType(TypeAST):
 
     def __str__(self):
         return "iterable[{}]".format(str(self.elem_type))
-                    
+
     def __repr__(self):
         return "IterableType({})".format(repr(self.elem_type))
 
@@ -272,7 +272,7 @@ if __name__ == "__main__":
     list2 = ListType(tup1)
     print(list2)
     print(repr(list2))
-    
+
     print("----")
     set2 = SetType(tup1)
     print(set2)
