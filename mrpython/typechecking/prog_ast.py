@@ -60,10 +60,10 @@ class Import:
 
 class FunctionDef:
     def __init__(self, node):
-        self.python101ready = False
         self.ast = node
         self.name = self.ast.name
         #print(astpp.dump(self.ast))
+        self.python101ready = True
 
         self.parameters = []
         for arg_obj in self.ast.args.args:
@@ -75,13 +75,13 @@ class FunctionDef:
             self.docstring = first_instr.value.s
             next_instr_index = 1
             #print(self.docstring)
+        else:
+            self.python101ready = False
 
         self.body = []
         for inner_node in self.ast.body[next_instr_index:]:
             #print(astpp.dump(inner_node))
             self.body.append(parse_instruction(inner_node))
-
-        self.python101ready = True
 
 
 class TestCase:
@@ -95,14 +95,21 @@ class Assign:
         self.ast = node
         #print(astpp.dump(node))
 
-        if len(self.ast.targets) != 1:
-            raise ValueError("Simple assignment has multiple targets (please report)")
-
         target = self.ast.targets[0]
         self.var_name = target.id
         #print("  ==> var_name =", self.var_name)
 
         self.expr = parse_expression(self.ast.value)
+
+class MultiAssign:
+    def __init__(self, node):
+        raise NotImplementedError("MultiAssign AST node not yet implemented")
+
+def parse_assign(node):
+    if len(node.targets) == 1:
+        return Assign(node)
+    else:
+        return MultiAssign(node)
 
 class Return:
     def __init__(self, node):
@@ -111,7 +118,7 @@ class Return:
         self.expr = parse_expression(self.ast.value)
 
 
-INSTRUCTION_CLASSES = {"Assign" : Assign
+INSTRUCTION_CLASSES = {"Assign" : parse_assign
                        , "Return" : Return
 }
 
