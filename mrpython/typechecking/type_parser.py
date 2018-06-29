@@ -202,6 +202,13 @@ class TypeParser:
         self.tokenizer.from_string(string)
         return parser.parse()
 
+def function_type_parser(string):
+    parser = TypeParser()
+    return parser.parse_functype_from_string(string)
+
+def type_expression_parser(string):
+    parser = TypeParser()
+    return parser.parse_typeexpr_from_string(string)
 
 if __name__ == "__main__":
     type_parser = TypeParser()
@@ -243,3 +250,4 @@ if __name__ == "__main__":
     # function types
     fresult1 = type_parser.parse_functype_from_string("int * float -> bool")
     print(repr(fresult1.content))
+
