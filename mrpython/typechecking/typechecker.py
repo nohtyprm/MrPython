@@ -1,7 +1,19 @@
+import os.path, sys
+
+main_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir)
+found_path = False
+for path in sys.path:
+    if path == main_path:
+        found_path = True
+        break
+if not found_path:
+    sys.path.append(main_path)
 
 from prog_ast import *
 from type_ast import *
 from type_parser import (type_expression_parser, function_type_parser)
+
+from translate import tr
 
 class TypeError:
     def is_fatal(self):
@@ -153,7 +165,29 @@ def type_check_Assign(assign, ctx):
         raise NotImplementedError("Proper assignment not yet implemented")
 
 def fetch_declaration_type(ctx, assign):
-    raise NotImplementedError("Fetch declaration type not yet implemented")
+    lineno = assign.ast.lineno
+    decl_line = ctx.prog.get_source_line(lineno-1).strip()
+
+    #print(decl_line)
+    if (not decl_line) or decl_line[0] != '#':
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign, tr("Missing '#' character in variable declaration")))
+        return None
+    decl_line = decl_line[1:].strip()
+    if (not decl_line) or decl_line[0] != assign.var_name:
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign, tr("Missing variable name '{}' in declaration").format(assign.var_name)))
+        return None
+    decl_line = decl_line[1:].strip()
+    if (not decl_line) or decl_line[0] != ':':
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign, tr("Missing ':' character before variable type declaration")))
+        return None
+    decl_line = decl_line[1:].strip()
+    decl_type = type_expression_parser(decl_line)
+    if decl_type.iserror:
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign, tr("Don't understand the declared type: {}").format(decl_type)))
+        return None
+    #print(decl_type.content)
+    return decl_type.content
+
 
 Assign.type_check = type_check_Assign
 
@@ -200,14 +234,19 @@ class DisallowedDeclarationError(TypeError):
     def is_fatal(self):
         return True
 
-if __name__ == '__main__':
-    #print(repr(MATH_IMPORTS['math.sqrt']))
+class DeclarationError(TypeError):
+    def __init__(self, in_function, node, explain):
+        self.in_function = in_function
+        self.node = node
+        self.explain = explain
 
-    aire_ast = python_ast_from_file("../../examples/aire.py")
-    #print(astpp.dump(aire_ast))
+    def is_fatal(self):
+        return True
+
+if __name__ == '__main__':
 
     prog1 = Program()
-    prog1.build_from_ast(aire_ast)
+    prog1.build_from_file("../../examples/aire.py")
 
     ctx = prog1.type_check()
     print(repr(ctx))

@@ -24,6 +24,29 @@ class Program:
         # other top level definitions
         self.other_top_defs = []
 
+        # metadata
+        self.filename = None
+        self.source = None
+        self.source_lines = None
+        self.ast = None
+
+    def get_source_line(self, linum):
+        if self.source is None:
+            raise ValueError("Source is empty")
+        if self.source_lines is None:
+            self.source_lines = self.source.split('\n')
+
+        return self.source_lines[linum-1]
+
+    def build_from_file(self, filename):
+        self.filename = filename
+        modtxt = ""
+        with tokenize.open(filename) as f:
+            modtxt = f.read()
+        self.source = modtxt
+        modast = ast.parse(modtxt, mode="exec")
+        self.build_from_ast(modast)
+
     def build_from_ast(self, modast):
         if not isinstance(modast, ast.Module):
             raise ValueError("Cannot build program from AST: not a module (please report)")
@@ -232,10 +255,14 @@ def python_ast_from_file(filename):
         modast = ast.parse(modtxt, mode="exec")
         return modast
 
-if __name__ == "__main__":
-    aire_ast = python_ast_from_file("../../examples/aire.py")
-    #print(astpp.dump(aire_ast))
+def python_show_tokenized(filename):
+    modtxt = ""
+    with tokenize.open(filename) as f:
+        modtxt = f.read()
 
+    return modtxt
+
+if __name__ == "__main__":
     prog1 = Program()
-    prog1.build_from_ast(aire_ast)
-    
+    prog1.build_from_file("../../examples/aire.py")
+    #print(astpp.dump(prog1.ast))
