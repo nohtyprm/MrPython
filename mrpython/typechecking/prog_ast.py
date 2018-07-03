@@ -162,6 +162,7 @@ class ENum:
 class EVar:
     def __init__(self, node):
         self.ast = node
+        self.name = self.ast.id
 
 class EAdd:
     def __init__(self, node, left, right):

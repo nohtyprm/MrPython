@@ -66,6 +66,11 @@ class TypingContext:
         # remark: local (lexical) environment disallow shadowing
         self.local_env = {}
 
+    def fetch_nominal_type(self, base_type):
+        # TODO : follow metavar instantiations
+        # (for now, just return the type as it is)
+        return base_type
+
     def unregister_function_def(self):
         self.param_env = None
         self.return_type = None
@@ -75,8 +80,17 @@ class TypingContext:
         self.allow_declarations = None
         self.local_env = None
 
+    def fetch_scope_mode(self):
+        # TODO : complete with parent stack
+        if not self.parent_stack:
+            return 'function'
+
     def __repr__(self):
         return "<TypingContext[genv={}, errors={}]>".format(self.global_env, self.type_errors)
+
+#############################################
+# Type checking                             #
+#############################################
 
 # Takes a program, and returns a
 # (possibly empty) list of type errors
@@ -158,8 +172,13 @@ def type_check_Assign(assign, ctx):
             return
         # Step 4a) infer type of initialization expression
         expr_type = assign.expr.type_infer(ctx)
+        if not expr_type:
+            return
         # Step 5a) compare inferred type wrt. declared type
-        expr_type.type_compare(ctx, declared_type)
+        if not expr_type.type_compare(ctx, declared_type):
+            return
+        # Step 6a) register declared type in environment
+        ctx.local_env[assign.var_name] = (declared_type, ctx.fetch_scope_mode())
 
     else: # proper assignment
         raise NotImplementedError("Proper assignment not yet implemented")
@@ -188,8 +207,165 @@ def fetch_declaration_type(ctx, assign):
     #print(decl_type.content)
     return decl_type.content
 
-
 Assign.type_check = type_check_Assign
+
+def type_check_Return(ret, ctx):
+    # step 1 : compare with expected return type
+    expr_type = type_expect(ctx, ret.expr, ctx.return_type)
+    if expr_type is None and not ctx.partial_function:
+        ctx.type_errors = ctx.type_errors[:-1]
+        ctx.add_type_error(WrongReturnTypeError(ctx.function_def, ret, ctx.return_type, ctx.partial_function))
+        return
+    if expr_type is not None:
+        # type type is correct
+        return
+    # remove the last error (this is a bit of a hack)
+    ctx.type_errors = ctx.type_errors[:-1]
+
+    # step 2 : the function is partial, we try with NoneType
+    assert(ctx.partial_function == True)
+    expr_type = type_expect(ctx, ret.expr, NoneType())
+    if expr_type is None:
+        # remove the last error (this is a bit of a hack)
+        ctx.type_errors = ctx.type_errors[:-1]
+        ctx.add_type_error(WrongReturnTypeError(ctx.function_def, ret, ctx.return_type, ctx.partial_function))
+        return
+
+Return.type_check = type_check_Return
+
+######################################
+# Type inference                     #
+######################################
+
+def infer_number_type(ctx, type1, type2):
+    # number always "wins"
+    if isinstance(type1, NumberType):
+        return type1
+    if isinstance(type2, NumberType):
+        return type2
+    # otherwise it's float
+    if isinstance(type1, FloatType):
+        return type1
+    if isinstance(type2, FloatType):
+        return type2
+
+    # otherwise it's either of the two
+    return type1
+
+
+# The rule for EDiv:
+#
+#      e1 :: Number   e2 :: Number
+#      ---------------------------
+#      e1 / e2  ::>  float
+
+def type_infer_EDiv(expr, ctx):
+    left_type = type_expect(ctx, expr.left, NumberType())
+    if not left_type:
+        return None
+
+    right_type = type_expect(ctx, expr.right, NumberType())
+    if not right_type:
+        return None
+
+    return FloatType()
+
+EDiv.type_infer = type_infer_EDiv
+
+# The rule for EAdd:
+#
+#      e1 :: Number[x]   e2 :: Number[x]
+#      ---------------------------------
+#      e1 + e2  ::>  x
+
+def type_infer_EAdd(expr, ctx):
+    left_type = type_expect(ctx, expr.left, NumberType())
+    if not left_type:
+        return None
+
+    right_type = type_expect(ctx, expr.right, NumberType())
+    if not right_type:
+        return None
+
+    add_type = infer_number_type(ctx, left_type, right_type)
+    if not add_type:
+        return None
+
+    return add_type
+
+EAdd.type_infer = type_infer_EAdd
+
+def type_infer_EVar(var, ctx):
+    # check if the var is a parameter
+    if var.name in ctx.param_env:
+        return ctx.param_env[var.name]
+    # or else lookup in the local environment
+    if var.name in ctx.local_env:
+        var_type, _ = ctx.local_env[var.name]
+        return var_type
+    # or the variable is unknown
+    ctx.add_type_error(UnknownVariableError(ctx.function_def, var))
+    return None
+
+EVar.type_infer = type_infer_EVar
+
+def type_infer_ENum(num, ctx):
+    if isinstance(num.value, int):
+        return IntType()
+    if isinstance(num.value, float):
+        return FloatType()
+
+    # or it's an unsupported numeric type
+    ctx.add_type_error(UnsupportedNumericTypeError(ctx.function_def, num))
+    return None
+
+ENum.type_infer = type_infer_ENum
+
+######################################
+# Type comparisons                   #
+######################################
+
+def type_expect(ctx, expr, expected_type):
+    expr_type = expr.type_infer(ctx)
+    if not expr_type:
+        return None
+    if not expected_type.type_compare(ctx, expr_type):
+        return None
+    return expr_type
+
+def type_compare_NumberType(expected_type, ctx, expr_type):
+    if isinstance(expr_type, NumberType) \
+       or isinstance(expr_type, IntType) \
+       or isinstance(expr_type, FloatType): 
+        return True
+
+    ctx.add_type_error(TypeComparisonError(ctx.function_def, expr_type, tr("Expecting a Number")))
+    return False
+
+NumberType.type_compare = type_compare_NumberType
+
+def type_compare_IntType(expected_type, ctx, expr_type):
+    if isinstance(expr_type, IntType):
+        return True
+
+    ctx.add_type_error(TypeComparisonError(ctx.function_def, expr_type, tr("Expecting an int")))
+    return False
+
+IntType.type_compare = type_compare_IntType
+
+def type_compare_FloatType(expected_type, ctx, expr_type):
+    if isinstance(expr_type, FloatType):
+        return True
+
+    ctx.add_type_error(TypeComparisonError(ctx.function_def, expr_type, tr("Expecting a float")))
+    return False
+
+FloatType.type_compare = type_compare_FloatType
+
+######################################
+# Standard imports                   #
+######################################
+
 
 MATH_IMPORTS = {
     'math.sqrt' : function_type_parser("Number -> float").content
@@ -239,6 +415,39 @@ class DeclarationError(TypeError):
         self.in_function = in_function
         self.node = node
         self.explain = explain
+
+    def is_fatal(self):
+        return True
+
+class UnknownVariableError(TypeError):
+    def __init__(self, in_function, node):
+        self.in_function = in_function
+        self.node = node
+
+    def is_fatal(self):
+        return True
+
+class TypeComparisonError(TypeError):
+    def __init__(self, in_function, typ, explain):
+        self.in_function = in_function
+        self.type = typ
+
+    def is_fatal(self):
+        return True
+
+class UnsupportedNumericTypeError(TypeError):
+    def __init__(self, in_function, num):
+        self.in_function = in_function
+        self.num = num
+
+    def is_fatal(self):
+        return True
+
+class WrongReturnTypeError(TypeError):
+    def __init__(self, in_function, ret, partial_function):
+        self.in_function = in_function
+        self.ret = ret
+        self.partial_function = partial_function
 
     def is_fatal(self):
         return True
