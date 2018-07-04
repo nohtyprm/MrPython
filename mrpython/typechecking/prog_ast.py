@@ -3,6 +3,19 @@
 
 import ast
 import tokenize
+
+import os.path, sys
+
+main_path = os.path.dirname(os.path.realpath(__file__))
+found_path = False
+for path in sys.path:
+    if path == main_path:
+        found_path = True
+        break
+if not found_path:
+    sys.path.append(main_path)
+
+
 import astpp
 
 class Program:
