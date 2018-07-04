@@ -210,26 +210,13 @@ def fetch_declaration_type(ctx, assign):
 Assign.type_check = type_check_Assign
 
 def type_check_Return(ret, ctx):
-    # step 1 : compare with expected return type
+    # Compare with expected return type
     expr_type = type_expect(ctx, ret.expr, ctx.return_type)
-    if expr_type is None and not ctx.partial_function:
-        ctx.type_errors = ctx.type_errors[:-1]
-        ctx.add_type_error(WrongReturnTypeError(ctx.function_def, ret, ctx.return_type, ctx.partial_function))
-        return
-    if expr_type is not None:
-        # type type is correct
-        return
-    # remove the last error (this is a bit of a hack)
-    ctx.type_errors = ctx.type_errors[:-1]
-
-    # step 2 : the function is partial, we try with NoneType
-    assert(ctx.partial_function == True)
-    expr_type = type_expect(ctx, ret.expr, NoneType())
     if expr_type is None:
-        # remove the last error (this is a bit of a hack)
-        ctx.type_errors = ctx.type_errors[:-1]
         ctx.add_type_error(WrongReturnTypeError(ctx.function_def, ret, ctx.return_type, ctx.partial_function))
         return
+    # no error here
+    return
 
 Return.type_check = type_check_Return
 
@@ -253,25 +240,6 @@ def infer_number_type(ctx, type1, type2):
     return type1
 
 
-# The rule for EDiv:
-#
-#      e1 :: Number   e2 :: Number
-#      ---------------------------
-#      e1 / e2  ::>  float
-
-def type_infer_EDiv(expr, ctx):
-    left_type = type_expect(ctx, expr.left, NumberType())
-    if not left_type:
-        return None
-
-    right_type = type_expect(ctx, expr.right, NumberType())
-    if not right_type:
-        return None
-
-    return FloatType()
-
-EDiv.type_infer = type_infer_EDiv
-
 # The rule for EAdd:
 #
 #      e1 :: Number[x]   e2 :: Number[x]
@@ -294,6 +262,59 @@ def type_infer_EAdd(expr, ctx):
     return add_type
 
 EAdd.type_infer = type_infer_EAdd
+
+def type_infer_ESub(expr, ctx):
+    left_type = type_expect(ctx, expr.left, NumberType())
+    if not left_type:
+        return None
+
+    right_type = type_expect(ctx, expr.right, NumberType())
+    if not right_type:
+        return None
+
+    sub_type = infer_number_type(ctx, left_type, right_type)
+    if not sub_type:
+        return None
+
+    return sub_type
+
+ESub.type_infer = type_infer_ESub
+
+def type_infer_EMult(expr, ctx):
+    left_type = type_expect(ctx, expr.left, NumberType())
+    if not left_type:
+        return None
+
+    right_type = type_expect(ctx, expr.right, NumberType())
+    if not right_type:
+        return None
+
+    mult_type = infer_number_type(ctx, left_type, right_type)
+    if not mult_type:
+        return None
+
+    return mult_type
+
+EMult.type_infer = type_infer_EMult
+
+# The rule for EDiv:
+#
+#      e1 :: Number   e2 :: Number
+#      ---------------------------
+#      e1 / e2  ::>  float
+
+def type_infer_EDiv(expr, ctx):
+    left_type = type_expect(ctx, expr.left, NumberType())
+    if not left_type:
+        return None
+
+    right_type = type_expect(ctx, expr.right, NumberType())
+    if not right_type:
+        return None
+
+    return FloatType()
+
+EDiv.type_infer = type_infer_EDiv
 
 def type_infer_EVar(var, ctx):
     # check if the var is a parameter
@@ -320,6 +341,33 @@ def type_infer_ENum(num, ctx):
     return None
 
 ENum.type_infer = type_infer_ENum
+
+def type_infer_ECall(call, ctx):
+    # step 1 : fetch the signature of the called function
+    if not call.fun_name in ctx.global_env:
+        ctx.add_type_error(UnknownFunctionError(ctx.function_def, call))
+        return None
+
+    signature = ctx.global_env[call.fun_name]
+    #print(repr(signature))
+
+    # step 2 : check the call arity
+    if len(signature.param_types) != len(call.arguments):
+        ctx.add_type_error(CallArityError(ctx.function_def, signature, call))
+        return None
+
+    # step 3 : check the argument types
+    for (num_arg, arg, param_type) in zip(range(1), call.arguments, signature.param_types):
+        arg_type = type_expect(ctx, arg, param_type)
+        if arg_type is None:
+            ctx.add_type_error(CallArgumentError(ctx.function_def, call, num_arg, arg, param_type))
+            return
+
+    # step 4 : return the return type
+    return signature.ret_type
+
+ECall.type_infer = type_infer_ECall
+
 
 ######################################
 # Type comparisons                   #
@@ -451,6 +499,35 @@ class WrongReturnTypeError(TypeError):
 
     def is_fatal(self):
         return True
+
+class UnknownFunctionError(TypeError):
+    def __init__(self, in_function, node):
+        self.in_function = in_function
+        self.node = node
+
+    def is_fatal(self):
+        return True
+
+class CallArityError(TypeError):
+    def __init__(self, in_function, signature, call):
+        self.in_function = in_function
+        self.signature = signature
+        self.call = call
+
+    def is_fatal(self):
+        return True
+
+class CallArgumentError(TypeError):
+    def __init__(self, in_function, call, num_arg, arg, param_type):
+        self.in_function = in_function
+        self.call = call
+        self.num_arg = num_arg
+        self.arg = arg
+        self.param_type = param_type
+
+    def is_fatal(self):
+        return True
+
 
 if __name__ == '__main__':
 

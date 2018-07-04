@@ -222,6 +222,22 @@ class IterableType(TypeAST):
     def __repr__(self):
         return "IterableType({})".format(repr(self.elem_type))
 
+class OptionType(TypeAST):
+    def __init__(self, elem_type, annotation=None):
+        super().__init__(annotation)
+        if not isinstance(elem_type, TypeAST):
+            raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
+        self.elem_type = elem_type
+
+    def is_hashable(self):
+        return False
+
+    def __str__(self):
+        return "Option[{}]".format(str(self.elem_type))
+
+    def __repr__(self):
+        return "OptionType({})".format(repr(self.elem_type))
+
 
 class FunctionType:
     def __init__(self, param_types, ret_type, partial=False, annotation=None):
@@ -238,13 +254,17 @@ class FunctionType:
 
         if not isinstance(ret_type, TypeAST):
             raise ValueError("Return type is not a TypeAST: {}".format(ret_type))
-        self.ret_type = ret_type
+
+        if partial:
+            self.ret_type = OptionType(ret_type)
+        else:
+            self.ret_type = ret_type
 
         self.partial = partial
 
     def __str__(self):
         return "{} -> {}".format(" * ".join((str(pt) for pt in self.param_types))
-                                 , "{}{}".format(str(self.ret_type), " + NoneType" if self.partial else ""))
+                                 , "{}{}".format(str(self.ret_type if not self.partial else self.ret_type.elem_type), " + NoneType" if self.partial else ""))
 
     def __repr__(self):
         return "FunctionType([{}], {})".format(", ".join((repr(pt) for pt in self.param_types))
