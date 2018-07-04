@@ -12,7 +12,10 @@ from popparser import (Grammar, tokens, parsers, expr, ParseResult)
 from popparser.llparser import LLParsing
 from popparser.tokenizer import Tokenizer
 
-from type_ast import *
+if __name__ == "__main__":
+    from type_ast import *
+else:
+    from .type_ast import *
 
 def type_tokenizer():
     tokenizer = Tokenizer()

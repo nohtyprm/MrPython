@@ -1,19 +1,27 @@
 import os.path, sys
 
-main_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir)
-found_path = False
-for path in sys.path:
-    if path == main_path:
-        found_path = True
-        break
-if not found_path:
-    sys.path.append(main_path)
+if __name__ == "__main__":
+    main_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir)
+    found_path = False
+    for path in sys.path:
+        if path == main_path:
+            found_path = True
+            break
+    if not found_path:
+        sys.path.append(main_path)
 
-from prog_ast import *
-from type_ast import *
-from type_parser import (type_expression_parser, function_type_parser)
+    from prog_ast import *
+    from type_ast import *
+    from type_parser import (type_expression_parser, function_type_parser)
 
-from translate import tr
+    from translate import tr
+else:
+
+    from .prog_ast import *
+    from .type_ast import *
+    from .type_parser import (type_expression_parser, function_type_parser)
+
+    from ..translate import tr
 
 class TypeError:
     def is_fatal(self):
