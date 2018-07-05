@@ -1,4 +1,6 @@
-import math
+##!FAIL:UnsupportedImportError[maths]@3:0
+
+import maths
 
 def aire_triangle(a,b,c):
     """ Number * Number * Number -> float

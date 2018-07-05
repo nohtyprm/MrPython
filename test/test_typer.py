@@ -24,20 +24,45 @@ def testWithoutTypeError(prog_filename, prog_name, prog):
         #print(ctx.type_errors)
         nb_tests_fail+=1
     else:
-        print("  ==> PASS")
+        print("  ==> PASS: no type error")
         nb_tests_pass+=1
 
-def testWithTypeError(prof_filename, prog_name, prog):
-    global nb_tests_abort
+def testWithTypeError(prog_filename, prog_name, prog):
+    global nb_tests_abort, nb_tests_fail, nb_tests_pass
 
-    print("  ==> ABORT: type error verifier not yet implemented")
-    nb_tests_abort += 1
+    with open(prog_filename, 'r') as f:
+        header = f.readline()
+    #print(header)
+
+    if not header.startswith("##!FAIL:"):
+        print("  ==> ABORT: the test file does not begin with the ##!FAIL: string")
+        nb_tests_abort += 1
+        return
+
+    ctx = prog.type_check()
+    if not ctx.type_errors:
+        print("  ==> FAIL: an error was expected (found none)")
+        nb_tests_fail += 1
+        return
+
+    valid_string = header[8:].strip()
+    #print(valid_string)
+
+    computed_string = ctx.type_errors[0].fail_string()
+
+    if computed_string != valid_string:
+        print("  ==> FAIL: mismatch error, expecting: {}".format(valid_string))
+        print("          | computed = {}".format(computed_string))
+        nb_tests_fail += 1
+    else:
+        print("  ==> PASS: {}".format(valid_string))
+        nb_tests_pass += 1
 
 def test_prog(prog_filename):
     global nb_tests
 
     prog_name = os.path.splitext(os.path.basename(prog_filename))[0]
-    ok = prog_name.endswith('OK')
+    ok = prog_name.endswith('OK_00')
     print("* Testing: {} ({})".format(prog_name, "expecting success" if ok else "expecting type error"))
 
     prog = prog_ast.Program()

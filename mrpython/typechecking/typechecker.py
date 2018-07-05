@@ -439,6 +439,9 @@ class UnsupportedImportError(TypeError):
         self.import_name = import_name
         self.import_ast = import_ast
 
+    def fail_string(self):
+        return "UnsupportedImportError[{}]@{}:{}".format(self.import_name, self.import_ast.ast.lineno, self.import_ast.ast.col_offset)
+
     def is_fatal(self):
         return False
 
@@ -500,9 +503,10 @@ class UnsupportedNumericTypeError(TypeError):
         return True
 
 class WrongReturnTypeError(TypeError):
-    def __init__(self, in_function, ret, partial_function):
+    def __init__(self, in_function, ret, ret_type, partial_function):
         self.in_function = in_function
         self.ret = ret
+        self.ret_type = ret_type
         self.partial_function = partial_function
 
     def is_fatal(self):
