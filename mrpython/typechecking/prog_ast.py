@@ -85,7 +85,7 @@ class Program:
 class UnsupportedNode:
     def __init__(self, node):
         self.ast = node
-        print("Unsupported node:", astpp.dump(node))
+        #print("Unsupported node:", astpp.dump(node))
 
 class Import:
     def __init__(self, node):

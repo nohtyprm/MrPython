@@ -481,6 +481,11 @@ class UnsupportedNodeError(TypeError):
     def is_fatal(self):
         return True
 
+    def fail_string(self):
+        return "UnsupportedNodeError[{}]@{}:{}".format(str(self.node.ast.__class__.__name__)
+                                                       , self.node.ast.lineno
+                                                       , self.node.ast.col_offset)
+
 class DisallowedDeclarationError(TypeError):
     def __init__(self, in_function, node):
         self.in_function = in_function
