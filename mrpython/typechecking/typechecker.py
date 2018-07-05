@@ -466,6 +466,13 @@ class FunctionArityError(TypeError):
     def is_fatal(self):
         return True
 
+    def fail_string(self):
+        return "FunctionArityError[{},{}/{}]@{}:{}".format(self.func_def.name
+                                                           , len(self.func_def.parameters)
+                                                           , len(self.signature.param_types)
+                                                           , self.func_def.ast.lineno
+                                                           , self.func_def.ast.col_offset)
+
 class UnsupportedNodeError(TypeError):
     def __init__(self, in_function, node):
         self.in_function = in_function
