@@ -120,7 +120,7 @@ def type_check_Program(prog):
         signature = function_type_parser(fun_def.docstring)
         #print(repr(signature))
         if signature.iserror:
-            ctx.add_type_error(SignatureParseError(fun_name, fun_def))
+            ctx.add_type_error(SignatureParseError(fun_name, fun_def, signature))
         else:
             ctx.register_function(fun_name, signature.content, fun_def)
 
@@ -444,6 +444,19 @@ class UnsupportedImportError(TypeError):
 
     def is_fatal(self):
         return False
+
+class SignatureParseError(TypeError):
+    def __init__(self, fun_name, fun_def, signature):
+        self.fun_name = fun_name
+        self.fun_def = fun_def
+        self.signature = signature
+
+    def fail_string(self):
+        return "SignatureParseError[{}]@{}:{}".format(self.fun_name, self.fun_def.ast.lineno, self.fun_def.ast.col_offset)
+
+    def is_fatal(self):
+        return False
+
 
 class FunctionArityError(TypeError):
     def __init__(self, func_def, signature):
