@@ -226,6 +226,7 @@ class Console:
         self.write(report.header, tags=(tag))
         for error in report.convention_errors:
             self.write(str(error), tags=(error.severity))
+            self.write("\n")
 
         if not status:
             for error in report.compilation_errors:

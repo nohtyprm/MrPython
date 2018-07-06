@@ -28,6 +28,10 @@ TRANSLATOR_DICT = {
     , "Wrong variable name in declaration, it should be '{}'" : { 'fr' : "le nom de variable est erroné dans la déclaration, cela devrait être '{}'"}
     , "Missing ':' character before variable type declaration" : { 'fr' : "il manque le caractère ':' avant le type de la variable"}
     , "I don't understand the declared type for variable '{}'" : { 'fr' : "je ne comprends pas le type déclaré pour la variable '{}'"}
+    , "Variable problem" : { 'fr' : "Problème de variable"}
+    , "there is such variable of name '{}'" : { 'fr' : "il n'y a pas de variable de nom '{}'"}
+    , "Call problem" : { 'fr' : "Problème d'appel de fonction"}
+    , "the {}-th argument in call to function '{}' is erroneous" : { 'fr' : "le {}-ième argument dans l'appel à '{}' est erroné"}
 }
 
 def tr(msg):

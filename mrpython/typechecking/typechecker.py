@@ -47,6 +47,9 @@ class TypingContext:
         if error.is_fatal():
             self.fatal_error = True
 
+    def has_error(self):
+        return len(self.type_errors) > 0
+
     def register_import(self, import_map):
         for (fname, ftype) in import_map.items():
             self.global_env[fname] = ftype
@@ -159,9 +162,11 @@ def type_check_FunctionDef(func_def, ctx):
 
         #print(repr(instr))
         instr.type_check(ctx)
-        if ctx.fatal_error:
+        if ctx.has_error():
             ctx.unregister_function_def()
             return
+
+    ctx.unregister_function_def()
 
 FunctionDef.type_check = type_check_FunctionDef
 
@@ -219,13 +224,12 @@ def fetch_declaration_type(ctx, assign):
 Assign.type_check = type_check_Assign
 
 def type_check_Return(ret, ctx):
-    # Compare with expected return type
-    expr_type = type_expect(ctx, ret.expr, ctx.return_type)
-    if expr_type is None:
+    expr_type = ret.expr.type_infer(ctx)
+    if not expr_type:
+        return None
+    if not ctx.return_type.type_compare(ctx, expr_type):
         ctx.add_type_error(WrongReturnTypeError(ctx.function_def, ret, ctx.return_type, ctx.partial_function))
-        return
-    # no error here
-    return
+        return None
 
 Return.type_check = type_check_Return
 
@@ -366,11 +370,13 @@ def type_infer_ECall(call, ctx):
         return None
 
     # step 3 : check the argument types
-    for (num_arg, arg, param_type) in zip(range(1), call.arguments, signature.param_types):
+    num_arg = 1
+    for (arg, param_type) in zip(call.arguments, signature.param_types):
         arg_type = type_expect(ctx, arg, param_type)
         if arg_type is None:
             ctx.add_type_error(CallArgumentError(ctx.function_def, call, num_arg, arg, param_type))
             return
+        num_arg += 1
 
     # step 4 : return the return type
     return signature.ret_type
@@ -531,7 +537,7 @@ class DeclarationError(TypeError):
                                                    , self.node.ast.col_offset)
 
     def is_fatal(self):
-        return True
+        return False
 
     def report(self, report):
         lineno = self.node.ast.lineno
@@ -547,12 +553,21 @@ class DeclarationError(TypeError):
 
 
 class UnknownVariableError(TypeError):
-    def __init__(self, in_function, node):
+    def __init__(self, in_function, var):
         self.in_function = in_function
-        self.node = node
+        self.var = var
 
     def is_fatal(self):
         return True
+
+    def fail_string(self):
+        return "UnknownVariableError[{}]@{}:{}".format(self.var.name
+                                                       , self.var.ast.lineno
+                                                       , self.var.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Variable problem"), self.var.ast.lineno, self.var.ast.col_offset
+                                    , tr("there is such variable of name '{}'").format(self.var.name))
 
 class TypeComparisonError(TypeError):
     def __init__(self, in_function, typ, explain):
@@ -607,6 +622,14 @@ class CallArgumentError(TypeError):
 
     def is_fatal(self):
         return True
+
+    def fail_string(self):
+        return "CallArgumentError[{}]@{}:{}".format(self.num_arg, self.call.ast.lineno, self.call.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Call problem"), self.call.ast.lineno, self.call.ast.col_offset
+                                    , tr("the {}-th argument in call to function '{}' is erroneous").format(self.num_arg
+                                                                                                           , self.call.fun_name))
 
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()
