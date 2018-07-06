@@ -10,6 +10,8 @@ from translate import tr
 import studentlib.gfx.image
 import studentlib.gfx.img_canvas
 
+from typechecking.typechecker import typecheck_from_ast
+
 def install_locals(locals):
     #locals = { k:v for (k,v) in locs.items() }
     locals['draw_line'] = studentlib.gfx.image.draw_line
@@ -145,7 +147,7 @@ class StudentRunner:
         locals = install_locals(locals)
         code = None
         try:
-            code = compile(self.source, self.filename, 'exec')            
+            code = compile(self.source, self.filename, 'exec')
         except SyntaxError as err:
             self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=str(err))
             return False
@@ -186,6 +188,10 @@ class StudentRunner:
             return False
         if not self.check_specifications():
             return False
+
+        if not self.check_types():
+            return False
+
         return True
 
     def check_specifications(self):
@@ -196,7 +202,7 @@ class StudentRunner:
 
     def check_asserts(self):
         """ Are there asserts at the end of the source code ? """
-        
+
         defined_funs = set()
         funcalls = set()
         for node in self.AST.body:
@@ -223,6 +229,20 @@ class StudentRunner:
             self.report.add_convention_error('run', tr('All functions tested'), details="==> " + tr("All functions tested (good)") + "\n")
 
         return True
+
+    def check_types(self):
+        type_ctx = typecheck_from_ast(self.AST, self.filename, self.source)
+        if len(type_ctx.type_errors) == 0:
+            # no type error
+            self.report.add_convention_error('run', tr('Program type-checked'), details=tr('==> the program is type-checked (very good)\n'))
+            return True
+
+        # convert type errors to report messages
+        for type_error in type_ctx.type_errors:
+            type_error.report(self.report)
+
+        return False
+
 
 class FunCallsVisitor(ast.NodeVisitor):
     def __init__(self):

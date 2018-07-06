@@ -16,12 +16,11 @@ if __name__ == "__main__":
 
     from translate import tr
 else:
-
     from .prog_ast import *
     from .type_ast import *
     from .type_parser import (type_expression_parser, function_type_parser)
 
-    from ..translate import tr
+    from .translate import tr
 
 class TypeError:
     def is_fatal(self):
@@ -442,8 +441,13 @@ class UnsupportedImportError(TypeError):
     def fail_string(self):
         return "UnsupportedImportError[{}]@{}:{}".format(self.import_name, self.import_ast.ast.lineno, self.import_ast.ast.col_offset)
 
+    def report(self, report):
+        report.add_convention_error('error', tr('Import problem'), line=self.import_ast.ast.lineno, offset=self.import_ast.ast.col_offset
+                                    , details=tr("the module '{}' is not supported in Python101").format(self.import_name))
+
+
     def is_fatal(self):
-        return False
+        return True
 
 class SignatureParseError(TypeError):
     def __init__(self, fun_name, fun_def, signature):
@@ -565,11 +569,19 @@ class CallArgumentError(TypeError):
     def is_fatal(self):
         return True
 
+def typecheck_from_ast(ast, filename=None, source=None):
+    prog = Program()
+    prog.build_from_ast(ast, filename, source)
+    ctx = prog.type_check()
+    return ctx
+
+def typecheck_from_file(filename):
+    prog = Program()
+    prog.build_from_file(filename)
+    ctx = prog.type_check()
+    return ctx
 
 if __name__ == '__main__':
 
-    prog1 = Program()
-    prog1.build_from_file("../../examples/aire.py")
-
-    ctx = prog1.type_check()
+    ctx = typecheck_from_file("../../examples/aire.py")
     print(repr(ctx))

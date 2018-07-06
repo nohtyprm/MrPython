@@ -35,9 +35,11 @@ TRANSLATOR_DICT = {
     ,"Assertion error (failed test?)" : { 'fr' : "Erreur d'assertion (test invalide ?)" }
     ,"User interruption" : { 'fr' : "Interruption par l'utilisateur"}
     # Erreurs de conventions
+    , ": line {}\n" : { 'fr' : ": ligne {}\n"}
     ,"Missing tests" : { 'fr' : "Tests manquants"}
     ,"Untested functions: " : { 'fr' : "Fonctions non-testées : "}
     ,"All functions tested (good)" : { 'fr' : "Toutes les fonctions sont testées (bien)"}
+    , '==> the program is type-checked (very good)\n' : {'fr' : '==> le programme est bien typé (très bien)\n' }
     # status
     ,"Saving file" : { 'fr' : "Enregistre" }
 }

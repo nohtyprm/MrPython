@@ -60,7 +60,12 @@ class Program:
         modast = ast.parse(modtxt, mode="exec")
         self.build_from_ast(modast)
 
-    def build_from_ast(self, modast):
+    def build_from_ast(self, modast, filename=None, source=None):
+        if filename:
+            self.filename = filename
+        if source:
+            self.source = source
+
         if not isinstance(modast, ast.Module):
             raise ValueError("Cannot build program from AST: not a module (please report)")
         self.ast = modast

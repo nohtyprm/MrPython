@@ -210,7 +210,7 @@ class PyEditorList(Notebook):
 
     def goto_line_event(self, event=None):
         return self.get_current_editor().goto_line_event(event)
-        
+
     def increase_font_size_event(self, event=None):
         edit = self.get_current_editor()
         if edit:
