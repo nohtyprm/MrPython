@@ -481,18 +481,31 @@ class FunctionArityError(TypeError):
                                                            , self.func_def.ast.lineno
                                                            , self.func_def.ast.col_offset)
 
+    def report(self, report):
+        report.add_convention_error('error', tr("Function arity issue"), self.func_def.ast.lineno, self.func_def.ast.col_offset
+                                    , tr("the signature of function '{}' defines {} parameters, but there are {} effectively: {}").
+                                    format(self.func_def.name
+                                           , len(self.signature.param_types)
+                                           , len(self.func_def.parameters)
+                                           , "({})".format(", ".join(self.func_def.parameters))))
+
+
 class UnsupportedNodeError(TypeError):
     def __init__(self, in_function, node):
         self.in_function = in_function
         self.node = node
 
     def is_fatal(self):
-        return True
+        return False
 
     def fail_string(self):
         return "UnsupportedNodeError[{}]@{}:{}".format(str(self.node.ast.__class__.__name__)
                                                        , self.node.ast.lineno
                                                        , self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr('Not-Python101'), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("this construction is not available in Python101 (try expert mode for standard Python)"))
 
 class DisallowedDeclarationError(TypeError):
     def __init__(self, in_function, node):

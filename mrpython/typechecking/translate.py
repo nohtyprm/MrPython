@@ -17,6 +17,12 @@ TRANSLATOR_DICT = {
     , "the module '{}' is not supported in Python101" : { 'fr' : "le module '{}' n'est pas disponible en Python101"}
     , "Signature problem" : { 'fr' : "Problème de signature"}
     , "I don't understand the signature of function '{}'" : { 'fr' : "je ne comprends pas la signature de la fonction '{}'"}
+    , "Function arity issue" : { 'fr' : "Problème d'arité" }
+    , "the signature of function '{}' defines {} parameters, but there are {} effectively: {}"
+    : { 'fr' : "la signature de la fonction '{}' definit {} paramètre(s), mais il y en a {} effectivement : {}"}
+    , 'Not-Python101' : { 'fr' : "Non-Python101"}
+    , "this construction is not available in Python101 (try expert mode for standard Python)"
+    : { 'fr' : "cette construction n'est pas disponible en Python101 (vous pouvez essayer le mode expert pour faire du Python standard)"}
 }
 
 def tr(msg):
