@@ -458,8 +458,12 @@ class SignatureParseError(TypeError):
     def fail_string(self):
         return "SignatureParseError[{}]@{}:{}".format(self.fun_name, self.fun_def.ast.lineno, self.fun_def.ast.col_offset)
 
+    def report(self, report):
+        report.add_convention_error('error', tr("Signature problem"), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
+                                    , details=tr("I don't understand the signature of function '{}").format(self.fun_name))
+
     def is_fatal(self):
-        return False
+        return True
 
 
 class FunctionArityError(TypeError):
