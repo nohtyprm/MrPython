@@ -196,21 +196,23 @@ def fetch_declaration_type(ctx, assign):
 
     #print(decl_line)
     if (not decl_line) or decl_line[0] != '#':
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign, tr("Missing '#' character in variable declaration")))
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'header-char', tr("Missing variable declaration '{}'").format(assign.var_name)))
         return None
     decl_line = decl_line[1:].strip()
     if (not decl_line) or decl_line[0] != assign.var_name:
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign, tr("Missing variable name '{}' in declaration").format(assign.var_name)))
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'var-name', tr("Wrong variable name in declaration, it should be '{}'").format(assign.var_name)))
         return None
     decl_line = decl_line[1:].strip()
     if (not decl_line) or decl_line[0] != ':':
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign, tr("Missing ':' character before variable type declaration")))
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'colon', tr("Missing ':' character before variable type declaration")))
         return None
     decl_line = decl_line[1:].strip()
     decl_type = type_expression_parser(decl_line)
-    if decl_type.iserror:
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign, tr("Don't understand the declared type: {}").format(decl_type)))
+    #print("rest='{}'".format(decl_line[decl_type.end_pos.offset:]))
+    if decl_type.iserror or decl_line[decl_type.end_pos.offset:]!='':
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'parse', tr("I don't understand the declared type for variable '{}'").format(assign.var_name)))
         return None
+    #print(repr(decl_type))
     #print(decl_type.content)
     return decl_type.content
 
@@ -442,7 +444,8 @@ class UnsupportedImportError(TypeError):
         return "UnsupportedImportError[{}]@{}:{}".format(self.import_name, self.import_ast.ast.lineno, self.import_ast.ast.col_offset)
 
     def report(self, report):
-        report.add_convention_error('error', tr('Import problem'), line=self.import_ast.ast.lineno, offset=self.import_ast.ast.col_offset
+        report.add_convention_error('error', tr('Import problem'), line=self.import_ast.ast.lineno
+                                    , offset=self.import_ast.ast.col_offset
                                     , details=tr("the module '{}' is not supported in Python101").format(self.import_name))
 
 
@@ -516,13 +519,32 @@ class DisallowedDeclarationError(TypeError):
         return True
 
 class DeclarationError(TypeError):
-    def __init__(self, in_function, node, explain):
+    def __init__(self, in_function, node, category, explain):
         self.in_function = in_function
         self.node = node
+        self.category = category
         self.explain = explain
+
+    def fail_string(self):
+        return "DeclarationError[{}]@{}:{}".format(self.category
+                                                   , self.node.ast.lineno if self.category == "header-char" else self.node.ast.lineno-1
+                                                   , self.node.ast.col_offset)
 
     def is_fatal(self):
         return True
+
+    def report(self, report):
+        lineno = self.node.ast.lineno
+        col_offset = self.node.ast.col_offset
+        if self.category == 'header-char':
+            report.add_convention_error('error', tr('Declaration problem'), lineno, col_offset, self.explain)
+            return
+        lineno -= 1
+        if self.category == 'var-name' or self.category == 'colon' or self.category == 'parse':
+            report.add_convention_error('error', tr('Declaration problem'), lineno, col_offset, self.explain)
+        else:
+            raise ValueError("Unknown declaration category: '{}' (please report)".format(self.category))
+
 
 class UnknownVariableError(TypeError):
     def __init__(self, in_function, node):
