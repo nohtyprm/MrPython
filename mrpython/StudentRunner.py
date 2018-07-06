@@ -232,6 +232,7 @@ class StudentRunner:
 
     def check_types(self):
         type_ctx = typecheck_from_ast(self.AST, self.filename, self.source)
+        fatal_error = False
         if len(type_ctx.type_errors) == 0:
             # no type error
             self.report.add_convention_error('run', tr('Program type-checked'), details=tr('==> the program is type-checked (very good)\n'))
@@ -240,8 +241,11 @@ class StudentRunner:
         # convert type errors to report messages
         for type_error in type_ctx.type_errors:
             type_error.report(self.report)
+            if type_error.is_fatal():
+                fatal_error = True
 
-        return False
+        #print("fatal_error = ", str(fatal_error))
+        return not fatal_error
 
 
 class FunCallsVisitor(ast.NodeVisitor):

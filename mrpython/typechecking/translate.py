@@ -16,7 +16,7 @@ TRANSLATOR_DICT = {
     "Import problem" : { 'fr' : "Problème d'import"}
     , "the module '{}' is not supported in Python101" : { 'fr' : "le module '{}' n'est pas disponible en Python101"}
     , "Signature problem" : { 'fr' : "Problème de signature"}
-    , "I don't understand the signature of function '{}" : { 'fr' : "je ne comprends pas la signature de la fonction '{}"}
+    , "I don't understand the signature of function '{}'" : { 'fr' : "je ne comprends pas la signature de la fonction '{}'"}
 }
 
 def tr(msg):
