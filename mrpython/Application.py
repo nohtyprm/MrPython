@@ -130,7 +130,7 @@ class Application:
             new_title = "MrPython"
             self.root.title(new_title)
             return
-            
+
         directory = ""
         if self.editor_list.get_current_editor().io.filename:
             directory = self.editor_list.get_current_editor().io.filename
@@ -215,6 +215,10 @@ class Application:
             self.status_bar.update_save_label(file_name)
             self.console.run(file_name)
 
+    def goto_position(self, lineno, col_offset):
+        editor = self.editor_list.get_current_editor()
+        editor.mark_set("insert", "%d.%d" % (lineno, col_offset))
+        editor.focus()
 
     # TODO: Continue ?
     def check_module(self, event=None):

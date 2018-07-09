@@ -4,6 +4,8 @@ from tkinter.font import Font, nametofont
 from PyInterpreter import InterpreterProxy
 from WidgetRedirector import WidgetRedirector
 
+from HyperlinkManager import HyperlinkManager
+
 import version
 from translate import tr
 import io
@@ -126,12 +128,13 @@ class Console:
         self.scrollbar = Scrollbar(self.frame_output)
         self.scrollbar.grid(row=0, column=1, sticky=(N, S))
 
-        
-        
+
+
         self.output_console = ReadOnlyText(self.frame_output, height=15, 
                                    yscrollcommand=self.scrollbar.set)
 
-        
+        self.hyperlinks = HyperlinkManager(self.output_console)
+
         self.frame_output.config(borderwidth=1, relief=GROOVE)
         self.output_console.grid(row=0, column=0, sticky=(N, S, E, W))
         self.scrollbar.config(command=self.output_console.yview)
@@ -216,6 +219,7 @@ class Console:
             the new mode """
         self.mode = mode
         self.reset_output()
+        self.hyperlinks.reset()
         #self.switch_input_status(False)
 
     def write_report(self, status, report):
@@ -223,26 +227,40 @@ class Console:
         if not status:
             tag = 'error'
 
+        self.hyperlinks.reset()
+
         self.write(report.header, tags=(tag))
         for error in report.convention_errors:
-            self.write(str(error), tags=(error.severity))
+            def error_click_cb():
+                self.app.goto_position(error.line, error.offset)
+            hyper, hyper_spec = self.hyperlinks.add(error_click_cb)
+            self.write(str(error), tags=(error.severity, hyper, hyper_spec))
             self.write("\n")
 
         if not status:
             for error in report.compilation_errors:
-                self.write(str(error), tags=(error.severity))
+                def error_click_cb():
+                    self.app.goto_position(error.line, error.offset)
+                    hyper, hyper_spec = self.hyperlinks.add(error_click_cb)
+                self.write(str(error), tags=(error.severity, hyper, hyper_spec))
             for error in report.execution_errors:
-                self.write(str(error), tags=(error.severity))
+                def error_click_cb():
+                    self.app.goto_position(error.line, error.offset)
+                    hyper, hyper_spec = self.hyperlinks.add(error_click_cb)
+                self.write(str(error), tags=(error.severity, hyper, hyper_spec))
         else:
             for error in report.execution_errors:
-                self.write(str(error), tags=(error.severity))
+                def error_click_cb():
+                    self.app.goto_position(error.line, error.offset)
+                    hyper, hyper_spec = self.hyperlinks.add(error_click_cb)
+                self.write(str(error), tags=(error.severity, hyper, hyper_spec))
 
             self.write(str(report.output), tags=('stdout'))
             if report.result is not None:
                 self.write(repr(report.result), tags=('normal'))
 
         self.write(report.footer, tags=(tag))
-        
+
     def evaluate_action(self, *args):
         """ Evaluate the expression in the input console """
         expr = self.input_console.get()
