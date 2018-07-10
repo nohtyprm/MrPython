@@ -34,6 +34,8 @@ TRANSLATOR_DICT = {
     , "the {}-th argument in call to function '{}' is erroneous" : { 'fr' : "le {}-ième argument dans l'appel à '{}' est erroné"}
     , "Number problem" : { 'fr' : "Problème numérique"}
     , "this numeric value is not supported in Python 101: {} ({})" : { 'fr' : "cette valeur numérique n'est pas disponible en Python101 : {} ({})"}
+    , "Call problem" : { 'fr' : "Problème d'appel"}
+    , "I don't know any function named '{}'" : { 'fr' : "je ne connais pas de fonction dont le nom est '{}'"}
 }
 
 def tr(msg):

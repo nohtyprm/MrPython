@@ -603,12 +603,19 @@ class WrongReturnTypeError(TypeError):
         return True
 
 class UnknownFunctionError(TypeError):
-    def __init__(self, in_function, node):
+    def __init__(self, in_function, call):
         self.in_function = in_function
-        self.node = node
+        self.call = call
 
     def is_fatal(self):
         return True
+
+    def fail_string(self):
+        return "UnknownFunctionError[{}]@{}:{}".format(self.call.fun_name, self.call.ast.lineno, self.call.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Call problem"), self.call.ast.lineno, self.call.ast.col_offset
+                                    , tr("I don't know any function named '{}'").format(self.call.fun_name))
 
 class CallArityError(TypeError):
     def __init__(self, in_function, signature, call):
