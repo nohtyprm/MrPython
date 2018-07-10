@@ -585,6 +585,13 @@ class UnsupportedNumericTypeError(TypeError):
     def is_fatal(self):
         return True
 
+    def fail_string(self):
+        return "UnsupportedNumericTypeError[{}]@{}:{}".format(self.num.value, self.num.ast.lineno, self.num.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Number problem"), self.num.ast.lineno, self.num.ast.col_offset
+                                    , tr("this numeric value is not supported in Python 101: {} ({})").format(self.num.value, type(self.num.value)))
+
 class WrongReturnTypeError(TypeError):
     def __init__(self, in_function, ret, ret_type, partial_function):
         self.in_function = in_function

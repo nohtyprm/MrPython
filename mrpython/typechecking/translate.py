@@ -32,6 +32,8 @@ TRANSLATOR_DICT = {
     , "there is such variable of name '{}'" : { 'fr' : "il n'y a pas de variable de nom '{}'"}
     , "Call problem" : { 'fr' : "Problème d'appel de fonction"}
     , "the {}-th argument in call to function '{}' is erroneous" : { 'fr' : "le {}-ième argument dans l'appel à '{}' est erroné"}
+    , "Number problem" : { 'fr' : "Problème numérique"}
+    , "this numeric value is not supported in Python 101: {} ({})" : { 'fr' : "cette valeur numérique n'est pas disponible en Python101 : {} ({})"}
 }
 
 def tr(msg):
