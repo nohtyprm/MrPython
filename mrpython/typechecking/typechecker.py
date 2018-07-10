@@ -182,12 +182,13 @@ def type_check_Assign(assign, ctx):
         declared_type = fetch_declaration_type(ctx, assign)
         if declared_type is None:
             return
+        
         # Step 4a) infer type of initialization expression
         expr_type = assign.expr.type_infer(ctx)
         if not expr_type:
             return
         # Step 5a) compare inferred type wrt. declared type
-        if not expr_type.type_compare(ctx, declared_type):
+        if not declared_type.type_compare(ctx, assign.expr, expr_type):
             return
         # Step 6a) register declared type in environment
         ctx.local_env[assign.var_name] = (declared_type, ctx.fetch_scope_mode())
@@ -227,7 +228,7 @@ def type_check_Return(ret, ctx):
     expr_type = ret.expr.type_infer(ctx)
     if not expr_type:
         return None
-    if not ctx.return_type.type_compare(ctx, expr_type):
+    if not ctx.return_type.type_compare(ctx, ret.expr, expr_type):
         ctx.add_type_error(WrongReturnTypeError(ctx.function_def, ret, ctx.return_type, ctx.partial_function))
         return None
 
@@ -392,35 +393,35 @@ def type_expect(ctx, expr, expected_type):
     expr_type = expr.type_infer(ctx)
     if not expr_type:
         return None
-    if not expected_type.type_compare(ctx, expr_type):
+    if not expected_type.type_compare(ctx, expr, expr_type):
         return None
     return expr_type
 
-def type_compare_NumberType(expected_type, ctx, expr_type):
+def type_compare_NumberType(expected_type, ctx, expr, expr_type):
     if isinstance(expr_type, NumberType) \
        or isinstance(expr_type, IntType) \
        or isinstance(expr_type, FloatType): 
         return True
 
-    ctx.add_type_error(TypeComparisonError(ctx.function_def, expr_type, tr("Expecting a Number")))
+    ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a Number")))
     return False
 
 NumberType.type_compare = type_compare_NumberType
 
-def type_compare_IntType(expected_type, ctx, expr_type):
+def type_compare_IntType(expected_type, ctx, expr, expr_type):
     if isinstance(expr_type, IntType):
         return True
 
-    ctx.add_type_error(TypeComparisonError(ctx.function_def, expr_type, tr("Expecting an int")))
+    ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an int")))
     return False
 
 IntType.type_compare = type_compare_IntType
 
-def type_compare_FloatType(expected_type, ctx, expr_type):
+def type_compare_FloatType(expected_type, ctx, expr, expr_type):
     if isinstance(expr_type, FloatType):
         return True
 
-    ctx.add_type_error(TypeComparisonError(ctx.function_def, expr_type, tr("Expecting a float")))
+    ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a float")))
     return False
 
 FloatType.type_compare = type_compare_FloatType
@@ -570,12 +571,21 @@ class UnknownVariableError(TypeError):
                                     , tr("there is such variable of name '{}'").format(self.var.name))
 
 class TypeComparisonError(TypeError):
-    def __init__(self, in_function, typ, explain):
+    def __init__(self, in_function, expected_type, expr, expr_type, explain):
         self.in_function = in_function
-        self.type = typ
+        self.expected_type = expected_type
+        self.expr = expr
+        self.expr_type = expr_type
 
     def is_fatal(self):
         return True
+
+    def fail_string(self):
+        return "TypeComparisonError[{}/{}]@{}:{}".format(self.expected_type, self.expr_type, self.expr.ast.lineno, self.expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Incompatible types"), self.expr.ast.lineno, self.expr.ast.col_offset
+                                    , tr("Expecting type {} but found {} instead").format(self.expected_type, self.expr_type))
 
 class UnsupportedNumericTypeError(TypeError):
     def __init__(self, in_function, num):
@@ -659,5 +669,5 @@ def typecheck_from_file(filename):
 
 if __name__ == '__main__':
 
-    ctx = typecheck_from_file("../../examples/aire.py")
+    ctx = typecheck_from_file("../../test/progs/01_aire_KO_14.py")
     print(repr(ctx))

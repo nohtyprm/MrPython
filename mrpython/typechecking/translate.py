@@ -36,6 +36,8 @@ TRANSLATOR_DICT = {
     , "this numeric value is not supported in Python 101: {} ({})" : { 'fr' : "cette valeur numérique n'est pas disponible en Python101 : {} ({})"}
     , "Call problem" : { 'fr' : "Problème d'appel"}
     , "I don't know any function named '{}'" : { 'fr' : "je ne connais pas de fonction dont le nom est '{}'"}
+    , "Incompatible types" : { 'fr' : "Types incompatibles"}
+    , "Expecting type {} but found {} instead" : { 'fr' : "j'attendais le type {} mais cette expression est plutôt de type: {}"}
 }
 
 def tr(msg):
