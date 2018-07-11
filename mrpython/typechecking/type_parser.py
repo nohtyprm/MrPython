@@ -3,7 +3,7 @@
 
 import os.path, sys
 
-pop_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "popparser", "src")
+pop_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir)
 #print("pop path=", pop_path)
 sys.path.append(pop_path)
 
