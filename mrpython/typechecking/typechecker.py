@@ -132,6 +132,10 @@ def type_check_Program(prog):
         if ctx.fatal_error:
             return ctx
 
+    # fourth step: type-check test assertions
+    for test_case in prog.test_cases:
+        print(test_case.expr.ast)
+
     return ctx
 
 Program.type_check = type_check_Program

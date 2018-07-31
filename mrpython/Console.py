@@ -271,7 +271,7 @@ class Console:
             self.app.running_interpreter_proxy = self.interpreter
 
         callback_called = False
-            
+
         # the call back
         def callback(ok, report):
             nonlocal callback_called
@@ -279,7 +279,7 @@ class Console:
                 return
             else:
                 callback_called = True
-            
+
             if ok:
                 self.input_history.record(expr)
 

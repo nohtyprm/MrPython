@@ -130,6 +130,7 @@ class TestCase:
         self.ast = node
         #print(astpp.dump(node))
 
+        self.expr = parse_expression(self.ast.test)
 
 class Assign:
     def __init__(self, node):
@@ -233,6 +234,45 @@ def parse_function_name(func_descr):
     parts.append(val.id)
     return ".".join(parts[::-1])
 
+class ECompare:
+    def __init__(self, node, conds):
+        self.ast = node
+        self.conds = conds
+
+def parse_compare(node):
+    left = node.left
+    conds = []
+    for (op, right) in zip(node.ops, node.comparators):
+        eleft = parse_expression(left)
+        if isinstance(eleft, UnsupportedNode):
+            return UnsupportedNode(node)
+        eright = parse_expression(right)
+        if isinstance(right, UnsupportedNode):
+            return UnsupportedNode(node)
+        econd = parse_cond(op, eleft, eright)
+        if econd is None:
+            return UnsupportedNode(node)
+        conds.append(econd)
+        left = right
+
+    return ECompare(node, conds)
+
+class CEq:
+    def __init__(self, op, left, right):
+        self.ast = op
+        self.left = left
+        self.right = right
+
+COMPARE_CLASSES = { "Eq" : CEq }
+
+
+def parse_cond(op, left, right):
+    compare_type_name = op.__class__.__name__
+    if compare_type_name in COMPARE_CLASSES:
+        return COMPARE_CLASSES[compare_type_name](op, left, right)
+    else:
+        return None
+
 class ECall:
     def __init__(self, node):
         self.ast = node
@@ -251,6 +291,7 @@ EXPRESSION_CLASSES = { "Num" : ENum
                        , "Name" : EVar
                        , "BinOp" : EBinOp
                        , "Call" : ECall
+                       , "Compare" : parse_compare
 }
 
 def parse_expression(node):
