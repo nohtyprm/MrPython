@@ -134,7 +134,9 @@ def type_check_Program(prog):
 
     # fourth step: type-check test assertions
     for test_case in prog.test_cases:
-        print(test_case.expr.ast)
+        test_case.type_check(ctx)
+        if ctx.fatal_error:
+            return ctx
 
     return ctx
 
@@ -186,7 +188,7 @@ def type_check_Assign(assign, ctx):
         declared_type = fetch_declaration_type(ctx, assign)
         if declared_type is None:
             return
-        
+
         # Step 4a) infer type of initialization expression
         expr_type = assign.expr.type_infer(ctx)
         if not expr_type:
@@ -237,6 +239,11 @@ def type_check_Return(ret, ctx):
         return None
 
 Return.type_check = type_check_Return
+
+def type_check_TestCase(assertion, ctx):
+    expr_type = type_expect(ctx, assertion.expr, BoolType())
+
+TestCase.type_check = type_check_TestCase
 
 ######################################
 # Type inference                     #
@@ -398,6 +405,7 @@ def type_expect(ctx, expr, expected_type):
     if not expr_type:
         return None
     if not expected_type.type_compare(ctx, expr, expr_type):
+        ctx.add_type_error(TypeComparisonError, ctx.function_def, expected_type, expr, expr_type, tr("Mismatch type '{}' expecting: {} ").format(expr_type, expected_type))
         return None
     return expr_type
 
@@ -658,6 +666,18 @@ class CallArgumentError(TypeError):
         report.add_convention_error('error', tr("Call problem"), self.call.ast.lineno, self.call.ast.col_offset
                                     , tr("the {}-th argument in call to function '{}' is erroneous").format(self.num_arg
                                                                                                            , self.call.fun_name))
+
+class TestCaseError(TypeError):
+    def __init__(self, test_case, expr_type):
+        self.test_case = test_case
+        self.expr_type = expr_type
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "TestCaseError[{}]@{}:{}".format(self.expr_type.__class__.__name__, self.ast.lineno, self.ast.col_offset)
+
 
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()
