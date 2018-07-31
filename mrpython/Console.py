@@ -232,7 +232,7 @@ class Console:
         self.write(report.header, tags=(tag))
         for error in report.convention_errors:
             def error_click_cb():
-                self.app.goto_position(error.line, error.offset)
+                self.app.goto_position(error.line, error.offset or 0)
             hyper, hyper_spec = self.hyperlinks.add(error_click_cb)
             self.write(str(error), tags=(error.severity, hyper, hyper_spec))
             self.write("\n")
