@@ -178,6 +178,28 @@ class ENum:
         self.ast = node
         self.value = node.n
 
+class ETrue:
+    def __init__(self, node):
+        self.ast = node
+
+class EFalse:
+    def __init__(self, node):
+        self.ast = node
+
+class ENone:
+    def __init__(self, node):
+        self.ast = node
+
+def parse_constant(node):
+    if node.value is True:
+        return ETrue(node)
+    elif node.value is False:
+        return EFalse(node)
+    elif node.value is None:
+        return ENone(node)
+
+    raise ValueError("Constant not supported: {} (please report)".format(node.value))
+
 class EVar:
     def __init__(self, node):
         self.ast = node
@@ -257,11 +279,15 @@ def parse_compare(node):
 
     return ECompare(node, conds)
 
-class CEq:
+class Condition:
     def __init__(self, op, left, right):
         self.ast = op
         self.left = left
         self.right = right
+
+class CEq(Condition):
+    def __init__(self, op, left, right):
+        super().__init__(op, left, right)
 
 COMPARE_CLASSES = { "Eq" : CEq }
 
@@ -288,6 +314,7 @@ class ECall:
 
 
 EXPRESSION_CLASSES = { "Num" : ENum
+                       , "NameConstant"  : parse_constant
                        , "Name" : EVar
                        , "BinOp" : EBinOp
                        , "Call" : ECall

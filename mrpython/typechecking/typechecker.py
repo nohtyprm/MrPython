@@ -367,6 +367,16 @@ def type_infer_ENum(num, ctx):
 
 ENum.type_infer = type_infer_ENum
 
+def type_infer_ETrue(node, ctx):
+    return BoolType()
+
+ETrue.type_infer = type_infer_ETrue
+
+def type_infer_EFalse(node, ctx):
+    return BoolType()
+
+EFalse.type_infer = type_infer_EFalse
+
 def type_infer_ECall(call, ctx):
     # step 1 : fetch the signature of the called function
     if not call.fun_name in ctx.global_env:
@@ -397,61 +407,79 @@ ECall.type_infer = type_infer_ECall
 
 def type_infer_ECompare(ecomp, ctx):
     for cond in ecomp.conds:
-        if type_expect(ctx, cond.left, BoolType()) is None:
-            return None
-        if type_expect(ctx, cond.right, BoolType()) is None:
+        if not cond.type_check(ctx, ecomp):
             return None
 
     return BoolType()
 
 ECompare.type_infer = type_infer_ECompare
 
+def type_check_Condition(cond, ctx, compare):
+        left_type = cond.left.type_infer(ctx)
+        if left_type is None:
+            return False
+        if type_expect(ctx, cond.right, left_type, raise_error=False) is None:
+            ctx.add_type_error(CompareConditionError(compare, cond))
+            return False
+        return True
+
+Condition.type_check = type_check_Condition
+
 ######################################
 # Type comparisons                   #
 ######################################
 
-def type_expect(ctx, expr, expected_type):
+def type_expect(ctx, expr, expected_type, raise_error=True):
     expr_type = expr.type_infer(ctx)
     if not expr_type:
         return None
-    if not expected_type.type_compare(ctx, expr, expr_type):
-        #ctx.add_type_error(TypeComparisonError, ctx.function_def, expected_type, expr, expr_type, tr("Mismatch type '{}' expecting: {} ").format(expr_type, expected_type))
+    if not expected_type.type_compare(ctx, expr, expr_type, raise_error):
+        #ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Mismatch type '{}' expecting: {} ").format(expr_type, expected_type)))
         return None
     return expr_type
 
-def type_compare_NumberType(expected_type, ctx, expr, expr_type):
+def type_compare_NumberType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, NumberType) \
        or isinstance(expr_type, IntType) \
        or isinstance(expr_type, FloatType): 
         return True
 
-    ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a Number")))
+    if raise_error:
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a Number")))
+
     return False
 
 NumberType.type_compare = type_compare_NumberType
 
-def type_compare_IntType(expected_type, ctx, expr, expr_type):
+def type_compare_IntType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, IntType):
         return True
 
-    ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an int")))
+    if raise_error:
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an int")))
+
     return False
 
 IntType.type_compare = type_compare_IntType
 
-def type_compare_FloatType(expected_type, ctx, expr, expr_type):
+def type_compare_FloatType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, FloatType):
         return True
 
-    ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a float")))
+    if raise_error:
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a float")))
+
     return False
 
 FloatType.type_compare = type_compare_FloatType
 
-def type_compare_BoolType(expected_type, ctx, expr, expr_type):
+def type_compare_BoolType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, BoolType):
         return True
-    ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a Bool")))
+
+    if raise_error:
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a Bool")))
+
     return False
 
 BoolType.type_compare = type_compare_BoolType
@@ -694,8 +722,22 @@ class TestCaseError(TypeError):
         return True
 
     def fail_string(self):
-        return "TestCaseError[{}]@{}:{}".format(self.expr_type.__class__.__name__, self.ast.lineno, self.ast.col_offset)
+        return "TestCaseError[{}]@{}:{}".format(self.expr_type.__class__.__name__, self.test_case.ast.lineno, self.test_case.ast.col_offset)
 
+class CompareConditionError(TypeError):
+    def __init__(self, compare, cond):
+        self.compare = compare
+        self.cond = cond
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "CompareConditionError@{}:{}".format(self.compare.ast.lineno, self.compare.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Comparison error"), self.compare.ast.lineno, self.compare.ast.col_offset
+                                    , tr("The two operands of the comparision should have the same type"))
 
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()
