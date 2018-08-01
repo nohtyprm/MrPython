@@ -395,6 +395,16 @@ def type_infer_ECall(call, ctx):
 
 ECall.type_infer = type_infer_ECall
 
+def type_infer_ECompare(ecomp, ctx):
+    for cond in ecomp.conds:
+        if type_expect(ctx, cond.left, BoolType()) is None:
+            return None
+        if type_expect(ctx, cond.right, BoolType()) is None:
+            return None
+
+    return BoolType()
+
+ECompare.type_infer = type_infer_ECompare
 
 ######################################
 # Type comparisons                   #
@@ -405,7 +415,7 @@ def type_expect(ctx, expr, expected_type):
     if not expr_type:
         return None
     if not expected_type.type_compare(ctx, expr, expr_type):
-        ctx.add_type_error(TypeComparisonError, ctx.function_def, expected_type, expr, expr_type, tr("Mismatch type '{}' expecting: {} ").format(expr_type, expected_type))
+        #ctx.add_type_error(TypeComparisonError, ctx.function_def, expected_type, expr, expr_type, tr("Mismatch type '{}' expecting: {} ").format(expr_type, expected_type))
         return None
     return expr_type
 
@@ -437,6 +447,14 @@ def type_compare_FloatType(expected_type, ctx, expr, expr_type):
     return False
 
 FloatType.type_compare = type_compare_FloatType
+
+def type_compare_BoolType(expected_type, ctx, expr, expr_type):
+    if isinstance(expr_type, BoolType):
+        return True
+    ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a Bool")))
+    return False
+
+BoolType.type_compare = type_compare_BoolType
 
 ######################################
 # Standard imports                   #
