@@ -305,6 +305,16 @@ def type_infer_ESub(expr, ctx):
 
 ESub.type_infer = type_infer_ESub
 
+def type_infer_EUSub(expr, ctx):
+    operand_type = type_expect(ctx, expr.operand, NumberType())
+    if not operand_type:
+        return None
+
+    return operand_type
+
+EUSub.type_infer = type_infer_EUSub
+
+
 def type_infer_EMult(expr, ctx):
     left_type = type_expect(ctx, expr.left, NumberType())
     if not left_type:
