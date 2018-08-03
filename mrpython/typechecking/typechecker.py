@@ -202,6 +202,15 @@ def type_check_Assign(assign, ctx):
     else: # proper assignment
         raise NotImplementedError("Proper assignment not yet implemented")
 
+def parse_var_name(declaration):
+    vdecl = ""
+    for i in range(0, len(declaration)):
+        if declaration[i] == ':':
+            return (vdecl, declaration[i:])
+        elif not declaration[i].isspace():
+            vdecl += declaration[i]
+    return None, None
+
 def fetch_declaration_type(ctx, assign):
     lineno = assign.ast.lineno
     decl_line = ctx.prog.get_source_line(lineno-1).strip()
@@ -211,10 +220,12 @@ def fetch_declaration_type(ctx, assign):
         ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'header-char', tr("Missing variable declaration '{}'").format(assign.var_name)))
         return None
     decl_line = decl_line[1:].strip()
-    if (not decl_line) or decl_line[0] != assign.var_name:
+    var_name, decl_line = parse_var_name(decl_line)
+    print(var_name)
+    print(assign.var_name)
+    if var_name != assign.var_name:
         ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'var-name', tr("Wrong variable name in declaration, it should be '{}'").format(assign.var_name)))
         return None
-    decl_line = decl_line[1:].strip()
     if (not decl_line) or decl_line[0] != ':':
         ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'colon', tr("Missing ':' character before variable type declaration")))
         return None

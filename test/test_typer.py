@@ -21,7 +21,8 @@ def testWithoutTypeError(prog_filename, prog_name, prog):
     ctx = prog.type_check()
     if ctx.type_errors:
         print("  ==> FAIL: some type error has been raised")
-        #print(ctx.type_errors)
+        for error in ctx.type_errors:
+            print("      | " + error.fail_string())
         nb_tests_fail+=1
     else:
         print("  ==> PASS: no type error")
