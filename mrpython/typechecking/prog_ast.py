@@ -159,9 +159,21 @@ class Return:
         #print(astpp.dump(node))
         self.expr = parse_expression(self.ast.value)
 
+class If:
+    def __init__(self, node):
+        self.ast = node
+        print(astpp.dump(node))
+        self.cond = parse_expression(self.ast.test)
+        self.body = []
+        for instr in self.ast.body:
+            iinstr = parse_instruction(instr)
+            self.body.append(iinstr)
+        self.orelse = parse_instruction(self.ast.orelse)
+
 
 INSTRUCTION_CLASSES = {"Assign" : parse_assign
                        , "Return" : Return
+                       , "If" : If
 }
 
 def parse_instruction(node):
@@ -247,6 +259,22 @@ def EBinOp(node):
     else:
         return UnsupportedNode(node)
 
+class EUSub:
+    def __init__(self, node, operand):
+        self.ast = node
+        self.operand = operand
+
+UNOP_CLASSES = { "USub" : EUSub
+}
+
+def EUnaryOp(node):
+    unop_type_name = node.op.__class__.__name__
+    if unop_type_name in UNOP_CLASSES:
+        operand = parse_expression(node.operand)
+        return UNOP_CLASSES[unop_type_name](node, operand)
+    else:
+        return UnsupportedNode(node)
+
 def parse_function_name(func_descr):
     parts = []
     val = func_descr
@@ -289,7 +317,14 @@ class CEq(Condition):
     def __init__(self, op, left, right):
         super().__init__(op, left, right)
 
-COMPARE_CLASSES = { "Eq" : CEq }
+class CGtE(Condition):
+    def __init__(self, op, left, right):
+        super().__init__(op, left, right)
+
+
+COMPARE_CLASSES = { "Eq" : CEq
+                    , "GtE" : CGtE
+}
 
 
 def parse_cond(op, left, right):
@@ -317,6 +352,7 @@ EXPRESSION_CLASSES = { "Num" : ENum
                        , "NameConstant"  : parse_constant
                        , "Name" : EVar
                        , "BinOp" : EBinOp
+                       , "UnaryOp" : EUnaryOp
                        , "Call" : ECall
                        , "Compare" : parse_compare
 }
