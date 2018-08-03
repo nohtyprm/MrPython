@@ -439,6 +439,11 @@ def type_infer_EDiv(expr, ctx):
 EDiv.type_infer = type_infer_EDiv
 
 def type_infer_EVar(var, ctx):
+    # check if the variable is dead
+    if var.name in ctx.dead_variables:
+        ctx.add_type_error(DeadVariableUse(var.name, var))
+        return None
+
     # check if the var is a parameter
     if var.name in ctx.param_env:
         return ctx.param_env[var.name]
