@@ -38,7 +38,7 @@ class TypingContext:
         self.return_type = None
         self.function_def = None
         self.partial_function = None
-        self.allow_declarations = None
+        self.dead_variables = set()
         self.parent_stack = None
         self.local_env = None
 
@@ -69,12 +69,26 @@ class TypingContext:
     def register_function_def(self, func_def, partial):
         self.function_def = func_def
         self.partial_function = partial
-        # are variable declarations allowed ?
-        self.allow_declarations = True
         # for nested construction (while, for, if ...)
         self.parent_stack = []
         # remark: local (lexical) environment disallow shadowing
         self.local_env = {}
+
+    def push_parent(self, parent_node):
+        parent_local_env = { var_name : var_info for (var_name, var_info) in self.local_env.items() }
+        self.parent_stack.append((parent_node, parent_local_env))
+
+    def pop_parent(self):
+        if not self.parent_stack:
+            raise ValueError("Cannot pop from empty parent stack (please report)")
+
+        # all variables defined within the parent are now disallowed
+        _, parent_local_env = self.parent_stack.pop()
+        for var in self.local_env:
+            if var not in parent_local_env:
+                self.dead_variables.add(var)
+
+        self.local_env = parent_local_env
 
     def fetch_nominal_type(self, base_type):
         # TODO : follow metavar instantiations
@@ -180,35 +194,58 @@ def type_check_Assign(assign, ctx):
     # Step 1: distinguish between initialization and proper assignment
     if assign.var_name not in ctx.local_env:
         # initialization
-        # Step 2a) check if declaration is allowed here
-        if not ctx.allow_declarations:
-            ctx.add_type_error(DisallowedDeclaration(ctx.function_def, assign))
-            return
+        # Step 2a) check if declaration is allowed here  <<<=== XXX: This convention is maybe too restrictive (?)
+        # if not ctx.allow_declarations:
+        #     ctx.add_type_error(DisallowedDeclaration(ctx.function_def, assign))
+        #     return
         # Step 3a) fetch declared type
         declared_type = fetch_declaration_type(ctx, assign)
         if declared_type is None:
-            return
+            return False
 
         # Step 4a) infer type of initialization expression
         expr_type = assign.expr.type_infer(ctx)
-        if not expr_type:
-            return
+        if expr_type is None:
+            return False
         # Step 5a) compare inferred type wrt. declared type
         if not declared_type.type_compare(ctx, assign.expr, expr_type):
-            return
+            return False
         # Step 6a) register declared type in environment
         ctx.local_env[assign.var_name] = (declared_type, ctx.fetch_scope_mode())
+        return True
 
     else: # proper assignment
-        raise NotImplementedError("Proper assignment not yet implemented")
+        if assign.var_name in ctx.dead_variables:
+            ctx.add_type_error(DeadVariableUse(assign.var_name, assign))
+            return False
+
+        # XXX: check if the student does not try a new declaration ?
+
+        declared_type, scope_mode = ctx.local_env[assign.var_name]
+
+        expr_type = assign.expr.type_infer(ctx)
+        if expr_type is None:
+            return False
+
+        if not declared_type.type_compare(ctx, assign.expr, expr_type):
+            return False
+
+        return True
 
 def parse_var_name(declaration):
     vdecl = ""
+    expect_colon = False
     for i in range(0, len(declaration)):
-        if declaration[i] == ':':
+        if declaration[i] == ':' and expect_colon:
             return (vdecl, declaration[i:])
         elif not declaration[i].isspace():
+            if expect_colon:
+                return vdecl, declaration[i-1:]
             vdecl += declaration[i]
+        else:
+            if vdecl != "":
+                expect_colon = True
+
     return None, None
 
 def fetch_declaration_type(ctx, assign):
@@ -244,17 +281,53 @@ Assign.type_check = type_check_Assign
 def type_check_Return(ret, ctx):
     expr_type = ret.expr.type_infer(ctx)
     if not expr_type:
-        return None
+        return False
     if not ctx.return_type.type_compare(ctx, ret.expr, expr_type):
         ctx.add_type_error(WrongReturnTypeError(ctx.function_def, ret, ctx.return_type, ctx.partial_function))
-        return None
+        return False
+
+    return True
 
 Return.type_check = type_check_Return
 
 def type_check_TestCase(assertion, ctx):
     expr_type = type_expect(ctx, assertion.expr, BoolType())
+    if expr_type is None:
+        return False
+    return True
 
 TestCase.type_check = type_check_TestCase
+
+def type_check_If(ifnode, ctx):
+    # push the parent for the scoping rule
+    ctx.push_parent(ifnode)
+
+    # 1. check condition is a boolean
+    cond_type = type_expect(ctx, ifnode.cond, BoolType())
+    if cond_type is None:
+        ctx.pop_parent()
+        return False
+
+    # 2. check type of body
+    for instr in ifnode.body:
+        if not instr.type_check(ctx):
+            ctx.pop_parent()
+            return False
+
+    # pop the parent and repush
+    ctx.pop_parent()
+    ctx.push_parent(ifnode)
+
+    # 3. check type of orelse block
+    for instr in ifnode.orelse:
+        if not instr.type_check(ctx):
+            ctx.pop_parent()
+            return False
+
+    ctx.pop_parent()
+    return True
+
+If.type_check = type_check_If
 
 ######################################
 # Type inference                     #
@@ -445,27 +518,6 @@ def type_check_Condition(cond, ctx, compare):
         return True
 
 Condition.type_check = type_check_Condition
-
-def type_check_If(ifnode, ctx):
-    # TODO: handle variable declaration in ifs (or disallow altogether)
-
-    # 1. check condition is a boolean
-    cond_type = type_expect(ctx, ifnode.cond, BoolType())
-    if cond_type is None:
-        return False
-
-    # 2. check type of body
-    for instr in ifnode.body:
-        if not instr.type_check(ctx):
-            return False
-
-    # 3. check type of orelse
-    if not orelse.type_check(ctx):
-        return False
-
-    return True
-
-If.type_check = type_check_If
 
 ######################################
 # Type comparisons                   #
@@ -780,6 +832,21 @@ class CompareConditionError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Comparison error"), self.compare.ast.lineno, self.compare.ast.col_offset
                                     , tr("The two operands of the comparision should have the same type"))
+
+class DeadVariableUse(TypeError):
+    def __init__(self, var_name, node):
+        self.var_name = var_name
+        self.node = node
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "DeadVariableUse[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("Forbidden use of a variable that is not in scope (Python101 scoping rule)"))
 
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()

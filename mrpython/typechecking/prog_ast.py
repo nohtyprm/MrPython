@@ -168,7 +168,10 @@ class If:
         for instr in self.ast.body:
             iinstr = parse_instruction(instr)
             self.body.append(iinstr)
-        self.orelse = parse_instruction(self.ast.orelse)
+        self.orelse = []
+        for instr in self.ast.orelse:
+            iinstr = parse_instruction(instr)
+            self.orelse.append(iinstr)
 
 
 INSTRUCTION_CLASSES = {"Assign" : parse_assign
