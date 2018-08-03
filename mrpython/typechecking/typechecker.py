@@ -191,6 +191,12 @@ def type_check_FunctionDef(func_def, ctx):
 FunctionDef.type_check = type_check_FunctionDef
 
 def type_check_Assign(assign, ctx):
+    # first let's see if the variable is dead
+    if assign.var_name in ctx.dead_variables:
+        ctx.add_type_error(DeadVariableUse(assign.var_name, assign))
+        return False
+
+
     # Step 1: distinguish between initialization and proper assignment
     if assign.var_name not in ctx.local_env:
         # initialization
@@ -215,9 +221,6 @@ def type_check_Assign(assign, ctx):
         return True
 
     else: # proper assignment
-        if assign.var_name in ctx.dead_variables:
-            ctx.add_type_error(DeadVariableUse(assign.var_name, assign))
-            return False
 
         # XXX: check if the student does not try a new declaration ?
 
