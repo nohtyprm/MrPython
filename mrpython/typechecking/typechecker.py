@@ -221,8 +221,8 @@ def fetch_declaration_type(ctx, assign):
         return None
     decl_line = decl_line[1:].strip()
     var_name, decl_line = parse_var_name(decl_line)
-    print(var_name)
-    print(assign.var_name)
+    #print(var_name)
+    #print(assign.var_name)
     if var_name != assign.var_name:
         ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'var-name', tr("Wrong variable name in declaration, it should be '{}'").format(assign.var_name)))
         return None
