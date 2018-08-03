@@ -446,6 +446,27 @@ def type_check_Condition(cond, ctx, compare):
 
 Condition.type_check = type_check_Condition
 
+def type_check_If(ifnode, ctx):
+    # TODO: handle variable declaration in ifs (or disallow altogether)
+
+    # 1. check condition is a boolean
+    cond_type = type_expect(ctx, ifnode.cond, BoolType())
+    if cond_type is None:
+        return False
+
+    # 2. check type of body
+    for instr in ifnode.body:
+        if not instr.type_check(ctx):
+            return False
+
+    # 3. check type of orelse
+    if not orelse.type_check(ctx):
+        return False
+
+    return True
+
+If.type_check = type_check_If
+
 ######################################
 # Type comparisons                   #
 ######################################

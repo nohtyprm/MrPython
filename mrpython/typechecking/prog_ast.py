@@ -162,7 +162,7 @@ class Return:
 class If:
     def __init__(self, node):
         self.ast = node
-        print(astpp.dump(node))
+        #print(astpp.dump(node))
         self.cond = parse_expression(self.ast.test)
         self.body = []
         for instr in self.ast.body:
