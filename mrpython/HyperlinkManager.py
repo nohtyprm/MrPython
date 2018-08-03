@@ -38,6 +38,7 @@ class HyperlinkManager:
     def _click(self, event):
         for tag in self.text.tag_names(CURRENT):
             if tag[:6] == "hyper-":
-                self.links[tag]()
+                if tag in self.links:
+                    self.links[tag]()
                 return
 
