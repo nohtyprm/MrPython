@@ -92,6 +92,17 @@ class ConsoleHistory:
 
         return str
 
+
+class ErrorCallback:
+    def __init__(self, src, error):
+        self.src = src
+        self.error = error
+
+    def __call__(self):
+        print("error line=" + str(self.error.line))
+        self.src.app.goto_position(self.error.line, self.error.offset or 0)
+
+
 # from: http://tkinter.unpythonic.net/wiki/ReadOnlyText
 class ReadOnlyText(Text):
     def __init__(self, *args, **kwargs):
@@ -231,9 +242,9 @@ class Console:
 
         self.write(report.header, tags=(tag))
         for error in report.convention_errors:
-            def error_click_cb():
-                self.app.goto_position(error.line, error.offset or 0)
-            hyper, hyper_spec = self.hyperlinks.add(error_click_cb)
+            hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
+            print("hyper={}".format(hyper))
+            print("hyper_spec={}".format(hyper_spec))
             self.write(str(error), tags=(error.severity, hyper, hyper_spec))
             self.write("\n")
 
@@ -241,18 +252,18 @@ class Console:
             for error in report.compilation_errors:
                 def error_click_cb():
                     self.app.goto_position(error.line, error.offset)
-                    hyper, hyper_spec = self.hyperlinks.add(error_click_cb)
+                    hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
                 self.write(str(error), tags=(error.severity, hyper, hyper_spec))
             for error in report.execution_errors:
                 def error_click_cb():
                     self.app.goto_position(error.line, error.offset)
-                    hyper, hyper_spec = self.hyperlinks.add(error_click_cb)
+                    hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
                 self.write(str(error), tags=(error.severity, hyper, hyper_spec))
         else:
             for error in report.execution_errors:
                 def error_click_cb():
                     self.app.goto_position(error.line, error.offset)
-                    hyper, hyper_spec = self.hyperlinks.add(error_click_cb)
+                    hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
                 self.write(str(error), tags=(error.severity, hyper, hyper_spec))
 
             self.write(str(report.output), tags=('stdout'))

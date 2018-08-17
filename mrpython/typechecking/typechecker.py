@@ -674,7 +674,7 @@ class UnsupportedNodeError(TypeError):
                                                        , self.node.ast.col_offset)
 
     def report(self, report):
-        report.add_convention_error('warning', tr('Not-Python101'), self.node.ast.lineno, self.node.ast.col_offset
+        report.add_convention_error('error', tr('Not-Python101'), self.node.ast.lineno, self.node.ast.col_offset
                                     , tr("this construction is not available in Python101 (try expert mode for standard Python)"))
 
 class DisallowedDeclarationError(TypeError):
@@ -853,7 +853,7 @@ class DeadVariableUse(TypeError):
         return "DeadVariableUse[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
 
     def report(self, report):
-        report.add_convention_error('warning', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
+        report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
                                     , tr("Forbidden use of a variable that is not in scope (Python101 scoping rule)"))
 
 def typecheck_from_ast(ast, filename=None, source=None):

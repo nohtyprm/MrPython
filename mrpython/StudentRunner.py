@@ -77,10 +77,13 @@ class StudentRunner:
         # No parsing error here
 
         # perform the local checks
+        ret_val = True
         if not self.check_rules(self.report):
-            return False
+            ret_val = False
         else:
-            return self.run(locals) # Run the code if it passed all the convention tests
+            ret_val = self.run(locals) # Run the code if it passed all the convention tests
+
+        return ret_val
 
     def _extract_error_details(self, err):
         err_str = err.args[0]
