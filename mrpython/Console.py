@@ -99,7 +99,7 @@ class ErrorCallback:
         self.error = error
 
     def __call__(self):
-        print("error line=" + str(self.error.line))
+        #print("error line=" + str(self.error.line))
         self.src.app.goto_position(self.error.line, self.error.offset or 0)
 
 
