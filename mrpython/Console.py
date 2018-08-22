@@ -243,27 +243,21 @@ class Console:
         self.write(report.header, tags=(tag))
         for error in report.convention_errors:
             hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
-            print("hyper={}".format(hyper))
-            print("hyper_spec={}".format(hyper_spec))
+            #print("hyper={}".format(hyper))
+            #print("hyper_spec={}".format(hyper_spec))
             self.write(str(error), tags=(error.severity, hyper, hyper_spec))
             self.write("\n")
 
         if not status:
             for error in report.compilation_errors:
-                def error_click_cb():
-                    self.app.goto_position(error.line, error.offset)
-                    hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
+                hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
                 self.write(str(error), tags=(error.severity, hyper, hyper_spec))
             for error in report.execution_errors:
-                def error_click_cb():
-                    self.app.goto_position(error.line, error.offset)
-                    hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
+                hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
                 self.write(str(error), tags=(error.severity, hyper, hyper_spec))
         else:
             for error in report.execution_errors:
-                def error_click_cb():
-                    self.app.goto_position(error.line, error.offset)
-                    hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
+                hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
                 self.write(str(error), tags=(error.severity, hyper, hyper_spec))
 
             self.write(str(report.output), tags=('stdout'))
