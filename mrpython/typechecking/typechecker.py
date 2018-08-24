@@ -272,9 +272,12 @@ def fetch_declaration_type(ctx, assign):
     decl_line = decl_line[1:].strip()
     decl_type = type_expression_parser(decl_line)
     #print("rest='{}'".format(decl_line[decl_type.end_pos.offset:]))
-    if decl_type.iserror or decl_line[decl_type.end_pos.offset:]!='':
+    if decl_type.iserror: # or decl_line[decl_type.end_pos.offset:]!='': (TODO some sanity check ?)
         ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'parse', tr("I don't understand the declared type for variable '{}'").format(assign.var_name)))
         return None
+    remaining = decl_line[decl_type.end_pos.offset:].strip()
+    if remaining != '' and not remaining.startswith('('):
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'parse', tr("The declared type for variable '{}' has strange appended string: {}").format(assign.var_name, remaining)))
     #print(repr(decl_type))
     #print(decl_type.content)
     return decl_type.content
