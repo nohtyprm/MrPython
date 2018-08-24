@@ -63,7 +63,7 @@ def test_prog(prog_filename):
     global nb_tests
 
     prog_name = os.path.splitext(os.path.basename(prog_filename))[0]
-    ok = prog_name.endswith('OK_00')
+    ok = (prog_name.find('OK') != -1)
     print("* Testing: {} ({})".format(prog_name, "expecting success" if ok else "expecting type error"))
 
     prog = prog_ast.Program()
