@@ -173,10 +173,20 @@ class If:
             iinstr = parse_instruction(instr)
             self.orelse.append(iinstr)
 
+class While:
+    def __init__(self, node):
+        self.ast = node
+        #print(astpp.dump(node))
+        self.cond = parse_expression(self.ast.test)
+        self.body = []
+        for instr in self.ast.body:
+            iinstr = parse_instruction(instr)
+            self.body.append(iinstr)
 
 INSTRUCTION_CLASSES = {"Assign" : parse_assign
                        , "Return" : Return
                        , "If" : If
+                       , "While" : While
 }
 
 def parse_instruction(node):

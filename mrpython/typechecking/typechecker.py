@@ -116,6 +116,14 @@ class TypingContext:
 # Type checking                             #
 #############################################
 
+def type_check_UnsupportedNode(node):
+    print("Error: Type checking not supported for this node")
+    import astpp
+    print(astpp.dump(node.ast))
+    raise NotImplementedError("Type checking not supported for this node")
+
+UnsupportedNode.type_check = type_check_UnsupportedNode
+
 # Takes a program, and returns a
 # (possibly empty) list of type errors
 def type_check_Program(prog):
@@ -335,9 +343,41 @@ def type_check_If(ifnode, ctx):
 
 If.type_check = type_check_If
 
+def type_check_While(wnode, ctx):
+    # push the parent for the scoping rule
+    ctx.push_parent(wnode)
+
+    # 1. check condition is a boolean
+    cond_type = type_expect(ctx, wnode.cond, BoolType())
+    if cond_type is None:
+        ctx.pop_parent()
+        return False
+
+    # 2. check type of body
+    for instr in wnode.body:
+        if not instr.type_check(ctx):
+            ctx.pop_parent()
+            return False
+
+    # pop the parent and repush
+    ctx.pop_parent()
+
+    return True
+
+While.type_check = type_check_While
+
 ######################################
 # Type inference                     #
 ######################################
+
+def type_infer_UnsupportedNode(node, ctx):
+    print("Error: Type inference not supported for this node")
+    import astpp
+    print(astpp.dump(node.ast))
+    raise NotImplementedError("Type inference not supported for this node")
+
+UnsupportedNode.type_infer = type_infer_UnsupportedNode
+
 
 def infer_number_type(ctx, type1, type2):
     # number always "wins"
