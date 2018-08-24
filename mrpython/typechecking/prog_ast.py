@@ -334,9 +334,14 @@ class CGtE(Condition):
     def __init__(self, op, left, right):
         super().__init__(op, left, right)
 
+class CLtE(Condition):
+    def __init__(self, op, left, right):
+        super().__init__(op, left, right)
+
 
 COMPARE_CLASSES = { "Eq" : CEq
                     , "GtE" : CGtE
+                    , "LtE" : CLtE
 }
 
 

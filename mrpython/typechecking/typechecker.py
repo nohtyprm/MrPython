@@ -379,7 +379,7 @@ def type_infer_UnsupportedNode(node, ctx):
     ctx.add_type_error(UnsupportedNodeError(None, node))
 
     return False
-    
+
 
 UnsupportedNode.type_infer = type_infer_UnsupportedNode
 
