@@ -120,7 +120,9 @@ def type_check_UnsupportedNode(node):
     print("Error: Type checking not supported for this node")
     import astpp
     print(astpp.dump(node.ast))
-    raise NotImplementedError("Type checking not supported for this node")
+    ctx.add_type_error(UnsupportedNodeError(None, node))
+
+    return ctx
 
 UnsupportedNode.type_check = type_check_UnsupportedNode
 
@@ -374,7 +376,10 @@ def type_infer_UnsupportedNode(node, ctx):
     print("Error: Type inference not supported for this node")
     import astpp
     print(astpp.dump(node.ast))
-    raise NotImplementedError("Type inference not supported for this node")
+    ctx.add_type_error(UnsupportedNodeError(None, node))
+
+    return False
+    
 
 UnsupportedNode.type_infer = type_infer_UnsupportedNode
 
