@@ -22,6 +22,9 @@ def type_tokenizer():
 
     # punctuation
     tokenizer.add_rule(tokens.Char('comma', ','))
+    tokenizer.add_rule(tokens.Char('open_bracket', '['))
+    tokenizer.add_rule(tokens.Char('close_bracket', ']'))
+
 
     # spaces
     tokenizer.add_rule(tokens.CharSet('space', ' ', '\t', '\r'))
@@ -39,6 +42,14 @@ def type_tokenizer():
     tokenizer.add_rule(tokens.Literal('Number_type', 'Number'))
     tokenizer.add_rule(tokens.Literal('NoneType_type', 'NoneType'))
     tokenizer.add_rule(tokens.Literal('str_type', 'str'))
+
+    # compound types
+    tokenizer.add_rule(tokens.Literal('Iterable_type', 'Iterable'))
+    tokenizer.add_rule(tokens.Literal('Sequence_type', 'Sequence'))
+    tokenizer.add_rule(tokens.Literal('list_type', 'list'))
+    tokenizer.add_rule(tokens.Literal('set_type', 'set'))
+    tokenizer.add_rule(tokens.Literal('dict_type', 'dict'))
+    tokenizer.add_rule(tokens.Literal('tuple_type', 'tuple'))
 
     # type variables
     tokenizer.add_rule(tokens.LiteralSet('type_var'
@@ -120,6 +131,51 @@ def build_typeexpr_grammar(grammar=None):
 
     grammar.register('identifier', parsers.Token('identifier'))
 
+    iterable_parser = parsers.Tuple() \
+                      .skip(parsers.Token('Iterable_type')) \
+                      .forget(grammar.ref('spaces')) \
+                      .skip(parsers.Token('open_bracket')) \
+                      .forget(grammar.ref('spaces')) \
+                      .element(grammar.ref('typeexpr')) \
+                      .forget(grammar.ref('spaces')) \
+                      .skip(parsers.Token('close_bracket'))
+
+    def iterable_xform_result(result):
+        result.content = IterableType(result.content.content, annotation=result)
+        return result
+    iterable_parser.xform_result = iterable_xform_result
+    grammar.register('Iterable_type', iterable_parser)
+
+    sequence_parser = parsers.Tuple() \
+                      .skip(parsers.Token('Sequence_type')) \
+                      .forget(grammar.ref('spaces')) \
+                      .skip(parsers.Token('open_bracket')) \
+                      .forget(grammar.ref('spaces')) \
+                      .element(grammar.ref('typeexpr')) \
+                      .forget(grammar.ref('spaces')) \
+                      .skip(parsers.Token('close_bracket'))
+
+    def sequence_xform_result(result):
+        result.content = SequenceType(result.content.content, annotation=result)
+        return result
+    sequence_parser.xform_result = sequence_xform_result
+    grammar.register('Sequence_type', sequence_parser)
+
+    list_parser = parsers.Tuple() \
+                      .skip(parsers.Token('list_type')) \
+                      .forget(grammar.ref('spaces')) \
+                      .skip(parsers.Token('open_bracket')) \
+                      .forget(grammar.ref('spaces')) \
+                      .element(grammar.ref('typeexpr')) \
+                      .forget(grammar.ref('spaces')) \
+                      .skip(parsers.Token('close_bracket'))
+
+    def list_xform_result(result):
+        result.content = ListType(result.content.content, annotation=result)
+        return result
+    list_parser.xform_result = list_xform_result
+    grammar.register('list_type', list_parser)
+
     type_expr = parsers.Choice() \
                        .forget(grammar.ref('spaces')) \
                        .either(grammar.ref('bool_type')) \
@@ -128,6 +184,9 @@ def build_typeexpr_grammar(grammar=None):
                        .orelse(grammar.ref('Number_type')) \
                        .orelse(grammar.ref('str_type')) \
                        .orelse(grammar.ref('NoneType_type')) \
+                       .orelse(grammar.ref('Iterable_type')) \
+                       .orelse(grammar.ref('Sequence_type')) \
+                       .orelse(grammar.ref('list_type')) \
                        .orelse(grammar.ref('type_var')) \
                        .orelse(grammar.ref('identifier'))
 

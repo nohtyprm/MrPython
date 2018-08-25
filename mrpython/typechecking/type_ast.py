@@ -217,10 +217,26 @@ class IterableType(TypeAST):
         return False
 
     def __str__(self):
-        return "iterable[{}]".format(str(self.elem_type))
+        return "Iterable[{}]".format(str(self.elem_type))
 
     def __repr__(self):
         return "IterableType({})".format(repr(self.elem_type))
+
+class SequenceType(TypeAST):
+    def __init__(self, elem_type, annotation=None):
+        super().__init__(annotation)
+        if not isinstance(elem_type, TypeAST):
+            raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
+        self.elem_type = elem_type
+
+    def is_hashable(self):
+        return False
+
+    def __str__(self):
+        return "Sequence[{}]".format(str(self.elem_type))
+
+    def __repr__(self):
+        return "SequenceType({})".format(repr(self.elem_type))
 
 class OptionType(TypeAST):
     def __init__(self, elem_type, annotation=None):

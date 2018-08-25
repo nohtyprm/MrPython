@@ -398,7 +398,7 @@ class Choice(Parser):
         if token.token_type not in self.__dispatch:
             return ParseError("Unexpected token type '"\
                               + str(token.token_type) + "' expecting: "\
-                              + self.explain_token_types())
+                              + self.explain_token_types(), token.start_pos, token.end_pos)
         branch = self.__dispatch[token.token_type]
 
         result = branch.parse(llparser)
