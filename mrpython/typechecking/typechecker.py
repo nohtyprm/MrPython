@@ -540,7 +540,7 @@ def type_infer_ECall(call, ctx):
     signature = ctx.global_env[call.fun_name]
     rename_map = {}
     signature = signature.rename_type_variables(rename_map)
-    print("rename_map = {}".format(rename_map))
+    #print("rename_map = {}".format(rename_map))
     #print(repr(signature))
 
     # step 2 : check the call arity
@@ -550,9 +550,9 @@ def type_infer_ECall(call, ctx):
 
     # step 3 : check the argument types
     num_arg = 1
-    param_env = dict()  # parameter environment (for parametric calls) 
+    ctx.call_type_env = dict()  # the type environment for calls (for generic functions) 
     for (arg, param_type) in zip(call.arguments, signature.param_types):
-        print("arg={}".format(arg))
+        print("arg={}".format(arg.ast))
         print("param_type={}".format(param_type))
         if isinstance(param_type, TypeVariable):
             raise NotImplementedError("Type variables in calls not yet implemented")
@@ -560,6 +560,7 @@ def type_infer_ECall(call, ctx):
             arg_type = type_expect(ctx, arg, param_type)
             if arg_type is None:
                 ctx.add_type_error(CallArgumentError(ctx.function_def, call, num_arg, arg, param_type))
+                ctx.call_type_env = None
                 return None
         num_arg += 1
 
@@ -567,6 +568,7 @@ def type_infer_ECall(call, ctx):
     if param_env:
         raise NotImplementedError("Type variables in return type for call not yet implemented")
     else:
+        ctx.call_type_env = None
         return signature.ret_type
 
 ECall.type_infer = type_infer_ECall
