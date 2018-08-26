@@ -10,6 +10,10 @@ class TypeAST:
         else:
             self.annotated=False
 
+    def rename_type_variables(self, rmap):
+        # by default: no renaming
+        return self
+
     def is_hashable(self):
         raise NotImplementedError("Method is_hashable is abstract")
 
@@ -101,6 +105,14 @@ class TypeVariable(TypeAST):
             raise ValueError("Type variable name is not a string: {}".format(var_name))
         self.var_name = var_name
 
+    def rename_type_variables(self, rmap):
+        if self.var_name in rmap:
+            return rmap[self.var_name]
+        else:
+            nvar = TypeVariable('_{}'.format(len(rmap)+1), self.annotation)
+            rmap[self.var_name] = nvar
+            return nvar
+
     def is_hashable(self):
         return True
 
@@ -119,6 +131,12 @@ class TupleType(TypeAST):
             if not isinstance(elem_type, TypeAST):
                 raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_types = elem_types
+
+    def rename_type_variables(self, rmap):
+        nelem_types = []
+        for elem_type in self.elem_types:
+            nelem_types.append(elem_type.rename_type_variables(rmap))
+        return TupleType(nelem_types, self.annotation)
 
     def is_hashable(self):
         for elem_type in elem_types:
@@ -142,6 +160,10 @@ class ListType(TypeAST):
             raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_type = elem_type
 
+    def rename_type_variables(self, rmap):
+        nelem_type = self.elem_type.rename_type_variables(rmap)
+        return ListType(nelem_type, self.annotation)
+
     def is_hashable(self):
         return False
 
@@ -163,6 +185,10 @@ class SetType(TypeAST):
         if elem_type is not None and not isinstance(elem_type, TypeAST):
             raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_type = elem_type
+
+    def rename_type_variables(self, rmap):
+        nelem_type = self.elem_type.rename_type_variables(rmap)
+        return SetType(nelem_type, self.annotation)
 
     def is_hashable(self):
         return False
@@ -191,6 +217,11 @@ class DictType(TypeAST):
             raise ValueError("Value type is not a TypeAST: {}".format(value_type))
         self.value_type = value_type
 
+    def rename_type_variables(self, rmap):
+        nkey_type = self.key_type.rename_type_variables(rmap)
+        nvalue_type = self.value_type.rename_type_variables(rmap)
+        return DictType(nkey_type, nvalue_type, self.annotation)
+
     def is_hashable(self):
         return False
 
@@ -213,6 +244,10 @@ class IterableType(TypeAST):
             raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_type = elem_type
 
+    def rename_type_variables(self, rmap):
+        nelem_type = self.elem_type.rename_type_variables(rmap)
+        return IterableType(nelem_type, self.annotation)
+
     def is_hashable(self):
         return False
 
@@ -229,6 +264,10 @@ class SequenceType(TypeAST):
             raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_type = elem_type
 
+    def rename_type_variables(self, rmap):
+        nelem_type = self.elem_type.rename_type_variables(rmap)
+        return SequenceType(nelem_type, self.annotation)
+
     def is_hashable(self):
         return False
 
@@ -244,6 +283,10 @@ class OptionType(TypeAST):
         if not isinstance(elem_type, TypeAST):
             raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_type = elem_type
+
+    def rename_type_variables(self, rmap):
+        nelem_type = self.elem_type.rename_type_variables(rmap)
+        return OptionType(nelem_type, self.annotation)
 
     def is_hashable(self):
         return False
@@ -277,6 +320,15 @@ class FunctionType:
             self.ret_type = ret_type
 
         self.partial = partial
+
+    def rename_type_variables(self, rmap):
+        nparam_types = []
+        for param_type in self.param_types:
+            nparam_types.append(param_type.rename_type_variables(rmap))
+        nret_type = self.ret_type.rename_type_variables(rmap)
+        nfntype = FunctionType(nparam_types, self.ret_type, self.partial, self.annotation)
+        nfntype.ret_type = nret_type
+        return nfntype
 
     def __str__(self):
         return "{} -> {}".format(" * ".join((str(pt) for pt in self.param_types))

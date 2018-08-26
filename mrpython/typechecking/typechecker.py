@@ -538,6 +538,9 @@ def type_infer_ECall(call, ctx):
         return None
 
     signature = ctx.global_env[call.fun_name]
+    rename_map = {}
+    signature.rename_type_variables(rename_map)
+    print("rename_map = {}".format(rename_map))
     #print(repr(signature))
 
     # step 2 : check the call arity
@@ -547,15 +550,22 @@ def type_infer_ECall(call, ctx):
 
     # step 3 : check the argument types
     num_arg = 1
+    param_env = dict()  # parameter environment (for parametric calls) 
     for (arg, param_type) in zip(call.arguments, signature.param_types):
-        arg_type = type_expect(ctx, arg, param_type)
-        if arg_type is None:
-            ctx.add_type_error(CallArgumentError(ctx.function_def, call, num_arg, arg, param_type))
-            return None
+        if isinstance(param_type, TypeVariable):
+            raise NotImplementedError("Type variables in calls not yet implemented")
+        else:
+            arg_type = type_expect(ctx, arg, param_type)
+            if arg_type is None:
+                ctx.add_type_error(CallArgumentError(ctx.function_def, call, num_arg, arg, param_type))
+                return None
         num_arg += 1
 
     # step 4 : return the return type
-    return signature.ret_type
+    if param_env:
+        raise NotImplementedError("Type variables in return type for call not yet implemented")
+    else:
+        return signature.ret_type
 
 ECall.type_infer = type_infer_ECall
 
@@ -666,6 +676,15 @@ def type_compare_ListType(expected_type, ctx, expr, expr_type, raise_error=True)
     raise NotImplementedError("type_compare_ListType")
 
 ListType.type_compare = type_compare_ListType
+
+def type_compare_IterableType(expected_type, ctx, expr, expr_type, raise_error=True):
+    print("expected_type={}".format(expected_type))
+    print("expr_type={}".format(expr_type))
+    print("expr={}".format(expr))
+
+    raise NotImplementedError("type_compare_IterableType")
+
+IterableType.type_compare = type_compare_IterableType
 
 ######################################
 # Standard imports                   #
