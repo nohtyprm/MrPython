@@ -117,7 +117,7 @@ class TypeVariable(TypeAST):
         return True
 
     def is_call_variable(self):
-        if self.name.startswith('_'):
+        if self.var_name.startswith('_'):
             return True
         else:
             return False

@@ -552,8 +552,8 @@ def type_infer_ECall(call, ctx):
     num_arg = 1
     ctx.call_type_env = dict()  # the type environment for calls (for generic functions) 
     for (arg, param_type) in zip(call.arguments, signature.param_types):
-        print("arg={}".format(arg.ast))
-        print("param_type={}".format(param_type))
+        #print("arg={}".format(arg))
+        #print("param_type={}".format(param_type))
         if isinstance(param_type, TypeVariable):
             raise NotImplementedError("Type variables in calls not yet implemented")
         else:
@@ -565,7 +565,7 @@ def type_infer_ECall(call, ctx):
         num_arg += 1
 
     # step 4 : return the return type
-    if param_env:
+    if ctx.call_type_env:
         raise NotImplementedError("Type variables in return type for call not yet implemented")
     else:
         ctx.call_type_env = None
@@ -700,6 +700,29 @@ def type_compare_IterableType(expected_type, ctx, expr, expr_type, raise_error=T
         return False
 
 IterableType.type_compare = type_compare_IterableType
+
+def type_compare_TypeVariable(expected_type, ctx, expr, expr_type, raise_error=True):
+    if expected_type.is_call_variable():
+        if expected_type.var_name in ctx.call_type_env:
+            real_expected_type = ctx.call_type_env[expected_type.var_name]
+            if real_expected_type == expr_type:
+                return True
+            # not equal
+            if raise_error:
+                ctx.add_type_error(TypeComparisonError(ctx.function_def, real_expected_type, expr, expr_type, tr("Type mismatch for parameter #{} in call, expecting {} found: {}").format(expected_type.var_name[1:],real_expected_type, expr_type)))
+            return False
+        else: # register type as type parameter:
+            ctx.call_type_env[expected_type.var_name] = expr_type
+            return True
+    else: # not a call variable
+        if expected_type == expr_type:
+            return True
+        else:
+            if raise_error:
+                ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Type mismatch for parameter #{} in call, expecting {} found: {}").format(expected_type.var_name[1:], expected_type, expr_type)))
+        return False
+
+TypeVariable.type_compare = type_compare_TypeVariable
 
 ######################################
 # Standard imports                   #
