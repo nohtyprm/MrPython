@@ -539,7 +539,7 @@ def type_infer_ECall(call, ctx):
 
     signature = ctx.global_env[call.fun_name]
     rename_map = {}
-    signature.rename_type_variables(rename_map)
+    signature = signature.rename_type_variables(rename_map)
     print("rename_map = {}".format(rename_map))
     #print(repr(signature))
 
@@ -552,6 +552,8 @@ def type_infer_ECall(call, ctx):
     num_arg = 1
     param_env = dict()  # parameter environment (for parametric calls) 
     for (arg, param_type) in zip(call.arguments, signature.param_types):
+        print("arg={}".format(arg))
+        print("param_type={}".format(param_type))
         if isinstance(param_type, TypeVariable):
             raise NotImplementedError("Type variables in calls not yet implemented")
         else:
@@ -667,8 +669,8 @@ def type_compare_BoolType(expected_type, ctx, expr, expr_type, raise_error=True)
 BoolType.type_compare = type_compare_BoolType
 
 def type_compare_ListType(expected_type, ctx, expr, expr_type, raise_error=True):
-    print("expected_type={}".format(expected_type))
-    print("expr_type={}".format(expr_type))
+    #print("expected_type={}".format(expected_type))
+    #print("expr_type={}".format(expr_type))
 
     if expr_type.is_emptylist():
         return True
@@ -678,11 +680,22 @@ def type_compare_ListType(expected_type, ctx, expr, expr_type, raise_error=True)
 ListType.type_compare = type_compare_ListType
 
 def type_compare_IterableType(expected_type, ctx, expr, expr_type, raise_error=True):
-    print("expected_type={}".format(expected_type))
-    print("expr_type={}".format(expr_type))
-    print("expr={}".format(expr))
+    #print("expected_type={}".format(expected_type))
+    #print("expr_type={}".format(expr_type))
+    #print("expr={}".format(expr))
 
-    raise NotImplementedError("type_compare_IterableType")
+    if isinstance(expr_type, IterableType) \
+       or isinstance(expr_type, SequenceType) \
+       or isinstance(expr_type, ListType) \
+       or isinstance(expr_type, SetType):
+        return expected_type.elem_type.type_compare(ctx, expr, expr_type.elem_type, raise_error)
+
+    elif isinstance(expr_type, DictType):
+        raise NotImplementedError("type_compare_IterableType (dict type)")
+    else:
+        if raise_error:
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an Iterable (Sequence, list, set or dictionnary)")))
+        return False
 
 IterableType.type_compare = type_compare_IterableType
 

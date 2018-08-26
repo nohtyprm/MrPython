@@ -116,6 +116,12 @@ class TypeVariable(TypeAST):
     def is_hashable(self):
         return True
 
+    def is_call_variable(self):
+        if self.name.startswith('_'):
+            return True
+        else:
+            return False
+
     def __str__(self):
         return self.var_name
 
