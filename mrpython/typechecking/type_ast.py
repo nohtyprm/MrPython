@@ -14,6 +14,10 @@ class TypeAST:
         # by default: no renaming
         return self
 
+    def subst(self, type_env):
+        # by default: no substitution
+        return self
+
     def is_hashable(self):
         raise NotImplementedError("Method is_hashable is abstract")
 
@@ -113,6 +117,12 @@ class TypeVariable(TypeAST):
             rmap[self.var_name] = nvar
             return nvar
 
+    def subst(self, type_env):
+        if self.var_name in type_env:
+            return type_env[self.var_name]
+        else:
+            return self
+
     def is_hashable(self):
         return True
 
@@ -144,6 +154,12 @@ class TupleType(TypeAST):
             nelem_types.append(elem_type.rename_type_variables(rmap))
         return TupleType(nelem_types, self.annotation)
 
+    def subst(self, type_env):
+        nelem_types = []
+        for elem_type in self.elem_types:
+            nelem_types.append(elem_type.subst(type_env))
+        return TupleType(nelem_types, self.annotation)
+
     def is_hashable(self):
         for elem_type in elem_types:
             if not elem_type.is_hashable():
@@ -170,6 +186,9 @@ class ListType(TypeAST):
         nelem_type = self.elem_type.rename_type_variables(rmap)
         return ListType(nelem_type, self.annotation)
 
+    def susbt(self, type_env):
+        return ListType(self.elem_type.subst(type_env), self.annotation)
+
     def is_hashable(self):
         return False
 
@@ -195,6 +214,9 @@ class SetType(TypeAST):
     def rename_type_variables(self, rmap):
         nelem_type = self.elem_type.rename_type_variables(rmap)
         return SetType(nelem_type, self.annotation)
+
+    def susbt(self, type_env):
+        return SetType(self.elem_type.subst(type_env), self.annotation)
 
     def is_hashable(self):
         return False
@@ -228,6 +250,11 @@ class DictType(TypeAST):
         nvalue_type = self.value_type.rename_type_variables(rmap)
         return DictType(nkey_type, nvalue_type, self.annotation)
 
+    def susbt(self, type_env):
+        return DictType(self.key_type.subst(type_env)
+                        , self.value_type.subst(type_env)
+                        , self.annotation)
+
     def is_hashable(self):
         return False
 
@@ -254,6 +281,9 @@ class IterableType(TypeAST):
         nelem_type = self.elem_type.rename_type_variables(rmap)
         return IterableType(nelem_type, self.annotation)
 
+    def susbt(self, type_env):
+        return IterableType(self.elem_type.subst(type_env), self.annotation)
+
     def is_hashable(self):
         return False
 
@@ -273,6 +303,9 @@ class SequenceType(TypeAST):
     def rename_type_variables(self, rmap):
         nelem_type = self.elem_type.rename_type_variables(rmap)
         return SequenceType(nelem_type, self.annotation)
+
+    def susbt(self, type_env):
+        return SequenceType(self.elem_type.subst(type_env), self.annotation)
 
     def is_hashable(self):
         return False
@@ -294,6 +327,9 @@ class OptionType(TypeAST):
         nelem_type = self.elem_type.rename_type_variables(rmap)
         return OptionType(nelem_type, self.annotation)
 
+    def susbt(self, type_env):
+        return OptionType(self.elem_type.subst(type_env), self.annotation)
+
     def is_hashable(self):
         return False
 
@@ -302,7 +338,6 @@ class OptionType(TypeAST):
 
     def __repr__(self):
         return "OptionType({})".format(repr(self.elem_type))
-
 
 class FunctionType:
     def __init__(self, param_types, ret_type, partial=False, annotation=None):
@@ -335,6 +370,9 @@ class FunctionType:
         nfntype = FunctionType(nparam_types, self.ret_type, self.partial, self.annotation)
         nfntype.ret_type = nret_type
         return nfntype
+
+    def subst(self, type_env):
+        raise ValueError("No substitution for function types (please report)")
 
     def __str__(self):
         return "{} -> {}".format(" * ".join((str(pt) for pt in self.param_types))
