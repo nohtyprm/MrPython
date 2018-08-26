@@ -566,7 +566,9 @@ def type_infer_ECall(call, ctx):
 
     # step 4 : return the return type
     if ctx.call_type_env:
-        raise NotImplementedError("Type variables in return type for call not yet implemented")
+        nret_type = signature.ret_type.subst(ctx.call_type_env)
+        ctx.call_type_env = None
+        return nret_type
     else:
         ctx.call_type_env = None
         return signature.ret_type
