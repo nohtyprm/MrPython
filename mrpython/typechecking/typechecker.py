@@ -116,7 +116,7 @@ class TypingContext:
 # Type checking                             #
 #############################################
 
-def type_check_UnsupportedNode(node):
+def type_check_UnsupportedNode(node, ctx):
     print("Error: Type checking not supported for this node")
     import astpp
     print(astpp.dump(node.ast))
