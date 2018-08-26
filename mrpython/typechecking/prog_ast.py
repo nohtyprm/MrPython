@@ -365,6 +365,14 @@ class ECall:
             self.arguments.append(earg)
             #print("---")
 
+class EList:
+    def __init__(self, node):
+        self.ast = node
+        #print(astpp.dump(node))
+        self.elements = []
+        for elt in node.elts:
+            elt_expr = parse_expression(elt)
+            self.elements.append(elt_expr)
 
 EXPRESSION_CLASSES = { "Num" : ENum
                        , "NameConstant"  : parse_constant
@@ -373,6 +381,7 @@ EXPRESSION_CLASSES = { "Num" : ENum
                        , "UnaryOp" : EUnaryOp
                        , "Call" : ECall
                        , "Compare" : parse_compare
+                       , "List" : EList
 }
 
 def parse_expression(node):

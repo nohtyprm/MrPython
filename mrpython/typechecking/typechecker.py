@@ -131,8 +131,12 @@ UnsupportedNode.type_check = type_check_UnsupportedNode
 def type_check_Program(prog):
     ctx = TypingContext(prog) 
 
-    # first step : fetch the imports
-    # to fill the global environment
+    # first step : fill the global environment
+
+    # first register the builtins
+    ctx.register_import(REGISTERED_IMPORTS[''])
+
+    # then register the imports
     for import_name in prog.imports:
         if import_name in REGISTERED_IMPORTS:
             ctx.register_import(REGISTERED_IMPORTS[import_name])
@@ -373,7 +377,7 @@ While.type_check = type_check_While
 ######################################
 
 def type_infer_UnsupportedNode(node, ctx):
-    print("Error: Type inference not supported for this node")
+    print("Error: Type inference for unsupported node")
     import astpp
     print(astpp.dump(node.ast))
     ctx.add_type_error(UnsupportedNodeError(None, node))
@@ -547,7 +551,7 @@ def type_infer_ECall(call, ctx):
         arg_type = type_expect(ctx, arg, param_type)
         if arg_type is None:
             ctx.add_type_error(CallArgumentError(ctx.function_def, call, num_arg, arg, param_type))
-            return
+            return None
         num_arg += 1
 
     # step 4 : return the return type
@@ -574,6 +578,24 @@ def type_check_Condition(cond, ctx, compare):
         return True
 
 Condition.type_check = type_check_Condition
+
+
+def type_infer_EList(lst, ctx):
+    lst_type = None
+    if not lst.elements:
+        return ListType()
+
+    for element in lst.elements:
+        element_type = element.type_infer(ctx)
+        if lst_type is None:
+            lst_type = element_type
+        else:
+            if element_type != lst_type:
+                ctx.add_type_error(HeterogeneousElementError('list', lst))
+                return None
+    return ListType(lst_type)
+
+EList.type_infer = type_infer_EList
 
 ######################################
 # Type comparisons                   #
@@ -634,17 +656,32 @@ def type_compare_BoolType(expected_type, ctx, expr, expr_type, raise_error=True)
 
 BoolType.type_compare = type_compare_BoolType
 
+def type_compare_ListType(expected_type, ctx, expr, expr_type, raise_error=True):
+    print("expected_type={}".format(expected_type))
+    print("expr_type={}".format(expr_type))
+
+    if expr_type.is_emptylist():
+        return True
+
+    raise NotImplementedError("type_compare_ListType")
+
+ListType.type_compare = type_compare_ListType
+
 ######################################
 # Standard imports                   #
 ######################################
 
+BUILTINS_IMPORTS = {
+    'len' : function_type_parser("Iterable[α] -> int").content
+}
 
 MATH_IMPORTS = {
     'math.sqrt' : function_type_parser("Number -> float").content
 }
 
 REGISTERED_IMPORTS = {
-    'math' : MATH_IMPORTS
+    '' : BUILTINS_IMPORTS
+    , 'math' : MATH_IMPORTS
 }
 
 
