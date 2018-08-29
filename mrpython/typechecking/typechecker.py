@@ -532,13 +532,12 @@ def type_infer_EFalse(node, ctx):
 EFalse.type_infer = type_infer_EFalse
 
 def type_infer_ECall(call, ctx):
-    print("HERE HERE HERE")
     # step 1 : fetch the signature of the called function
-    if not call.fun_name in ctx.global_env:
+    if not call.full_fun_name in ctx.global_env:
         ctx.add_type_error(UnknownFunctionError(ctx.function_def, call))
         return None
 
-    signature = ctx.global_env[call.fun_name]
+    signature = ctx.global_env[call.full_fun_name]
     rename_map = {}
     signature = signature.rename_type_variables(rename_map)
     #print("rename_map = {}".format(rename_map))
