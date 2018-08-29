@@ -85,6 +85,7 @@ class Program:
                 assert_ast = TestCase(node)
                 self.test_cases.append(assert_ast)
             else:
+                #print("Unsupported instruction: " + node)
                 self.other_top_defs.append(UnsupportedNode(node))
 
 class UnsupportedNode:
@@ -183,10 +184,17 @@ class While:
             iinstr = parse_instruction(instr)
             self.body.append(iinstr)
 
+def parse_expression_as_instruction(node):
+    # XXX: do something here or way until typing for
+    #      losing the returned value (except if None)
+    # For now, just parse as an expression
+    return parse_expression(node.value)
+
 INSTRUCTION_CLASSES = {"Assign" : parse_assign
                        , "Return" : Return
                        , "If" : If
                        , "While" : While
+                       , "Expr" : parse_expression_as_instruction
 }
 
 def parse_instruction(node):
@@ -196,6 +204,7 @@ def parse_instruction(node):
         wrap_node = INSTRUCTION_CLASSES[instruction_type_name](node)
         return wrap_node
     else:
+        #print(">>>> not supported")
         return UnsupportedNode(node)
 
 class ENum:
@@ -288,14 +297,6 @@ def EUnaryOp(node):
     else:
         return UnsupportedNode(node)
 
-def parse_function_name(func_descr):
-    parts = []
-    val = func_descr
-    while isinstance(val, ast.Attribute):
-        parts.append(val.attr)
-        val = val.value
-    parts.append(val.id)
-    return ".".join(parts[::-1])
 
 class ECompare:
     def __init__(self, node, conds):
@@ -344,7 +345,6 @@ COMPARE_CLASSES = { "Eq" : CEq
                     , "LtE" : CLtE
 }
 
-
 def parse_cond(op, left, right):
     compare_type_name = op.__class__.__name__
     if compare_type_name in COMPARE_CLASSES:
@@ -352,12 +352,30 @@ def parse_cond(op, left, right):
     else:
         return None
 
+def parse_function(func_descr):
+    parts = []
+    val = func_descr
+    while isinstance(val, ast.Attribute):
+        parts.append(parse_expression(val.value))
+        val = val.value
+    parts.append(val.id)
+    print("parts={}".format(parts))
+    return parts
+
 class ECall:
     def __init__(self, node):
         self.ast = node
         #print(astpp.dump(node))
-        self.fun_name = parse_function_name(node.func)
-        #print("function name=", self.fun_name)
+
+        if isinstance(node.func, ast.Name):
+            self.receiver = None
+            self.fun_name = node.func.id
+        else: # attribute
+            self.receiver = parse_expression(node.func.value)
+            self.fun_name = node.func.attr
+
+        print("function receiver={}".format(self.receiver))
+        print("function name=", self.fun_name)
         self.arguments = []
         for arg in self.ast.args:
             #print(astpp.dump(arg))
