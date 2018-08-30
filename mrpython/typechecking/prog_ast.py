@@ -400,6 +400,33 @@ class EList:
             elt_expr = parse_expression(elt)
             self.elements.append(elt_expr)
 
+class Indexing:
+    def __init__(self, node):
+        self.ast = node
+        self.subject = parse_expression(node.value)
+        self.index = parse_expression(node.slice.value)
+
+class Slicing:
+    def __init__(self, node):
+        self.ast = node
+        self.subject = parse_expression(node.value)
+        self.lower = None
+        if node.slice.lower is not None:
+            self.lower = parse_expression(node.slice.lower)
+        self.upper = None
+        if node.slice.upper is not None:
+            self.upper = parse_expression(node.slice.upper)
+        self.step = None
+        if node.slice.step is not None:
+            self.step = parse_expression(node.slice.upper)
+
+def parse_subscript(node):
+    if isinstance(node.slice, ast.Index):
+        return Indexing(node)
+    else:
+        return Slicing(node)
+
+
 EXPRESSION_CLASSES = { "Num" : ENum
                        , "NameConstant"  : parse_constant
                        , "Name" : EVar
@@ -408,6 +435,7 @@ EXPRESSION_CLASSES = { "Num" : ENum
                        , "Call" : ECall
                        , "Compare" : parse_compare
                        , "List" : EList
+                       , "Subscript" : parse_subscript
 }
 
 def parse_expression(node):
