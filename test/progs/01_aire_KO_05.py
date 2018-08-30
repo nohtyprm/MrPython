@@ -1,4 +1,4 @@
-##!FAIL: UnsupportedNodeError[Expr]@17:4
+##!FAIL: UnsupportedNodeError[IfExp]@17:4
 
 import math
 

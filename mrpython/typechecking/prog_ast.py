@@ -371,14 +371,20 @@ class ECall:
             self.receiver = None
             self.fun_name = node.func.id
             self.full_fun_name = self.fun_name
+            self.multi_receivers = False
         else: # attribute
             self.receiver = parse_expression(node.func.value)
             self.fun_name = node.func.attr
-            self.full_fun_name = (node.func.value.id if isinstance(node.func.value, ast.Name) else "<multi-reicevers>") + "." + self.fun_name
+            if isinstance(node.func.value, ast.Name):
+                self.multi_receivers = False
+            else:
+                self.multi_receivers = True
+            self.full_fun_name = (node.func.value.id if not self.multi_receivers else "<multi-reicevers>") + "." + self.fun_name
 
         #print("function receiver={}".format(self.receiver))
         #print("function name=", self.fun_name)
         self.arguments = []
+ 
         for arg in self.ast.args:
             #print(astpp.dump(arg))
             earg = parse_expression(arg)

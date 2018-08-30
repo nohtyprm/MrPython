@@ -372,6 +372,17 @@ def type_check_While(wnode, ctx):
 
 While.type_check = type_check_While
 
+def type_check_ECall(enode, ctx):
+    call_type = enode.type_infer(ctx)
+    if call_type is None:
+        return False
+    elif isinstance(call_type, NoneType):
+        return True
+    else: # the return type is not None: it's a warning
+        ctx.add_type_error(CallNotNoneError(enode, call_type))
+
+ECall.type_check = type_check_ECall
+
 ######################################
 # Type inference                     #
 ######################################
@@ -531,12 +542,7 @@ def type_infer_EFalse(node, ctx):
 
 EFalse.type_infer = type_infer_EFalse
 
-def type_infer_ECall(call, ctx):
-    # step 1 : fetch the signature of the called function
-    if not call.full_fun_name in ctx.global_env:
-        ctx.add_type_error(UnknownFunctionError(ctx.function_def, call))
-        return None
-
+def type_infer_funcall(call, ctx):
     signature = ctx.global_env[call.full_fun_name]
     rename_map = {}
     signature = signature.rename_type_variables(rename_map)
@@ -560,6 +566,72 @@ def type_infer_ECall(call, ctx):
             arg_type = type_expect(ctx, arg, param_type)
             if arg_type is None:
                 ctx.add_type_error(CallArgumentError(ctx.function_def, call, num_arg, arg, param_type))
+                ctx.call_type_env = None
+                return None
+        num_arg += 1
+
+    # step 4 : return the return type
+    if ctx.call_type_env:
+        nret_type = signature.ret_type.subst(ctx.call_type_env)
+        ctx.call_type_env = None
+        return nret_type
+    else:
+        ctx.call_type_env = None
+        return signature.ret_type
+
+
+def type_infer_ECall(call, ctx):
+    # step 1 : fetch the signature of the called function
+    if call.full_fun_name in ctx.global_env:
+        method_call = False
+        signature = ctx.global_env[call.full_fun_name]
+        arguments = call.arguments
+    elif "." + call.fun_name in { ".append" } and not call.multi_receivers:
+        method_call = True
+        signature = ctx.global_env["." + call.fun_name]
+        arguments = []
+        arguments.append(call.receiver)
+        arguments.extend(call.arguments)
+    else:
+        ctx.add_type_error(UnknownFunctionError(ctx.function_def, call))
+        return None
+
+    # step 1bis : we rename the type parameters to avoid any nameclash
+    rename_map = {}
+    signature = signature.rename_type_variables(rename_map)
+    #print("rename_map = {}".format(rename_map))
+    #print(repr(signature))
+
+    # step 2 : check the call arity
+    if len(signature.param_types) != len(arguments):
+        ctx.add_type_error(CallArityError(ctx.function_def, method_call, signature, call))
+        return None
+
+    # step 3 : check the argument types
+    num_arg = 1
+    ctx.call_type_env = dict()  # the type environment for calls (for generic functions) 
+    for (arg, param_type) in zip(arguments, signature.param_types):
+        #print("arg={}".format(arg))
+        #print("param_type={}".format(param_type))
+        if isinstance(param_type, TypeVariable):
+            if param_type.var_name in ctx.call_type_env:
+                arg_type = type_expect(ctx, arg, ctx.call_type_env[param_type.var_name])
+                if arg_type is None:
+                    ctx.add_type_error(CallArgumentError(ctx.function_def, method_call, call, num_arg, arg, ctx.call_type_env[param_type.var_name]))
+                    ctx.call_type_env = None
+                    return None
+            else: # bind the type variable
+                arg_type = arg.type_infer(ctx)
+                if arg_type is None:
+                    # XXX: add an error ?
+                    return None
+
+                ctx.call_type_env[param_type.var_name] = arg_type
+
+        else: # not a type variable
+            arg_type = type_expect(ctx, arg, param_type)
+            if arg_type is None:
+                ctx.add_type_error(CallArgumentError(ctx.function_def, method_call, call, num_arg, arg, param_type))
                 ctx.call_type_env = None
                 return None
         num_arg += 1
@@ -679,7 +751,12 @@ def type_compare_ListType(expected_type, ctx, expr, expr_type, raise_error=True)
     if expr_type.is_emptylist():
         return True
 
-    raise NotImplementedError("type_compare_ListType")
+    if not isinstance(expr_type, ListType):
+        if raise_error:
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a list")))
+        return False
+
+    return expected_type.elem_type.type_compare(ctx, expr, expr_type.elem_type, raise_error)
 
 ListType.type_compare = type_compare_ListType
 
@@ -732,6 +809,7 @@ TypeVariable.type_compare = type_compare_TypeVariable
 
 BUILTINS_IMPORTS = {
     'len' : function_type_parser("Iterable[α] -> int").content
+    , '.append' : function_type_parser("list[α] * α -> NoneType").content
 }
 
 MATH_IMPORTS = {
@@ -808,6 +886,8 @@ class UnsupportedNodeError(TypeError):
     def __init__(self, in_function, node):
         self.in_function = in_function
         self.node = node
+        #print("Unsupported Node:")
+        #print(astpp.dump(self.node.ast))
 
     def is_fatal(self):
         return False
@@ -925,24 +1005,26 @@ class UnknownFunctionError(TypeError):
         return True
 
     def fail_string(self):
-        return "UnknownFunctionError[{}]@{}:{}".format(self.call.fun_name, self.call.ast.lineno, self.call.ast.col_offset)
+        return "UnknownFunctionError[{}]@{}:{}".format(self.call.full_fun_name, self.call.ast.lineno, self.call.ast.col_offset)
 
     def report(self, report):
         report.add_convention_error('error', tr("Call problem"), self.call.ast.lineno, self.call.ast.col_offset
-                                    , tr("I don't know any function named '{}'").format(self.call.fun_name))
+                                    , tr("I don't know any function named '{}'").format(self.call.full_fun_name))
 
 class CallArityError(TypeError):
-    def __init__(self, in_function, signature, call):
+    def __init__(self, in_function, method_call, signature, call):
         self.in_function = in_function
         self.signature = signature
         self.call = call
+        self.method_call = method_call
 
     def is_fatal(self):
         return True
 
 class CallArgumentError(TypeError):
-    def __init__(self, in_function, call, num_arg, arg, param_type):
+    def __init__(self, in_function, method_call, call, num_arg, arg, param_type):
         self.in_function = in_function
+        self.method_call = method_call
         self.call = call
         self.num_arg = num_arg
         self.arg = arg
@@ -952,10 +1034,10 @@ class CallArgumentError(TypeError):
         return True
 
     def fail_string(self):
-        return "CallArgumentError[{}]@{}:{}".format(self.num_arg, self.call.ast.lineno, self.call.ast.col_offset)
+        return "CallArgumentError[{}]@{}:{}".format(self.num_arg, self.arg.ast.lineno, self.arg.ast.col_offset)
 
     def report(self, report):
-        report.add_convention_error('error', tr("Call problem"), self.call.ast.lineno, self.call.ast.col_offset
+        report.add_convention_error('error', tr("Call problem"), self.call.arg.lineno, self.call.arg.col_offset
                                     , tr("the {}-th argument in call to function '{}' is erroneous").format(self.num_arg
                                                                                                            , self.call.fun_name))
 
