@@ -763,13 +763,13 @@ def type_compare_ListType(expected_type, ctx, expr, expr_type, raise_error=True)
     #print("expected_type={}".format(expected_type))
     #print("expr_type={}".format(expr_type))
 
-    if expr_type.is_emptylist():
-        return True
-
     if not isinstance(expr_type, ListType):
         if raise_error:
             ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a list")))
         return False
+
+    if expr_type.is_emptylist():
+        return True
 
     return expected_type.elem_type.type_compare(ctx, expr, expr_type.elem_type, raise_error)
 
@@ -1076,7 +1076,7 @@ class CallArgumentError(TypeError):
         return "CallArgumentError[{}]@{}:{}".format(self.num_arg, self.arg.ast.lineno, self.arg.ast.col_offset)
 
     def report(self, report):
-        report.add_convention_error('error', tr("Call problem"), self.call.arg.lineno, self.call.arg.col_offset
+        report.add_convention_error('error', tr("Call problem"), self.arg.ast.lineno, self.arg.ast.col_offset
                                     , tr("the {}-th argument in call to function '{}' is erroneous").format(self.num_arg
                                                                                                            , self.call.fun_name))
 
