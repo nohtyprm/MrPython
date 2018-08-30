@@ -212,6 +212,11 @@ class ENum:
         self.ast = node
         self.value = node.n
 
+class EStr:
+    def __init__(self, node):
+        self.ast = node
+        self.value = node.s
+
 class ETrue:
     def __init__(self, node):
         self.ast = node
@@ -428,6 +433,7 @@ def parse_subscript(node):
 
 
 EXPRESSION_CLASSES = { "Num" : ENum
+                       , "Str" : EStr
                        , "NameConstant"  : parse_constant
                        , "Name" : EVar
                        , "BinOp" : EBinOp

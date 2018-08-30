@@ -532,6 +532,11 @@ def type_infer_ENum(num, ctx):
 
 ENum.type_infer = type_infer_ENum
 
+def type_infer_EStr(estr, ctx):
+    return StrType()
+
+EStr.type_infer = type_infer_EStr
+
 def type_infer_ETrue(node, ctx):
     return BoolType()
 
@@ -737,11 +742,22 @@ def type_compare_BoolType(expected_type, ctx, expr, expr_type, raise_error=True)
         return True
 
     if raise_error:
-        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a Bool")))
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a Bool (type bool)")))
 
     return False
 
 BoolType.type_compare = type_compare_BoolType
+
+def type_compare_StrType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, StrType):
+        return True
+
+    if raise_error:
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a string (type str)")))
+
+    return False
+
+StrType.type_compare = type_compare_StrType
 
 def type_compare_ListType(expected_type, ctx, expr, expr_type, raise_error=True):
     #print("expected_type={}".format(expected_type))
