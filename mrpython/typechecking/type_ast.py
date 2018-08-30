@@ -18,6 +18,9 @@ class TypeAST:
         # by default: no substitution
         return self
 
+    def __eq__(self, other):
+        raise NotImplementedError("Equality not implemented for this node type (please report)")
+
     def is_hashable(self):
         raise NotImplementedError("Method is_hashable is abstract")
 
@@ -27,6 +30,9 @@ class BoolType(TypeAST):
 
     def is_hashable(self):
         return True
+
+    def __eq__(self, other):
+        return isinstance(other, BoolType)
 
     def __str__(self):
         return "bool"
@@ -41,6 +47,9 @@ class IntType(TypeAST):
     def is_hashable(self):
         return True
 
+    def __eq__(self, other):
+        return isinstance(other, IntType)
+
     def __str__(self):
         return "int"
 
@@ -53,6 +62,9 @@ class FloatType(TypeAST):
 
     def is_hashable(self):
         return True
+
+    def __eq__(self, other):
+        return isinstance(other, FloatType)
 
     def __str__(self):
         return "float"
@@ -68,6 +80,9 @@ class NumberType(TypeAST):
     def is_hashable(self):
         return True
 
+    def __eq__(self, other):
+        return isinstance(other, NumberType)
+
     def __str__(self):
         return "Number"
 
@@ -82,6 +97,9 @@ class NoneType(TypeAST):
     def is_hashable(self):
         return True
 
+    def __eq__(self, other):
+        return isinstance(other, NoneType)
+
     def __str__(self):
         return "NoneType"
 
@@ -91,6 +109,9 @@ class NoneType(TypeAST):
 class StrType(TypeAST):
     def __init__(self, annotation=None):
         super().__init__(annotation)
+
+    def __eq__(self, other):
+        return isinstance(other, StrType)
 
     def is_hashable(self):
         return True
@@ -108,6 +129,9 @@ class TypeVariable(TypeAST):
         if not isinstance(var_name, type("")):
             raise ValueError("Type variable name is not a string: {}".format(var_name))
         self.var_name = var_name
+
+    def __eq__(self, other):
+        return isinstance(other, TypeVariable) and other.var_name == self.var_name
 
     def rename_type_variables(self, rmap):
         if self.var_name in rmap:
@@ -189,6 +213,9 @@ class ListType(TypeAST):
     def susbt(self, type_env):
         return ListType(self.elem_type.subst(type_env), self.annotation)
 
+    def __eq__(self, other):
+        return isinstance(other, ListType) and other.elem_type == self.elem_type
+
     def is_hashable(self):
         return False
 
@@ -210,6 +237,9 @@ class SetType(TypeAST):
         if elem_type is not None and not isinstance(elem_type, TypeAST):
             raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_type = elem_type
+
+    def __eq__(self, other):
+        return isinstance(other, SetType) and other.elem_type == self.elem_type
 
     def rename_type_variables(self, rmap):
         nelem_type = self.elem_type.rename_type_variables(rmap)
@@ -258,6 +288,10 @@ class DictType(TypeAST):
     def is_hashable(self):
         return False
 
+    def __eq__(self, other):
+        return isinstance(other, DictType) and other.key_type == self.key_type \
+            and other.value_type == self.value_type
+
     def is_emptydict(self):
         return self.key_type is None and self.value_type is None
 
@@ -287,6 +321,9 @@ class IterableType(TypeAST):
     def is_hashable(self):
         return False
 
+    def __eq__(self, other):
+        return isinstance(other, IterableType) and other.elem_type == self.elem_type
+
     def __str__(self):
         return "Iterable[{}]".format(str(self.elem_type))
 
@@ -310,6 +347,10 @@ class SequenceType(TypeAST):
     def is_hashable(self):
         return False
 
+        def __eq__(self, other):
+            return isinstance(other, SequenceType) and other.elem_type == self.elem_type
+
+
     def __str__(self):
         return "Sequence[{}]".format(str(self.elem_type))
 
@@ -332,6 +373,9 @@ class OptionType(TypeAST):
 
     def is_hashable(self):
         return False
+
+    def __eq__(self, other):
+        return isinstance(other, OptionType) and other.elem_type == self.elem_type
 
     def __str__(self):
         return "Option[{}]".format(str(self.elem_type))

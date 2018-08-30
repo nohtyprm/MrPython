@@ -685,6 +685,42 @@ def type_infer_EList(lst, ctx):
 
 EList.type_infer = type_infer_EList
 
+def type_infer_Indexing(indexing, ctx):
+    subject_type = indexing.subject.type_infer(ctx)
+    if subject_type is None:
+        return None
+
+    if isinstance(subject_type, SequenceType) \
+         or isinstance(subject_type, ListType):
+        sequential = True
+        result_type = subject_type.elem_type
+
+    elif isinstance(subject_type, StrType):
+        sequential = True
+        result_type = StrType # XXX: typical python twist !
+
+    elif isinstance(subject_type, DictType):
+        # TODO : dict typing
+        sequential = False
+        raise NotImplementedError("Dictionary typing not (yet) supported")
+
+    else:
+        ctx.add_type_error(IndexingError(indexing))
+        return None
+
+    if sequential:
+        if type_expect(ctx, indexing.index, IntType(), raise_error=False) is None:
+            ctx.add_type_error(IndexingSequenceNotNumeric(indexing.index))
+            return None
+    else: # dictionary
+        if type_expect(ctx, indexing.index, key_type, raise_error=False) is None:
+            ctx.add_type_error(IndexingDictKeyTypeError(indexing.index))
+            return None
+
+    return result_type
+
+Indexing.type_infer = type_infer_Indexing
+
 ######################################
 # Type comparisons                   #
 ######################################
@@ -693,6 +729,7 @@ def type_expect(ctx, expr, expected_type, raise_error=True):
     expr_type = expr.type_infer(ctx)
     if not expr_type:
         return None
+    #print("[type_expect] expected_type={}".format(expected_type))
     if not expected_type.type_compare(ctx, expr, expr_type, raise_error):
         #ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Mismatch type '{}' expecting: {} ").format(expr_type, expected_type)))
         return None
@@ -771,14 +808,38 @@ def type_compare_IterableType(expected_type, ctx, expr, expr_type, raise_error=T
        or isinstance(expr_type, SetType):
         return expected_type.elem_type.type_compare(ctx, expr, expr_type.elem_type, raise_error)
 
+    elif isinstance(expr_type, StrType):
+        return expected_type.elem_type.type_compare(ctx, expr, StrType(), raise_error)
+
     elif isinstance(expr_type, DictType):
         raise NotImplementedError("type_compare_IterableType (dict type)")
     else:
         if raise_error:
-            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an Iterable (Sequence, list, set or dictionnary)")))
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an Iterable (Sequence, list, string, set or dictionnary)")))
         return False
 
 IterableType.type_compare = type_compare_IterableType
+
+def type_compare_SequenceType(expected_type, ctx, expr, expr_type, raise_error=True):
+    #print("expected_type={}".format(expected_type))
+    #print("expr_type={}".format(expr_type))
+    #print("expr={}".format(expr))
+
+    if isinstance(expr_type, SequenceType) \
+       or isinstance(expr_type, ListType) \
+       or isinstance(expr_type, SetType):
+        return expected_type.elem_type.type_compare(ctx, expr, expr_type.elem_type, raise_error)
+
+    elif isinstance(expr_type, StrType):
+        return expected_type.elem_type.type_compare(ctx, expr, StrType(), raise_error)
+
+    else:
+        if raise_error:
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a Sequence (list or string)")))
+        return False
+
+SequenceType.type_compare = type_compare_SequenceType
+
 
 def type_compare_TypeVariable(expected_type, ctx, expr, expr_type, raise_error=True):
     if expected_type.is_call_variable():
