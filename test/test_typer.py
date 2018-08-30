@@ -85,7 +85,12 @@ def percent(value, maxi):
 
 if __name__ == "__main__":
 
-    for prog_file in glob.glob("{}/*.py".format(TESTPROG_PATH)):
+    if sys.argv[1:]:
+        prog_files = sys.argv[1:]
+    else:
+        prog_files = glob.glob("{}/*.py".format(TESTPROG_PATH))
+
+    for prog_file in prog_files:
         test_prog(prog_file)
 
     print("-----")

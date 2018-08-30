@@ -11,15 +11,13 @@ class TypeAST:
             self.annotated=False
 
     def rename_type_variables(self, rmap):
-        # by default: no renaming
-        return self
+        raise NotImplementedError("Type variable renaming not implemented for this node type (please report)\n  ==> {}".format(self))
 
     def subst(self, type_env):
-        # by default: no substitution
-        return self
+        raise NotImplementedError("Substitution not implemented for this node type (please report)\n  ==> {}".format(self))
 
     def __eq__(self, other):
-        raise NotImplementedError("Equality not implemented for this node type (please report)")
+        raise NotImplementedError("Equality not implemented for this node type (please report)\n  ==> {}".format(self))
 
     def is_hashable(self):
         raise NotImplementedError("Method is_hashable is abstract")
@@ -30,6 +28,12 @@ class BoolType(TypeAST):
 
     def is_hashable(self):
         return True
+
+    def rename_type_variables(self, rmap):
+        return self
+
+    def subst(self, type_env):
+        return self
 
     def __eq__(self, other):
         return isinstance(other, BoolType)
@@ -47,6 +51,12 @@ class IntType(TypeAST):
     def is_hashable(self):
         return True
 
+    def rename_type_variables(self, rmap):
+        return self
+
+    def subst(self, type_env):
+        return self
+
     def __eq__(self, other):
         return isinstance(other, IntType)
 
@@ -62,6 +72,12 @@ class FloatType(TypeAST):
 
     def is_hashable(self):
         return True
+
+    def rename_type_variables(self, rmap):
+        return self
+
+    def subst(self, type_env):
+        return self
 
     def __eq__(self, other):
         return isinstance(other, FloatType)
@@ -80,6 +96,12 @@ class NumberType(TypeAST):
     def is_hashable(self):
         return True
 
+    def rename_type_variables(self, rmap):
+        return self
+
+    def subst(self, type_env):
+        return self
+
     def __eq__(self, other):
         return isinstance(other, NumberType)
 
@@ -96,6 +118,12 @@ class NoneType(TypeAST):
 
     def is_hashable(self):
         return True
+
+    def rename_type_variables(self, rmap):
+        return self
+
+    def subst(self, type_env):
+        return self
 
     def __eq__(self, other):
         return isinstance(other, NoneType)
@@ -210,7 +238,7 @@ class ListType(TypeAST):
         nelem_type = self.elem_type.rename_type_variables(rmap)
         return ListType(nelem_type, self.annotation)
 
-    def susbt(self, type_env):
+    def subst(self, type_env):
         return ListType(self.elem_type.subst(type_env), self.annotation)
 
     def __eq__(self, other):

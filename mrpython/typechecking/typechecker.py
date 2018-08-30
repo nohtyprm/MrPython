@@ -542,44 +542,6 @@ def type_infer_EFalse(node, ctx):
 
 EFalse.type_infer = type_infer_EFalse
 
-def type_infer_funcall(call, ctx):
-    signature = ctx.global_env[call.full_fun_name]
-    rename_map = {}
-    signature = signature.rename_type_variables(rename_map)
-    #print("rename_map = {}".format(rename_map))
-    #print(repr(signature))
-
-    # step 2 : check the call arity
-    if len(signature.param_types) != len(call.arguments):
-        ctx.add_type_error(CallArityError(ctx.function_def, signature, call))
-        return None
-
-    # step 3 : check the argument types
-    num_arg = 1
-    ctx.call_type_env = dict()  # the type environment for calls (for generic functions) 
-    for (arg, param_type) in zip(call.arguments, signature.param_types):
-        #print("arg={}".format(arg))
-        #print("param_type={}".format(param_type))
-        if isinstance(param_type, TypeVariable):
-            raise NotImplementedError("Type variables in calls not yet implemented")
-        else:
-            arg_type = type_expect(ctx, arg, param_type)
-            if arg_type is None:
-                ctx.add_type_error(CallArgumentError(ctx.function_def, call, num_arg, arg, param_type))
-                ctx.call_type_env = None
-                return None
-        num_arg += 1
-
-    # step 4 : return the return type
-    if ctx.call_type_env:
-        nret_type = signature.ret_type.subst(ctx.call_type_env)
-        ctx.call_type_env = None
-        return nret_type
-    else:
-        ctx.call_type_env = None
-        return signature.ret_type
-
-
 def type_infer_ECall(call, ctx):
     # step 1 : fetch the signature of the called function
     if call.full_fun_name in ctx.global_env:
