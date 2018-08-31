@@ -185,7 +185,7 @@ class TypeVariable(TypeAST):
             return False
 
     def __str__(self):
-        return self.var_name
+        return '_' if self.var_name.startswith('_') else self.var_name
 
     def __repr__(self):
         return 'TypeVariable({})'.format(self.var_name)
