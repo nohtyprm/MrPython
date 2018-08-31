@@ -100,7 +100,8 @@ class ErrorCallback:
 
     def __call__(self):
         #print("error line=" + str(self.error.line))
-        self.src.app.goto_position(self.error.line, self.error.offset or 0)
+        if self.error and self.error.line:
+            self.src.app.goto_position(self.error.line, self.error.offset or 0)
 
 
 # from: http://tkinter.unpythonic.net/wiki/ReadOnlyText

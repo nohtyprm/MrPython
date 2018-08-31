@@ -584,7 +584,7 @@ def type_infer_ECall(call, ctx):
             if param_type.var_name in ctx.call_type_env:
                 arg_type = type_expect(ctx, arg, ctx.call_type_env[param_type.var_name])
                 if arg_type is None:
-                    ctx.add_type_error(CallArgumentError(ctx.function_def, method_call, call, num_arg, arg, ctx.call_type_env[param_type.var_name]))
+                    #ctx.add_type_error(CallArgumentError(ctx.function_def, method_call, call, num_arg, arg, ctx.call_type_env[param_type.var_name]))
                     ctx.call_type_env = None
                     return None
             else: # bind the type variable
@@ -598,7 +598,7 @@ def type_infer_ECall(call, ctx):
         else: # not a type variable
             arg_type = type_expect(ctx, arg, param_type)
             if arg_type is None:
-                ctx.add_type_error(CallArgumentError(ctx.function_def, method_call, call, num_arg, arg, param_type))
+                #ctx.add_type_error(CallArgumentError(ctx.function_def, method_call, call, num_arg, arg, param_type))
                 ctx.call_type_env = None
                 return None
         num_arg += 1
@@ -672,7 +672,7 @@ def type_infer_Indexing(indexing, ctx):
         raise NotImplementedError("Dictionary typing not (yet) supported")
 
     else:
-        ctx.add_type_error(IndexingError(indexing))
+        ctx.add_type_error(IndexingError(indexing, subject_type))
         return None
 
     if sequential:
@@ -1059,7 +1059,7 @@ class CallArityError(TypeError):
 
     def is_fatal(self):
         return True
-
+    
 class CallArgumentError(TypeError):
     def __init__(self, in_function, method_call, call, num_arg, arg, param_type):
         self.in_function = in_function
@@ -1121,6 +1121,22 @@ class DeadVariableUse(TypeError):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
                                     , tr("Forbidden use of a variable that is not in scope (Python101 scoping rule)"))
 
+class IndexingError(TypeError):
+    def __init__(self, indexing, subject_type):
+        self.indexing = indexing
+        self.subject_type = subject_type
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "IndexingError[{}]@{}:{}".format(self.subject_type, self.indexing.ast.lineno, self.indexing.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad indexing"), self.indexing.ast.lineno, self.indexing.ast.col_offset
+                                    , tr("One can only index a sequence or a dictionnary, not a '{}'").format(self.subject_type))
+
+    
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()
     prog.build_from_ast(ast, filename, source)

@@ -41,7 +41,9 @@ TRANSLATOR_DICT = {
     , "Comparison error" : { 'fr' : "Erreur de comparaison"}
     , "The two operands of the comparision should have the same type" : { 'fr' : "Les deux opérandes de la comparaison devraient être du même type"}
     , "Bad variable" : { 'fr' : "Mauvaise utilisation de variable"}
-    , "Forbidden use of a variable that is not in scope (Python101 scoping rule)" : { 'fr' : "Il n'est pas autorisé en Python101 d'utiliser cette variable dont la portée est erronée"}
+    , "Forbidden use of a variable that is not in scope (Python101 scoping rule)" : { 'fr' : "Il n'est pas autorisé en Python101 d'utiliser cette variable dont la portée est erronée" }
+    , "Bad indexing" : { 'fr' : "Problème d'indexation" }
+    , "One can only index a sequence or a dictionnary, not a '{}'" : { 'fr' : "On ne peut indexer qu'une séquence ou un dictionnaire, pas un '{}'" }
 }
 
 def tr(msg):
