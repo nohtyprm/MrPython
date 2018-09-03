@@ -46,6 +46,8 @@ TRANSLATOR_DICT = {
     , "One can only index a sequence or a dictionnary, not a '{}'" : { 'fr' : "On ne peut indexer qu'une séquence ou un dictionnaire, pas un '{}'" }
     , "Bad index" : { 'fr' : "Erreur d'index"}
     , "Sequence index must be an integer" : { 'fr' : "L'index de sequence doit être un entier"}
+    , "Heterogeneous elements (Python101 restriction)" : { 'fr' : "Eléments hétérogènes (restriction Python 101)"}
+    , "All elements of must be of the same type '{}' but this element has incompatible type: {}" : { 'fr' : "Tous les élements doivent être du même type '{}' mais cet élément est d'un type incompatible: {}" }
 }
 
 def tr(msg):

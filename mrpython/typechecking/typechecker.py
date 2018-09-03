@@ -1167,8 +1167,8 @@ class HeterogeneousElementError(TypeError):
         return "HeterogenousElementError[{}]@{}:{}".format(self.element_type, self.element.ast.lineno, self.element.ast.col_offset)
 
     def report(self, report):
-        report.add_convention_error('error', tr("Heterogeneous elements (Python101 restriction)"), self.index.ast.lineno, self.index.ast.col_offset
-                                    , tr("All elements of a {} must be of the same type '{}' but this element has incompatible type: {}").format(tr(self.container_kind), self.container_type, self.element_type))
+        report.add_convention_error('error', tr("Heterogeneous elements (Python101 restriction)"), self.element.ast.lineno, self.element.ast.col_offset
+                                    , tr("All elements of must be of the same type '{}' but this element has incompatible type: {}").format(self.container_type, self.element_type))
 
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()
