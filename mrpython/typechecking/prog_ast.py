@@ -184,6 +184,19 @@ class While:
             iinstr = parse_instruction(instr)
             self.body.append(iinstr)
 
+class For:
+    def __init__(self, node):
+        self.ast = node
+        print(astpp.dump(node))
+        self.target = node.target
+        self.var_name = self.target.id
+        self.iter = parse_expression(node.iter)
+        self.body = []
+        for instr in node.body:
+            iinstr = parse_instruction(instr)
+            self.body.append(iinstr)
+
+
 def parse_expression_as_instruction(node):
     # XXX: do something here or way until typing for
     #      losing the returned value (except if None)
@@ -195,6 +208,7 @@ INSTRUCTION_CLASSES = {"Assign" : parse_assign
                        , "If" : If
                        , "While" : While
                        , "Expr" : parse_expression_as_instruction
+                       , "For" : For
 }
 
 def parse_instruction(node):

@@ -249,6 +249,58 @@ def type_check_Assign(assign, ctx):
 
         return True
 
+def type_check_For(for_node, ctx):
+
+    # Step 1) let's see if the variable is dead
+    if for_node.var_name in ctx.dead_variables:
+        ctx.add_type_error(DeadVariableUse(for_node.var_name, for_node))
+        return False
+
+    # Step 2) check/infer iterator type
+    iter_type = for_node.iter.type_infer(ctx)
+    if iter_type is None:
+        return False
+
+    if isinstance(iter_type, IterableType) \
+       or isinstance(iter_type, SequenceType) \
+       or isinstance(iter_type, ListType) \
+       or isinstance(iter_type, SetType) \
+       or isinstance(iter_type, StrType):
+
+        # Step 3) fetch declared type
+        declared_type = fetch_declaration_type(ctx, for_node, raise_error=False)
+        if ctx.fatal_error:
+            return False
+
+        if declared_type:
+            if not declared_type.type_compare(ctx, for_node, iter_type.elem_type):
+                return False
+            else:
+                iter_element_type = declared_type
+        else: # use inferred type
+            iter_element_type = iter_type.elem_type
+
+
+        # Step 4) type check body
+        ctx.push_parent(for_node)
+        ctx.local_env[for_node.var_name] = (iter_element_type, 'for_scope')
+
+        for instr in for_node.body:
+            if not instr.type_check(ctx):
+                ctx.pop_parent()
+                return False
+
+        ctx.pop_parent()
+        return True
+    # dictionary
+    elif isinstance(iter_type, DictType):
+        raise NotImplementedError("Dictionary type not yet supported")
+    else: # unsupported iterator type
+        ctx.add_type_error(IteratorTypeError(for_nod, iter_type))
+        return False
+
+For.type_check = type_check_For
+
 def parse_var_name(declaration):
     vdecl = ""
     expect_colon = False
@@ -265,12 +317,12 @@ def parse_var_name(declaration):
 
     return None, None
 
-def fetch_declaration_type(ctx, assign):
+def fetch_declaration_type(ctx, assign, raise_error=True):
     lineno = assign.ast.lineno
     decl_line = ctx.prog.get_source_line(lineno-1).strip()
 
     #print(decl_line)
-    if (not decl_line) or decl_line[0] != '#':
+    if raise_error and ((not decl_line) or decl_line[0] != '#'):
         ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'header-char', tr("Missing variable declaration '{}'").format(assign.var_name)))
         return None
     decl_line = decl_line[1:].strip()
