@@ -187,7 +187,7 @@ class While:
 class For:
     def __init__(self, node):
         self.ast = node
-        print(astpp.dump(node))
+        #print(astpp.dump(node))
         self.target = node.target
         self.var_name = self.target.id
         self.iter = parse_expression(node.iter)

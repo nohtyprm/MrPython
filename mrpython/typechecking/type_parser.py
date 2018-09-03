@@ -43,6 +43,8 @@ def type_tokenizer():
     tokenizer.add_rule(tokens.Literal('NoneType_type', 'NoneType'))
     tokenizer.add_rule(tokens.Literal('str_type', 'str'))
 
+    tokenizer.add_rule(tokens.Literal('Anything_type', 'Ω'))
+
     # compound types
     tokenizer.add_rule(tokens.Literal('Iterable_type', 'Iterable'))
     tokenizer.add_rule(tokens.Literal('Sequence_type', 'Sequence'))
@@ -87,6 +89,13 @@ def build_typeexpr_grammar(grammar=None):
     bool_parser.xform_result = bool_xform_result
     grammar.register('bool_type', bool_parser)
 
+    anything_parser = parsers.Token('Anything_type')
+    def anything_xform_result(result):
+        result.content = Anything(annotation=result)
+        return result
+    anything_parser.xform_result = anything_xform_result
+    grammar.register('Anything_type', anything_parser)
+
     int_parser = parsers.Token('int_type')
     def int_xform_result(result):
         result.content = IntType(annotation=result)
@@ -117,7 +126,7 @@ def build_typeexpr_grammar(grammar=None):
 
     NoneType_parser = parsers.Token('NoneType_type')
     def NoneType_xform_result(result):
-        result.content = NoneType(annotation=result)
+        result.content = NoneTypeType(annotation=result)
         return result
     NoneType_parser.xform_result = NoneType_xform_result
     grammar.register('NoneType_type', NoneType_parser)
@@ -184,6 +193,7 @@ def build_typeexpr_grammar(grammar=None):
                        .orelse(grammar.ref('Number_type')) \
                        .orelse(grammar.ref('str_type')) \
                        .orelse(grammar.ref('NoneType_type')) \
+                       .orelse(grammar.ref('Anything_type')) \
                        .orelse(grammar.ref('Iterable_type')) \
                        .orelse(grammar.ref('Sequence_type')) \
                        .orelse(grammar.ref('list_type')) \

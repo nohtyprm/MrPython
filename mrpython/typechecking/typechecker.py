@@ -41,6 +41,7 @@ class TypingContext:
         self.dead_variables = set()
         self.parent_stack = None
         self.local_env = None
+        self.call_type_env = [] # stack of type environments when calling generic functions
 
     def add_type_error(self, error):
         self.type_errors.append(error)
@@ -103,6 +104,7 @@ class TypingContext:
         self.parent_stack = None
         self.allow_declarations = None
         self.local_env = None
+        self.dead_variables = set()
 
     def fetch_scope_mode(self):
         # TODO : complete with parent stack
@@ -428,7 +430,7 @@ def type_check_ECall(enode, ctx):
     call_type = enode.type_infer(ctx)
     if call_type is None:
         return False
-    elif isinstance(call_type, NoneType):
+    elif isinstance(call_type, NoneTypeType):
         return True
     else: # the return type is not None: it's a warning
         ctx.add_type_error(CallNotNoneError(enode, call_type))
@@ -628,16 +630,16 @@ def type_infer_ECall(call, ctx):
 
     # step 3 : check the argument types
     num_arg = 1
-    ctx.call_type_env = dict()  # the type environment for calls (for generic functions) 
+    ctx.call_type_env.append(dict())  # the type environment for calls (for generic functions) 
     for (arg, param_type) in zip(arguments, signature.param_types):
         #print("arg={}".format(arg))
         #print("param_type={}".format(param_type))
         if isinstance(param_type, TypeVariable):
-            if param_type.var_name in ctx.call_type_env:
-                arg_type = type_expect(ctx, arg, ctx.call_type_env[param_type.var_name])
+            if param_type.var_name in ctx.call_type_env[-1]:
+                arg_type = type_expect(ctx, arg, ctx.call_type_env[-1][param_type.var_name])
                 if arg_type is None:
                     #ctx.add_type_error(CallArgumentError(ctx.function_def, method_call, call, num_arg, arg, ctx.call_type_env[param_type.var_name]))
-                    ctx.call_type_env = None
+                    ctx.call_type_env.pop()
                     return None
             else: # bind the type variable
                 arg_type = arg.type_infer(ctx)
@@ -645,23 +647,23 @@ def type_infer_ECall(call, ctx):
                     # XXX: add an error ?
                     return None
 
-                ctx.call_type_env[param_type.var_name] = arg_type
+                ctx.call_type_env[-1][param_type.var_name] = arg_type
 
         else: # not a type variable
             arg_type = type_expect(ctx, arg, param_type)
             if arg_type is None:
                 #ctx.add_type_error(CallArgumentError(ctx.function_def, method_call, call, num_arg, arg, param_type))
-                ctx.call_type_env = None
+                ctx.call_type_env.pop()
                 return None
         num_arg += 1
 
     # step 4 : return the return type
-    if ctx.call_type_env:
-        nret_type = signature.ret_type.subst(ctx.call_type_env)
-        ctx.call_type_env = None
+    if ctx.call_type_env[-1]:
+        nret_type = signature.ret_type.subst(ctx.call_type_env[-1])
+        ctx.call_type_env.pop()
         return nret_type
     else:
-        ctx.call_type_env = None
+        ctx.call_type_env.pop()
         return signature.ret_type
 
 ECall.type_infer = type_infer_ECall
@@ -694,12 +696,17 @@ def type_infer_EList(lst, ctx):
 
     for element in lst.elements:
         element_type = element.type_infer(ctx)
+        if element_type is None:
+            return None
+        #print("----\nelement type={}".format(element_type))
+        #print("lst type={}\n----".format(lst_type))
         if lst_type is None:
             lst_type = element_type
         else:
-            if element_type != lst_type:
+            if not lst_type.type_compare(ctx, element, element_type, raise_error=False):
                 ctx.add_type_error(HeterogeneousElementError('list', lst, lst_type, element_type, element))
                 return None
+
     return ListType(lst_type)
 
 EList.type_infer = type_infer_EList
@@ -753,6 +760,12 @@ def type_expect(ctx, expr, expected_type, raise_error=True):
         #ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Mismatch type '{}' expecting: {} ").format(expr_type, expected_type)))
         return None
     return expr_type
+
+def type_compare_Anything(expected_type, ctx, expr, expr_type, raise_error=True):
+    # everything is compatible with anything
+    return True
+
+Anything.type_compare = type_compare_Anything
 
 def type_compare_NumberType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, NumberType) \
@@ -823,6 +836,9 @@ def type_compare_ListType(expected_type, ctx, expr, expr_type, raise_error=True)
     if expr_type.is_emptylist():
         return True
 
+    if expected_type.is_emptylist():
+        return True
+
     return expected_type.elem_type.type_compare(ctx, expr, expr_type.elem_type, raise_error)
 
 ListType.type_compare = type_compare_ListType
@@ -831,6 +847,9 @@ def type_compare_IterableType(expected_type, ctx, expr, expr_type, raise_error=T
     #print("expected_type={}".format(expected_type))
     #print("expr_type={}".format(expr_type))
     #print("expr={}".format(expr))
+
+    if isinstance(expr_type, ListType) and expr_type.is_emptylist():
+        return True
 
     if isinstance(expr_type, IterableType) \
        or isinstance(expr_type, SequenceType) \
@@ -873,8 +892,8 @@ SequenceType.type_compare = type_compare_SequenceType
 
 def type_compare_TypeVariable(expected_type, ctx, expr, expr_type, raise_error=True):
     if expected_type.is_call_variable():
-        if expected_type.var_name in ctx.call_type_env:
-            real_expected_type = ctx.call_type_env[expected_type.var_name]
+        if expected_type.var_name in ctx.call_type_env[-1]:
+            real_expected_type = ctx.call_type_env[-1][expected_type.var_name]
             if real_expected_type == expr_type:
                 return True
             # not equal
@@ -882,7 +901,7 @@ def type_compare_TypeVariable(expected_type, ctx, expr, expr_type, raise_error=T
                 ctx.add_type_error(TypeComparisonError(ctx.function_def, real_expected_type, expr, expr_type, tr("Type mismatch for parameter #{} in call, expecting {} found: {}").format(expected_type.var_name[1:],real_expected_type, expr_type)))
             return False
         else: # register type as type parameter:
-            ctx.call_type_env[expected_type.var_name] = expr_type
+            ctx.call_type_env[-1][expected_type.var_name] = expr_type
             return True
     else: # not a call variable
         if expected_type == expr_type:
@@ -894,12 +913,23 @@ def type_compare_TypeVariable(expected_type, ctx, expr, expr_type, raise_error=T
 
 TypeVariable.type_compare = type_compare_TypeVariable
 
+def type_compare_NoneTypeType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if not isinstance(expr_type, NoneTypeType):
+        if raise_error:
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting value None")))
+        return False
+
+    return True
+
+NoneTypeType.type_compare = type_compare_NoneTypeType
+
 ######################################
 # Standard imports                   #
 ######################################
 
 BUILTINS_IMPORTS = {
     'len' : function_type_parser("Iterable[α] -> int").content
+    ,'print' : function_type_parser("Ω -> NoneType").content
     , '.append' : function_type_parser("list[α] * α -> NoneType").content
 }
 

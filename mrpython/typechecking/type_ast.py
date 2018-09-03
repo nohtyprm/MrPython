@@ -22,6 +22,29 @@ class TypeAST:
     def is_hashable(self):
         raise NotImplementedError("Method is_hashable is abstract")
 
+class Anything(TypeAST):
+    def __init__(self, annotation=None):
+        super().__init__(annotation)
+
+    def is_hashable(self):
+        return False
+
+    def rename_type_variables(self, rmap):
+        return self
+
+    def subst(self, type_env):
+        return self
+
+    def __eq__(self, other):
+        return isinstance(other, Anything)
+
+    def __str__(self):
+        return "any"
+
+    def __repr__(self):
+        return "Anything()"
+
+
 class BoolType(TypeAST):
     def __init__(self, annotation=None):
         super().__init__(annotation)
@@ -112,7 +135,7 @@ class NumberType(TypeAST):
         return "NumberType()"
 
 
-class NoneType(TypeAST):
+class NoneTypeType(TypeAST):
     def __init__(self, annotation=None):
         super().__init__(annotation)
 
@@ -126,7 +149,7 @@ class NoneType(TypeAST):
         return self
 
     def __eq__(self, other):
-        return isinstance(other, NoneType)
+        return isinstance(other, NoneTypeType)
 
     def __str__(self):
         return "NoneType"

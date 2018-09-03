@@ -8,6 +8,7 @@ def longueur(L):
 
     # e : α
     for e in L:
+        print(e)
         l = l + 1
 
     return l
@@ -32,7 +33,7 @@ def list_length(LL):
 
 assert list_length([[], [1], [1, 2], [1, 2, 3], [1, 2, 3, 4]]) == [0, 1, 2, 3, 4]
 assert list_length([]) == []
-assert list_length([longueur([]), longueur([1]), longueur([1, 2])
-                    , longueur([1, 2, 3])
-                    , longueur([1, 2, 3, 4])]) == [1, 1, 1, 1, 1]
+assert list_length([[longueur([])], [longueur([1])], [longueur([1, 2])]
+                    , [longueur([1, 2, 3])]
+                    , [longueur([1, 2, 3, 4])]]) == [1, 1, 1, 1, 1]
 
