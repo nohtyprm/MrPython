@@ -1136,7 +1136,22 @@ class IndexingError(TypeError):
         report.add_convention_error('error', tr("Bad indexing"), self.indexing.ast.lineno, self.indexing.ast.col_offset
                                     , tr("One can only index a sequence or a dictionnary, not a '{}'").format(self.subject_type))
 
-    
+
+class IndexingSequenceNotNumeric(TypeError):
+    def __init__(self, index):
+        self.index = index
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "IndexingSequenceNotNumeric[]@{}:{}".format(self.index.ast.lineno, self.index.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad index"), self.index.ast.lineno, self.index.ast.col_offset
+                                    , tr("Sequence index must be an integer"))
+
+
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()
     prog.build_from_ast(ast, filename, source)
