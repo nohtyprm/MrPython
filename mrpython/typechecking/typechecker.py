@@ -646,7 +646,7 @@ def type_infer_EList(lst, ctx):
             lst_type = element_type
         else:
             if element_type != lst_type:
-                ctx.add_type_error(HeterogeneousElementError('list', lst))
+                ctx.add_type_error(HeterogeneousElementError('list', lst, lst_type, element_type, element))
                 return None
     return ListType(lst_type)
 
@@ -1151,6 +1151,24 @@ class IndexingSequenceNotNumeric(TypeError):
         report.add_convention_error('error', tr("Bad index"), self.index.ast.lineno, self.index.ast.col_offset
                                     , tr("Sequence index must be an integer"))
 
+
+class HeterogeneousElementError(TypeError):
+    def __init__(self, container_kind, container, container_type, element_type, element):
+        self.container_kind = container_kind
+        self.container = container
+        self.element_type = element_type
+        self.container_type = container_type
+        self.element = element
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "HeterogenousElementError[{}]@{}:{}".format(self.element_type, self.element.ast.lineno, self.element.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Heterogeneous elements (Python101 restriction)"), self.index.ast.lineno, self.index.ast.col_offset
+                                    , tr("All elements of a {} must be of the same type '{}' but this element has incompatible type: {}").format(tr(self.container_kind), self.container_type, self.element_type))
 
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()
