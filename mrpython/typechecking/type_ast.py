@@ -160,6 +160,7 @@ class NoneTypeType(TypeAST):
 class StrType(TypeAST):
     def __init__(self, annotation=None):
         super().__init__(annotation)
+        #self.elem_type = StrType() # how strange !
 
     def __eq__(self, other):
         return isinstance(other, StrType)
@@ -233,13 +234,13 @@ class TupleType(TypeAST):
         nelem_types = []
         for elem_type in self.elem_types:
             nelem_types.append(elem_type.rename_type_variables(rmap))
-        return TupleType(nelem_types, self.annotation)
+        return TupleType(nelem_types, self.annotation if self.annotated else None)
 
     def subst(self, type_env):
         nelem_types = []
         for elem_type in self.elem_types:
             nelem_types.append(elem_type.subst(type_env))
-        return TupleType(nelem_types, self.annotation)
+        return TupleType(nelem_types, self.annotation if self.annotated else None)
 
     def is_hashable(self):
         for elem_type in elem_types:
@@ -423,10 +424,10 @@ class OptionType(TypeAST):
 
     def rename_type_variables(self, rmap):
         nelem_type = self.elem_type.rename_type_variables(rmap)
-        return OptionType(nelem_type, self.annotation)
+        return OptionType(nelem_type, self.annotation if self.annotated else None)
 
     def susbt(self, type_env):
-        return OptionType(self.elem_type.subst(type_env), self.annotation)
+        return OptionType(self.elem_type.subst(type_env), self.annotation if self.annotated else None)
 
     def is_hashable(self):
         return False
@@ -468,7 +469,7 @@ class FunctionType:
         for param_type in self.param_types:
             nparam_types.append(param_type.rename_type_variables(rmap))
         nret_type = self.ret_type.rename_type_variables(rmap)
-        nfntype = FunctionType(nparam_types, self.ret_type, self.partial, self.annotation)
+        nfntype = FunctionType(nparam_types, self.ret_type, self.partial, self.annotation if self.annotated else None)
         nfntype.ret_type = nret_type
         return nfntype
 

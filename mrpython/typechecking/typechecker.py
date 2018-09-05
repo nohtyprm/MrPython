@@ -275,12 +275,13 @@ def type_check_For(for_node, ctx):
             return False
 
         if declared_type:
-            if not declared_type.type_compare(ctx, for_node, iter_type.elem_type):
+            if not declared_type.type_compare(ctx, for_node
+                                              , iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()):
                 return False
             else:
                 iter_element_type = declared_type
         else: # use inferred type
-            iter_element_type = iter_type.elem_type
+            iter_element_type = iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()
 
 
         # Step 4) type check body
@@ -831,7 +832,7 @@ def type_infer_Indexing(indexing, ctx):
 
     elif isinstance(subject_type, StrType):
         sequential = True
-        result_type = StrType # XXX: typical python twist !
+        result_type = StrType() # XXX: typical python twist !
 
     elif isinstance(subject_type, DictType):
         # TODO : dict typing
@@ -854,6 +855,38 @@ def type_infer_Indexing(indexing, ctx):
     return result_type
 
 Indexing.type_infer = type_infer_Indexing
+
+def type_infer_Slicing(slicing, ctx):
+    subject_type = slicing.subject.type_infer(ctx)
+    if subject_type is None:
+        return None
+
+    if isinstance(subject_type, SequenceType) \
+       or isinstance(subject_type, ListType):
+        result_type = subject_type.elem_type
+
+    elif isinstance(subject_type, StrType):
+        result_type = StrType() # XXX: typical python twist !
+        
+    else:
+        ctx.add_type_error(SlicingError(slicing, subject_type))
+        return None
+
+    # check slice arguments
+
+    if slicing.lower and not type_expect(ctx, slicing.lower, IntType(), raise_error=True):
+        return None
+
+    if slicing.upper and not type_expect(ctx, slicing.upper, IntType(), raise_error=True):
+        return None
+
+    if slicing.step and not type_expect(ctx, slicing.step, IntType(), raise_error=True):
+        return None
+
+    return result_type
+
+Slicing.type_infer = type_infer_Slicing
+    
 
 ######################################
 # Type comparisons                   #
@@ -1030,6 +1063,19 @@ def type_compare_NoneTypeType(expected_type, ctx, expr, expr_type, raise_error=T
     return True
 
 NoneTypeType.type_compare = type_compare_NoneTypeType
+
+def type_compare_OptionType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, NoneTypeType):
+        return True
+
+    val_type = expected_type.elem_type.type_compare(ctx, expr, expr_type, raise_error=False)
+    if not val_type:
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting value None or of type: {}").format(expected_type.elem_type)))
+        return False
+
+    return True
+
+OptionType.type_compare = type_compare_OptionType
 
 ######################################
 # Standard imports                   #
