@@ -282,6 +282,12 @@ class EDiv:
         self.left = left
         self.right = right
 
+class EFloorDiv:
+    def __init__(self, node, left, right):
+        self.ast = node
+        self.left = left
+        self.right = right
+        
 class EMod:
     def __init__(self, node, left, right):
         self.ast = node
@@ -298,6 +304,7 @@ BINOP_CLASSES = { "Add" : EAdd
                   , "Sub" : ESub
                   , "Mult" : EMult
                   , "Div" : EDiv
+                  , "FloorDiv" : EFloorDiv #  // vs. /
                   , "Mod" : EMod
                   , "Pow" : EPow
 }

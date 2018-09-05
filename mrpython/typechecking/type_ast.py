@@ -164,6 +164,12 @@ class StrType(TypeAST):
     def __eq__(self, other):
         return isinstance(other, StrType)
 
+    def rename_type_variables(self, rmap):
+        return self
+
+    def subst(self, type_env):
+        return self
+
     def is_hashable(self):
         return True
 

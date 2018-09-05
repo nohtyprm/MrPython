@@ -475,20 +475,61 @@ def infer_number_type(ctx, type1, type2):
 #      ---------------------------------
 #      e1 + e2  ::>  x
 
+# Well, it's more complicated than that... (sequences...)
+
 def type_infer_EAdd(expr, ctx):
-    left_type = type_expect(ctx, expr.left, NumberType())
+    left_type = expr.left.type_infer(ctx)
     if not left_type:
         return None
 
-    right_type = type_expect(ctx, expr.right, NumberType())
-    if not right_type:
-        return None
+    if isinstance(left_type, (NumberType, IntType, FloatType)):    
+        left_type = type_expect(ctx, expr.left, NumberType())
+        if not left_type:
+            return None
 
-    add_type = infer_number_type(ctx, left_type, right_type)
-    if not add_type:
-        return None
+        right_type = type_expect(ctx, expr.right, NumberType())
+        if not right_type:
+            return None
 
-    return add_type
+        add_type = infer_number_type(ctx, left_type, right_type)
+
+        if not add_type:
+            return None
+
+        return add_type
+
+    elif isinstance(left_type, StrType):
+        right_type = type_expect(ctx, expr.right, StrType())
+        if not right_type:
+            return None
+
+        return StrType()
+
+    elif isinstance(left_type, ListType):
+        right_type = expr.right.type_infer(ctx)
+        if not right_type:
+            return None
+
+        if not isinstance(right_type, ListType):
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, left_type, expr.right, right_type,
+                                                   tr("Expecting a list")))
+            return None
+
+        if left_type.elem_type != right_type.elem_type:
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, left_type.elem_type, expr.right, right_type.elem_type,
+                                                   tr("Expecting a list with elements of type: {}").format(left_type.elem_type)))
+            return None
+
+        return left_type
+
+    else:
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, ListType(), expr.left, left_type,
+                                               tr("Expecting a list")))
+        return None
+            
+    
+
+        
 
 EAdd.type_infer = type_infer_EAdd
 
@@ -554,6 +595,19 @@ def type_infer_EDiv(expr, ctx):
     return FloatType()
 
 EDiv.type_infer = type_infer_EDiv
+
+def type_infer_EFloorDiv(expr, ctx):
+    left_type = type_expect(ctx, expr.left, IntType())
+    if not left_type:
+        return None
+
+    right_type = type_expect(ctx, expr.right, IntType())
+    if not right_type:
+        return None
+
+    return IntType()
+
+EFloorDiv.type_infer = type_infer_EFloorDiv
 
 def type_infer_EMod(expr, ctx):
     left_type = type_expect(ctx, expr.left, IntType())
@@ -984,6 +1038,7 @@ NoneTypeType.type_compare = type_compare_NoneTypeType
 BUILTINS_IMPORTS = {
     'len' : function_type_parser("Iterable[α] -> int").content
     ,'print' : function_type_parser("Ω -> NoneType").content
+    ,'range' : function_type_parser("int * int -> Iterable[int]").content
     , '.append' : function_type_parser("list[α] * α -> NoneType").content
 }
 
