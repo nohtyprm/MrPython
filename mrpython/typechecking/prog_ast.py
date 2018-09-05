@@ -282,10 +282,24 @@ class EDiv:
         self.left = left
         self.right = right
 
+class EMod:
+    def __init__(self, node, left, right):
+        self.ast = node
+        self.left = left
+        self.right = right
+
+class EPow:
+    def __init__(self, node, left, right):
+        self.ast = node
+        self.left = left
+        self.right = right
+
 BINOP_CLASSES = { "Add" : EAdd
                   , "Sub" : ESub
                   , "Mult" : EMult
                   , "Div" : EDiv
+                  , "Mod" : EMod
+                  , "Pow" : EPow
 }
 
 def EBinOp(node):
@@ -300,12 +314,46 @@ def EBinOp(node):
     else:
         return UnsupportedNode(node)
 
+class EAnd:
+    def __init__(self, node, operands):
+        self.ast = node
+        self.operands = operands
+
+class EOr:
+    def __init__(self, node, operands):
+        self.ast = node
+        self.operands = operands
+
+BOOLOP_CLASSES = { "And" : EAnd
+                  , "Or" : EOr
+}
+
+def EBoolOp(node):
+    boolop_type_name = node.op.__class__.__name__
+    #print("boolop type=",boolop_type_name)
+    if boolop_type_name in BOOLOP_CLASSES:
+        operands = []
+        for operand in node.values:
+            operand = parse_expression(operand)
+            operands.append(operand)
+
+        wrap_node = BOOLOP_CLASSES[boolop_type_name](node, operands)
+        return wrap_node
+    else:
+        return UnsupportedNode(node)
+
 class EUSub:
     def __init__(self, node, operand):
         self.ast = node
         self.operand = operand
 
+class ENot:
+    def __init__(self, node, operand):
+        self.ast = node
+        self.operand = operand
+        
 UNOP_CLASSES = { "USub" : EUSub
+                 , "Not" : ENot
 }
 
 def EUnaryOp(node):
@@ -323,6 +371,7 @@ class ECompare:
         self.conds = conds
 
 def parse_compare(node):
+    #print(astpp.dump(node))
     left = node.left
     conds = []
     for (op, right) in zip(node.ops, node.comparators):
@@ -350,7 +399,15 @@ class CEq(Condition):
     def __init__(self, op, left, right):
         super().__init__(op, left, right)
 
+class CNotEq(Condition):
+    def __init__(self, op, left, right):
+        super().__init__(op, left, right)
+
 class CGtE(Condition):
+    def __init__(self, op, left, right):
+        super().__init__(op, left, right)
+
+class CGt(Condition):
     def __init__(self, op, left, right):
         super().__init__(op, left, right)
 
@@ -358,10 +415,17 @@ class CLtE(Condition):
     def __init__(self, op, left, right):
         super().__init__(op, left, right)
 
+class CLt(Condition):
+    def __init__(self, op, left, right):
+        super().__init__(op, left, right)
+
 
 COMPARE_CLASSES = { "Eq" : CEq
+                    , "NotEq" : CNotEq
                     , "GtE" : CGtE
+                    , "Gt" : CGt
                     , "LtE" : CLtE
+                    , "Lt" : CLt
 }
 
 def parse_cond(op, left, right):
@@ -378,7 +442,7 @@ def parse_function(func_descr):
         parts.append(parse_expression(val.value))
         val = val.value
     parts.append(val.id)
-    print("parts={}".format(parts))
+    #print("parts={}".format(parts))
     return parts
 
 class ECall:
@@ -451,6 +515,7 @@ EXPRESSION_CLASSES = { "Num" : ENum
                        , "NameConstant"  : parse_constant
                        , "Name" : EVar
                        , "BinOp" : EBinOp
+                       , "BoolOp" : EBoolOp
                        , "UnaryOp" : EUnaryOp
                        , "Call" : ECall
                        , "Compare" : parse_compare

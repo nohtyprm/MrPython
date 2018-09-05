@@ -232,8 +232,9 @@ def build_functype_grammar(grammar):
     def functype_parser_xform_result(result):
         param_types = []
         params_content = result.content[0]
-        for param_content in params_content.content:
-            param_types.append(param_content.content)
+        if params_content.content:
+            for param_content in params_content.content:
+                param_types.append(param_content.content)
 
         range_content = result.content[1].content
         #print("range content=",range_content)

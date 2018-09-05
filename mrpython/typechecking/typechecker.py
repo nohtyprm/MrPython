@@ -555,6 +555,37 @@ def type_infer_EDiv(expr, ctx):
 
 EDiv.type_infer = type_infer_EDiv
 
+def type_infer_EMod(expr, ctx):
+    left_type = type_expect(ctx, expr.left, IntType())
+    if not left_type:
+        return None
+
+    right_type = type_expect(ctx, expr.right, IntType())
+    if not right_type:
+        return None
+
+    return IntType()
+
+EMod.type_infer = type_infer_EMod
+
+def type_infer_EPow(expr, ctx):
+    target_type = expr.left.type_infer(ctx)
+    if target_type is None:
+        return None
+
+    if isinstance(target_type, IntType) \
+       or isinstance(target_type, FloatType) \
+       or isinstance(target_type, NumberType):
+        exponent_type = type_expect(ctx, expr.right, IntType())
+        if exponent_type is None:
+            return None
+        return IntType()
+    else: # not a numeric type
+       return type_expect(ctx, expr.left, NumberType())
+
+EPow.type_infer = type_infer_EPow
+
+
 def type_infer_EVar(var, ctx):
     # check if the variable is dead
     if var.name in ctx.dead_variables:
@@ -600,6 +631,29 @@ def type_infer_EFalse(node, ctx):
     return BoolType()
 
 EFalse.type_infer = type_infer_EFalse
+
+def type_infer_BoolOp(node, ctx):
+    for operand in node.operands:
+        operand_type = type_expect(ctx, operand, BoolType())
+        if not operand_type:
+            return None
+    return BoolType()
+
+EAnd.type_infer = type_infer_BoolOp
+EOr.type_infer = type_infer_BoolOp
+
+def type_infer_ENot(node, ctx):
+    operand_type = type_expect(ctx, node.operand, BoolType())
+    if not operand_type:
+        return None
+    return BoolType()
+
+ENot.type_infer = type_infer_ENot
+
+def type_infer_ENone(node, ctx):
+    return NoneTypeType()
+
+ENone.type_infer = type_infer_ENone
 
 def type_infer_ECall(call, ctx):
     # step 1 : fetch the signature of the called function
@@ -678,13 +732,13 @@ def type_infer_ECompare(ecomp, ctx):
 ECompare.type_infer = type_infer_ECompare
 
 def type_check_Condition(cond, ctx, compare):
-        left_type = cond.left.type_infer(ctx)
-        if left_type is None:
-            return False
-        if type_expect(ctx, cond.right, left_type, raise_error=False) is None:
-            ctx.add_type_error(CompareConditionError(compare, cond))
-            return False
-        return True
+    left_type = cond.left.type_infer(ctx)
+    if left_type is None:
+        return False
+    if type_expect(ctx, cond.right, left_type, raise_error=False) is None:
+        ctx.add_type_error(CompareConditionError(compare, cond))
+        return False
+    return True
 
 Condition.type_check = type_check_Condition
 
