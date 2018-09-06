@@ -27,7 +27,7 @@ def type_tokenizer():
 
 
     # spaces
-    tokenizer.add_rule(tokens.CharSet('space', ' ', '\t', '\r'))
+    tokenizer.add_rule(tokens.CharSet('space', ' ', '\t', '\r', '\n'))
 
     # symbols
     tokenizer.add_rule(tokens.Literal('arrow', "->"))
