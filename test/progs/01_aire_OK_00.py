@@ -2,6 +2,7 @@ import math
 
 def aire_triangle(a,b,c):
     """ Number * Number * Number -> float
+
     Hypothèse : (a>0) and (b>0) and (c>0)
     Hypothèse : les côtés a, b et c définissent bien un triangle.
 

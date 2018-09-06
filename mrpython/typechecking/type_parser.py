@@ -27,8 +27,9 @@ def type_tokenizer():
 
 
     # spaces
-    tokenizer.add_rule(tokens.CharSet('space', ' ', '\t', '\r', '\n'))
-
+    tokenizer.add_rule(tokens.CharSet('space', ' ', '\t', '\r'))
+    tokenizer.add_rule(tokens.Char('newline', '\n'))
+    
     # symbols
     tokenizer.add_rule(tokens.Literal('arrow', "->"))
     tokenizer.add_rule(tokens.Literal('expr', "**"))
@@ -74,6 +75,12 @@ def build_typeexpr_grammar(grammar=None):
         grammar = Grammar()
 
     grammar.register('spaces', parsers.Repeat(parsers.Token('space'), minimum=1))
+
+    grammar.register('nspaces', parsers.Repeat(parsers.Choice() \
+                                               .either(parsers.Token('space')) \
+                                               .orelse(parsers.Token('newline'))
+                                               , minimum=1))
+
     grammar.register('type_var', parsers.Token('type_var'))
     grammar.register('identifier', parsers.Token('identifier'))
 
@@ -214,7 +221,7 @@ def build_functype_grammar(grammar):
 
     range_parser = parsers.Tuple() \
                           .element(grammar.ref('typeexpr')) \
-                          .skip(grammar.ref('spaces')) \
+                          .skip(grammar.ref('nspaces')) \
                           .element(parsers.Optional(parsers.Tuple() \
                                                     .skip(parsers.Token('add')) \
                                                     .skip(grammar.ref('spaces')) \
@@ -223,8 +230,9 @@ def build_functype_grammar(grammar):
     grammar.register('range_type', range_parser)
 
     functype_parser = parsers.Tuple() \
+                      .skip(grammar.ref('nspaces')) \
                       .element(grammar.ref('domain_type')) \
-                      .skip(grammar.ref('spaces')) \
+                      .skip(grammar.ref('nspaces')) \
                       .skip(parsers.Token('arrow')) \
                       .skip(grammar.ref('spaces')) \
                       .element(grammar.ref('range_type'))
@@ -270,6 +278,7 @@ class TypeParser:
         return parser.parse()
 
     def parse_functype_from_string(self, string):
+        #import pdb ; pdb.set_trace()
         parser = LLParsing(self.functype_grammar)
         parser.tokenizer = self.tokenizer
         self.tokenizer.from_string(string)
