@@ -863,7 +863,7 @@ def type_infer_Slicing(slicing, ctx):
 
     if isinstance(subject_type, SequenceType) \
        or isinstance(subject_type, ListType):
-        result_type = subject_type.elem_type
+        result_type = subject_type
 
     elif isinstance(subject_type, StrType):
         result_type = StrType() # XXX: typical python twist !
