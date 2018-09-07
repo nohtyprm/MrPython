@@ -12,13 +12,13 @@ if __name__ == "__main__":
 
     from prog_ast import *
     from type_ast import *
-    from type_parser import (type_expression_parser, function_type_parser)
+    from type_parser import (type_expression_parser, function_type_parser, type_def_parser)
 
     from translate import tr
 else:
     from .prog_ast import *
     from .type_ast import *
-    from .type_parser import (type_expression_parser, function_type_parser)
+    from .type_parser import (type_expression_parser, function_type_parser, type_def_parser)
 
     from .translate import tr
 
@@ -31,6 +31,7 @@ class TypingContext:
     def __init__(self, prog):
         self.prog = prog
         self.type_errors = []
+        self.type_defs = {}
         self.global_env = {}
         self.functions = {}
         self.fatal_error = False
@@ -133,7 +134,22 @@ UnsupportedNode.type_check = type_check_UnsupportedNode
 def type_check_Program(prog):
     ctx = TypingContext(prog) 
 
-    # first step : fill the global environment
+    # first step : parse all type definitions
+    if prog.source_lines is None: # Hackish ...
+        prog.source_lines = prog.source.split('\n')
+
+    for i in range(len(prog.source_lines)):
+        source_line = prog.source_lines[i]
+        type_name, parse_result = type_def_parser(source_line)
+        if type_name is not None:
+            if parse_result.iserror:
+                ctx.add_type_error(TypeDefParseError(i+1, type_name))
+            elif type_name in ctx.type_defs:
+                ctx.add_type_error(DuplicateTypeDefError(i+1, type_name))
+            else:
+                ctx.type_defs[type_name] = parse_result.content
+
+    # second step :  fill the global environment
 
     # first register the builtins
     ctx.register_import(REGISTERED_IMPORTS[''])
@@ -145,7 +161,7 @@ def type_check_Program(prog):
         else:
             ctx.add_type_error(UnsupportedImportError(import_name, prog.imports[import_name]))
 
-    # second step : process each function to fill the global environment
+    # third step : process each function to fill the global environment
     for (fun_name, fun_def) in prog.functions.items():
         #print("function: "+ fun_name)
         #print(fun_def.docstring)
@@ -156,13 +172,13 @@ def type_check_Program(prog):
         else:
             ctx.register_function(fun_name, signature.content, fun_def)
 
-    # third step : type-check each function
+    # fourth step : type-check each function
     for (fun_name, fun_def) in ctx.functions.items():
         fun_def.type_check(ctx)
         if ctx.fatal_error:
             return ctx
 
-    # fourth step: type-check test assertions
+    # fifth step: type-check test assertions
     for test_case in prog.test_cases:
         test_case.type_check(ctx)
         if ctx.fatal_error:

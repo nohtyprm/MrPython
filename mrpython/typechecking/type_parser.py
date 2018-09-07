@@ -3,6 +3,8 @@
 
 import os.path, sys
 
+import re
+
 pop_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir)
 #print("pop path=", pop_path)
 sys.path.append(pop_path)
@@ -68,6 +70,7 @@ def type_tokenizer():
     # identifiers
     tokenizer.add_rule(tokens.Regexp('identifier',
                                      "[a-zA-Z_][a-zA-Z_0-9]*'*"))
+    
     return tokenizer
 
 def build_typeexpr_grammar(grammar=None):
@@ -145,7 +148,12 @@ def build_typeexpr_grammar(grammar=None):
     typevar_parser.xform_result = typevar_xform_result
     grammar.register('type_var', typevar_parser)
 
-    grammar.register('identifier', parsers.Token('identifier'))
+    type_alias_parser = parsers.Token('identifier')
+    def type_alias_xform_result(result):
+        result.content = TypeAlias(result.content.value, annotation=result)
+        return result
+    type_alias_parser.xform_result = type_alias_xform_result
+    grammar.register('type_alias', type_alias_parser)
 
     iterable_parser = parsers.Tuple() \
                       .skip(parsers.Token('Iterable_type')) \
@@ -228,7 +236,7 @@ def build_typeexpr_grammar(grammar=None):
                        .orelse(grammar.ref('list_type')) \
                        .orelse(grammar.ref('tuple_type')) \
                        .orelse(grammar.ref('type_var')) \
-                       .orelse(grammar.ref('identifier'))
+                       .orelse(grammar.ref('type_alias'))
 
     grammar.register('typeexpr', type_expr)
 
@@ -314,6 +322,18 @@ def function_type_parser(string):
 def type_expression_parser(string):
     parser = TypeParser()
     return parser.parse_typeexpr_from_string(string)
+
+TYPE_DEF_REGEXP = re.compile(r"\A#[ \t]+type[ \t]+([a-zA-Z][a-zA-Z_0-9]*)[ \t]*=[ \t]*(.*)$")
+
+def type_def_parser(string):
+    m = re.match(TYPE_DEF_REGEXP, string)
+    if m is None:
+        return (None, None)
+
+    type_name = m.group(1)
+
+    type_def = type_expression_parser(m.group(2))
+    return (type_name, type_def)
 
 if __name__ == "__main__":
     type_parser = TypeParser()

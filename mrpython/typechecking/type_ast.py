@@ -44,7 +44,30 @@ class Anything(TypeAST):
     def __repr__(self):
         return "Anything()"
 
+class TypeAlias(TypeAST):
+    def __init__(self, alias_name, annotation=None):
+        super().__init__(annotation)
+        self.alias_name = alias_name
 
+    def is_hashable(self):
+        return True
+
+    def rename_type_variables(self, rmap):
+        return self
+
+    def subst(self, type_env):
+        return self
+
+    def __eq__(self, other):
+        return isinstance(other, BoolType)
+
+    def __str__(self):
+        return self.alias_name
+
+    def __repr__(self):
+        return "TypeAlias({})".format(self.alias_name)
+    
+    
 class BoolType(TypeAST):
     def __init__(self, annotation=None):
         super().__init__(annotation)
