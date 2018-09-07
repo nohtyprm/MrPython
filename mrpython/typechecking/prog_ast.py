@@ -264,6 +264,14 @@ class EVar:
         self.ast = node
         self.name = self.ast.id
 
+class ETuple:
+    def __init__(self, node):
+        self.ast = node
+        self.elements = []
+        for elem_node in node.elts:
+            elem = parse_expression(elem_node)
+            self.elements.append(elem)
+        
 class EAdd:
     def __init__(self, node, left, right):
         self.ast = node
@@ -527,6 +535,7 @@ EXPRESSION_CLASSES = { "Num" : ENum
                        , "Str" : EStr
                        , "NameConstant"  : parse_constant
                        , "Name" : EVar
+                       , "Tuple" : ETuple
                        , "BinOp" : EBinOp
                        , "BoolOp" : EBoolOp
                        , "UnaryOp" : EUnaryOp

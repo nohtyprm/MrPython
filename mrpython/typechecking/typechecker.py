@@ -412,7 +412,7 @@ def fetch_massign_declaration_types(ctx, massign):
 
         var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
         if var_name is None:
-            ctx.add_type_error(DeclarationError(ctx.function_def, assign, err_cat, massign.lineno if err_cat=='header-char' else lineno, decl_type))
+            ctx.add_type_error(DeclarationError(ctx.function_def, massign, err_cat, massign.ast.lineno if err_cat=='header-char' else lineno, decl_type))
             return None
 
         if var_name in declared_types:
@@ -895,6 +895,21 @@ def type_check_Condition(cond, ctx, compare):
 
 Condition.type_check = type_check_Condition
 
+def type_infer_ETuple(tup, ctx):
+    if not tup.elements:
+        ctx.add_type_error(EmptyTupleError(tup))
+        return None
+
+    element_types = []
+    for element in tup.elements:
+        element_type = element.type_infer(ctx)
+        if not element_type:
+            return None
+        element_types.append(element_type)
+
+    return TupleType(element_types)
+
+ETuple.type_infer = type_infer_ETuple
 
 def type_infer_EList(lst, ctx):
     lst_type = None
@@ -1174,6 +1189,24 @@ def type_compare_OptionType(expected_type, ctx, expr, expr_type, raise_error=Tru
     return True
 
 OptionType.type_compare = type_compare_OptionType
+
+def type_compare_TupleType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if not isinstance(expr_type, TupleType):
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a tuple")))
+        return False
+
+    if len(expr_type.elem_types) != len(expected_type.elem_types):
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a tuple of size '{}' but found: {}").format(len(expected_type.elem_types)
+                                                                                                                                                           , len(expr_type.elem_types))))
+        return False
+
+    for (expected_elem_type, expr_elem_type) in zip(expected_type.elem_types, expr_type.elem_types):
+        if not expected_elem_type.type_compare(ctx, expr, expr_elem_type, raise_error):
+            return False
+
+    return True
+
+TupleType.type_compare = type_compare_TupleType
 
 ######################################
 # Standard imports                   #
