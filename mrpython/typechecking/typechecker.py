@@ -251,6 +251,46 @@ def type_check_Assign(assign, ctx):
 
         return True
 
+Assign.type_check = type_check_Assign
+    
+def type_check_MultiAssign(massign, ctx):
+    # import pdb ; pdb.set_trace()
+    # first let's see if the variables are dead
+    for var_name in massign.var_names:
+        if var_name in ctx.dead_variables:
+            ctx.add_type_error(DeadVariableUse(var_name, massign))
+            return False
+
+        if var_name in ctx.local_env:
+            # Multiple assigment is forbidden
+            ctx.add_type_error(ForbiddenMultiAssign(var_name, massign))
+            return False   
+
+    # second fetch the declared types
+    declared_types = fetch_massign_declaration_types(ctx, massign)
+    if declared_types is None:
+        return False
+    
+    # third infer type of initialization expression
+    expr_type = massign.expr.type_infer(ctx)
+    if expr_type is None:
+        return False
+
+    expected_elem_types = []
+    for var_name in massign.var_names:
+        expected_elem_types.append(declared_types[var_name])
+    expected_tuple_type = TupleType(expected_elem_types)
+
+    if not type_expect(ctx, massign.expr, expected_tuple_type):
+        return False
+        
+    for var_name in massign.var_names:
+        ctx.local_env[var_name] = (declared_types[var_name], ctx.fetch_scope_mode())
+
+    return True
+
+MultiAssign.type_check = type_check_MultiAssign
+
 def type_check_For(for_node, ctx):
 
     # Step 1) let's see if the variable is dead
@@ -362,6 +402,40 @@ def fetch_assign_declaration_type(ctx, assign):
     
     return decl_type
 
+def fetch_massign_declaration_types(ctx, massign):
+    lineno = massign.ast.lineno - 1
+
+    req_vars = { v for v in massign.var_names }
+    
+    declared_types = dict()
+    for _ in massign.var_names:
+
+        var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
+        if var_name is None:
+            ctx.add_type_error(DeclarationError(ctx.function_def, assign, err_cat, massign.lineno if err_cat=='header-char' else lineno, decl_type))
+            return None
+
+        if var_name in declared_types:
+            ctx.add_type_error(DuplicateMultiAssign(var, massign))
+            return None
+
+        if var_name not in req_vars:
+            ctx.add_type_error(DeclarationError(ctx.function_def, massign, 'var-name', lineno, tr("Unused variable name '{}' in declaration").format(var_name)))
+            return None
+
+        req_vars.remove(var_name)
+
+        declared_types[var_name] = decl_type
+
+        lineno -= 1
+
+    if req_vars:
+        ctx.add_type_error(DeclarationError(ctx.function_def, massign, 'unknown-vars', massign.ast.lineno, tr("Variables not declared: {}").format(req_vars)))
+        return None
+
+    return declared_types
+
+
 def fetch_iter_declaration_type(ctx, iter_node):
     lineno = iter_node.ast.lineno - 1
 
@@ -376,8 +450,6 @@ def fetch_iter_declaration_type(ctx, iter_node):
     
     return decl_type
 
-
-Assign.type_check = type_check_Assign
 
 def type_check_Return(ret, ctx):
     expr_type = ret.expr.type_infer(ctx)
