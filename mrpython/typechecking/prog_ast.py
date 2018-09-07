@@ -146,10 +146,16 @@ class Assign:
 
 class MultiAssign:
     def __init__(self, node):
-        raise NotImplementedError("MultiAssign AST node not yet implemented")
+        self.ast = node
+        self.var_names = []
+        for elt in node.targets[0].elts:
+            self.var_names.append(elt.id)
+
+        self.expr = parse_expression(node.value)
 
 def parse_assign(node):
-    if len(node.targets) == 1:
+    
+    if isinstance(node.targets[0], ast.Name):
         return Assign(node)
     else:
         return MultiAssign(node)

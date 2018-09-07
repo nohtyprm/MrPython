@@ -192,6 +192,28 @@ def build_typeexpr_grammar(grammar=None):
     list_parser.xform_result = list_xform_result
     grammar.register('list_type', list_parser)
 
+    tuple_parser = parsers.Tuple() \
+                        .skip(parsers.Token('tuple_type')) \
+                        .forget(grammar.ref('spaces')) \
+                        .skip(parsers.Token('open_bracket')) \
+                        .forget(grammar.ref('spaces')) \
+                        .element(parsers.List(grammar.ref('typeexpr'), sep='comma')
+                                 .forget(grammar.ref('spaces'))) \
+                        .forget(grammar.ref('spaces')) \
+                        .skip(parsers.Token('close_bracket'))
+                                 
+    def tuple_xform_result(result):
+        elem_types = []
+        for elem_result in result.content.content:
+            elem_types.append(elem_result.content)
+            
+        result.content = TupleType(elem_types, annotation=result)
+        return result
+    
+    tuple_parser.xform_result = tuple_xform_result
+    grammar.register('tuple_type', tuple_parser)
+    
+
     type_expr = parsers.Choice() \
                        .forget(grammar.ref('spaces')) \
                        .either(grammar.ref('bool_type')) \
@@ -204,6 +226,7 @@ def build_typeexpr_grammar(grammar=None):
                        .orelse(grammar.ref('Iterable_type')) \
                        .orelse(grammar.ref('Sequence_type')) \
                        .orelse(grammar.ref('list_type')) \
+                       .orelse(grammar.ref('tuple_type')) \
                        .orelse(grammar.ref('type_var')) \
                        .orelse(grammar.ref('identifier'))
 

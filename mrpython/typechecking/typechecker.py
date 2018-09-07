@@ -221,7 +221,7 @@ def type_check_Assign(assign, ctx):
         #     ctx.add_type_error(DisallowedDeclaration(ctx.function_def, assign))
         #     return
         # Step 3a) fetch declared type
-        declared_type = fetch_declaration_type(ctx, assign)
+        declared_type = fetch_assign_declaration_type(ctx, assign)
         if declared_type is None:
             return False
 
@@ -270,7 +270,7 @@ def type_check_For(for_node, ctx):
        or isinstance(iter_type, StrType):
 
         # Step 3) fetch declared type
-        declared_type = fetch_declaration_type(ctx, for_node, raise_error=False)
+        declared_type = fetch_iter_declaration_type(ctx, for_node)
         if ctx.fatal_error:
             return False
 
@@ -320,36 +320,62 @@ def parse_var_name(declaration):
 
     return None, None
 
-def fetch_declaration_type(ctx, assign, raise_error=True):
-    lineno = assign.ast.lineno
-    decl_line = ctx.prog.get_source_line(lineno-1).strip()
-
-    #print(decl_line)
-    if raise_error and ((not decl_line) or decl_line[0] != '#'):
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'header-char', tr("Missing variable declaration '{}'").format(assign.var_name)))
-        return None
+def parse_declaration_type(ctx, lineno):
+    """parse a declared type: returns a pair (v, T) with v the declared
+variable name and T its type, or (None, msg, err_cat) with an informational message if the parsing fails."""
+    
+    decl_line = ctx.prog.get_source_line(lineno).strip()
+    
+    if (not decl_line) or decl_line[0] != '#':
+        return (None, tr("Missing variable declaration"), 'header-char')
+    
     decl_line = decl_line[1:].strip()
     var_name, decl_line = parse_var_name(decl_line)
+
     #print(var_name)
-    #print(assign.var_name)
-    if var_name != assign.var_name:
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'var-name', tr("Wrong variable name in declaration, it should be '{}'").format(assign.var_name)))
-        return None
     if (not decl_line) or decl_line[0] != ':':
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'colon', tr("Missing ':' character before variable type declaration")))
-        return None
+        return (None, tr("Missing ':' character before variable type declaration"), 'colon')
+
     decl_line = decl_line[1:].strip()
     decl_type = type_expression_parser(decl_line)
     #print("rest='{}'".format(decl_line[decl_type.end_pos.offset:]))
     if decl_type.iserror: # or decl_line[decl_type.end_pos.offset:]!='': (TODO some sanity check ?)
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'parse', tr("I don't understand the declared type for variable '{}'").format(assign.var_name)))
-        return None
+        return (None, tr("I don't understand the declared type for variable '{}'").format(var_name), 'parse')
+
     remaining = decl_line[decl_type.end_pos.offset:].strip()
     if remaining != '' and not remaining.startswith('('):
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'parse', tr("The declared type for variable '{}' has strange appended string: {}").format(assign.var_name, remaining)))
-    #print(repr(decl_type))
-    #print(decl_type.content)
-    return decl_type.content
+        return (None, tr("The declared type for variable '{}' has strange appended string: {}").format(var_name, remaining), 'parse')
+        
+    return (var_name, decl_type.content, "")
+
+def fetch_assign_declaration_type(ctx, assign):
+    lineno = assign.ast.lineno - 1
+
+    var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
+    if var_name is None:
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign, err_cat, lineno + 1 if err_cat=='header-char' else lineno, decl_type))
+        return None
+
+    if var_name != assign.var_name:
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'var-name', lineno, tr("Wrong variable name in declaration, it should be '{}'").format(assign.var_name)))
+        return None
+    
+    return decl_type
+
+def fetch_iter_declaration_type(ctx, iter_node):
+    lineno = iter_node.ast.lineno - 1
+
+    var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
+    if var_name is None:
+        # no error for iterator variables
+        return None
+
+    if var_name != iter_node.var_name:
+        ctx.add_type_error(DeclarationError(ctx.function_def, iter_node, 'var-name', lineno, tr("Wrong variable name in declaration, it should be '{}'").format(iter_node.var_name)))
+        return None
+    
+    return decl_type
+
 
 Assign.type_check = type_check_Assign
 
@@ -1186,32 +1212,24 @@ class DisallowedDeclarationError(TypeError):
         return True
 
 class DeclarationError(TypeError):
-    def __init__(self, in_function, node, category, explain):
+    def __init__(self, in_function, node, category, lineno, explain):
         self.in_function = in_function
         self.node = node
         self.category = category
+        self.lineno = lineno
         self.explain = explain
 
     def fail_string(self):
         return "DeclarationError[{}]@{}:{}".format(self.category
-                                                   , self.node.ast.lineno if self.category == "header-char" else self.node.ast.lineno-1
+                                                   , self.lineno
                                                    , self.node.ast.col_offset)
 
     def is_fatal(self):
         return False
 
     def report(self, report):
-        lineno = self.node.ast.lineno
         col_offset = self.node.ast.col_offset
-        if self.category == 'header-char':
-            report.add_convention_error('error', tr('Declaration problem'), lineno, col_offset, self.explain)
-            return
-        lineno -= 1
-        if self.category == 'var-name' or self.category == 'colon' or self.category == 'parse':
-            report.add_convention_error('error', tr('Declaration problem'), lineno, col_offset, self.explain)
-        else:
-            raise ValueError("Unknown declaration category: '{}' (please report)".format(self.category))
-
+        report.add_convention_error('error', tr('Declaration problem'), self.lineno, col_offset, self.explain)
 
 class UnknownVariableError(TypeError):
     def __init__(self, in_function, var):
