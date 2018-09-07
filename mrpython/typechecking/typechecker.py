@@ -147,7 +147,8 @@ def type_check_Program(prog):
             elif type_name in ctx.type_defs:
                 ctx.add_type_error(DuplicateTypeDefError(i+1, type_name))
             else:
-                ctx.type_defs[type_name] = parse_result.content
+                type_def = parse_result.content.unalias(ctx.type_defs)
+                ctx.type_defs[type_name] = type_def
 
     # second step :  fill the global environment
 
@@ -170,7 +171,8 @@ def type_check_Program(prog):
         if signature.iserror:
             ctx.add_type_error(SignatureParseError(fun_name, fun_def, signature))
         else:
-            ctx.register_function(fun_name, signature.content, fun_def)
+            fun_type = signature.content.unalias(ctx.type_defs)
+            ctx.register_function(fun_name, fun_type, fun_def)
 
     # fourth step : type-check each function
     for (fun_name, fun_def) in ctx.functions.items():
@@ -416,7 +418,7 @@ def fetch_assign_declaration_type(ctx, assign):
         ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'var-name', lineno, tr("Wrong variable name in declaration, it should be '{}'").format(assign.var_name)))
         return None
     
-    return decl_type
+    return decl_type.unalias(ctx.type_defs)
 
 def fetch_massign_declaration_types(ctx, massign):
     lineno = massign.ast.lineno - 1
@@ -441,7 +443,7 @@ def fetch_massign_declaration_types(ctx, massign):
 
         req_vars.remove(var_name)
 
-        declared_types[var_name] = decl_type
+        declared_types[var_name] = decl_type.unalias(ctx.type_defs)
 
         lineno -= 1
 
@@ -464,7 +466,7 @@ def fetch_iter_declaration_type(ctx, iter_node):
         ctx.add_type_error(DeclarationError(ctx.function_def, iter_node, 'var-name', lineno, tr("Wrong variable name in declaration, it should be '{}'").format(iter_node.var_name)))
         return None
     
-    return decl_type
+    return decl_type.unalias(ctx.type_defs)
 
 
 def type_check_Return(ret, ctx):
