@@ -272,7 +272,6 @@ def type_check_Assign(assign, ctx):
 Assign.type_check = type_check_Assign
     
 def type_check_MultiAssign(massign, ctx):
-    # import pdb ; pdb.set_trace()
     # first let's see if the variables are dead
     for var_name in massign.var_names:
         if var_name in ctx.dead_variables:
@@ -284,19 +283,35 @@ def type_check_MultiAssign(massign, ctx):
             ctx.add_type_error(ForbiddenMultiAssign(var_name, massign))
             return False   
 
+    #import pdb ; pdb.set_trace()
+
+        
     # second fetch the declared types
     declared_types = fetch_massign_declaration_types(ctx, massign)
     if declared_types is None:
-        return False
+        declared_types = dict()
     
     # third infer type of initialization expression
     expr_type = massign.expr.type_infer(ctx)
     if expr_type is None:
         return False
 
+    if not isinstance(expr_type, TupleType):
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, TupleType(), expr, expr_type,
+                                               tr("Expecting a tuple")))
+        return False
+
+    if len(expr_type.elem_types) != len(massign.var_names):
+        ctx.add_type_error(TupleArityError(massign, expr_type))
+        return False
+
     expected_elem_types = []
-    for var_name in massign.var_names:
+    for (i, var_name) in zip(range(0, len(massign.var_names)), massign.var_names):
+        if var_name not in declared_types:
+            declared_types[var_name] = expr_type.elem_types[i]
+            
         expected_elem_types.append(declared_types[var_name])
+            
     expected_tuple_type = TupleType(expected_elem_types)
 
     if not type_expect(ctx, massign.expr, expected_tuple_type):
@@ -430,7 +445,7 @@ def fetch_massign_declaration_types(ctx, massign):
 
         var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
         if var_name is None:
-            ctx.add_type_error(DeclarationError(ctx.function_def, massign, err_cat, massign.ast.lineno if err_cat=='header-char' else lineno, decl_type))
+            #ctx.add_type_error(DeclarationError(ctx.function_def, massign, err_cat, massign.ast.lineno if err_cat=='header-char' else lineno, decl_type))
             return None
 
         if var_name in declared_types:

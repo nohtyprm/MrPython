@@ -1,4 +1,4 @@
-##!FAIL:UnsupportedImportError[maths]@3:0
+##!FAIL: UnsupportedImportError[maths]@3:0
 
 import maths
 
