@@ -43,6 +43,7 @@ class TypingContext:
         self.parent_stack = None
         self.local_env = None
         self.call_type_env = [] # stack of type environments when calling generic functions
+        self.local_env = {}  # will have global variables
 
     def add_type_error(self, error):
         self.type_errors.append(error)
@@ -74,7 +75,8 @@ class TypingContext:
         # for nested construction (while, for, if ...)
         self.parent_stack = []
         # remark: local (lexical) environment disallow shadowing
-        self.local_env = {}
+        self.save_local_env = self.local_env.copy()
+        self.save_dead_variables = self.dead_variables.copy()
 
     def push_parent(self, parent_node):
         parent_local_env = { var_name : var_info for (var_name, var_info) in self.local_env.items() }
@@ -104,8 +106,10 @@ class TypingContext:
         self.partial_function = None
         self.parent_stack = None
         self.allow_declarations = None
-        self.local_env = None
-        self.dead_variables = set()
+        self.local_env = self.save_local_env
+        self.save_local_env = None
+        self.dead_variables = self.save_dead_variables
+        self.save_dead_variables = None
 
     def fetch_scope_mode(self):
         # TODO : complete with parent stack
@@ -180,7 +184,14 @@ def type_check_Program(prog):
         if ctx.fatal_error:
             return ctx
 
-    # fifth step: type-check test assertions
+    # fifth step: process each global variable definitions
+    # (should not be usable from functions so it comes after)
+    for global_var in prog.global_vars:
+        global_var.type_check(ctx)
+        if ctx.fatal_error:
+            return ctx
+
+    # sixth step: type-check test assertions
     for test_case in prog.test_cases:
         test_case.type_check(ctx)
         if ctx.fatal_error:
@@ -225,6 +236,7 @@ def type_check_FunctionDef(func_def, ctx):
 FunctionDef.type_check = type_check_FunctionDef
 
 def type_check_Assign(assign, ctx):
+    
     # first let's see if the variable is dead
     if assign.var_name in ctx.dead_variables:
         ctx.add_type_error(DeadVariableUse(assign.var_name, assign))
@@ -779,7 +791,7 @@ def type_infer_EVar(var, ctx):
         return None
 
     # check if the var is a parameter
-    if var.name in ctx.param_env:
+    if ctx.param_env and var.name in ctx.param_env:
         return ctx.param_env[var.name]
     # or else lookup in the local environment
     if var.name in ctx.local_env:

@@ -34,6 +34,9 @@ class Program:
         # test cases
         self.test_cases = []
 
+        # global (read-only) variables
+        self.global_vars = []
+
         # other top level definitions
         self.other_top_defs = []
 
@@ -84,6 +87,9 @@ class Program:
             elif isinstance(node, ast.Assert):
                 assert_ast = TestCase(node)
                 self.test_cases.append(assert_ast)
+            elif isinstance(node, ast.Assign):
+                assign_ast = Assign(node)
+                self.global_vars.append(assign_ast)
             else:
                 #print("Unsupported instruction: " + node)
                 self.other_top_defs.append(UnsupportedNode(node))
