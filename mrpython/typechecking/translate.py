@@ -48,6 +48,9 @@ TRANSLATOR_DICT = {
     , "Sequence index must be an integer" : { 'fr' : "L'index de sequence doit être un entier"}
     , "Heterogeneous elements (Python101 restriction)" : { 'fr' : "Eléments hétérogènes (restriction Python 101)"}
     , "All elements of must be of the same type '{}' but this element has incompatible type: {}" : { 'fr' : "Tous les élements doivent être du même type '{}' mais cet élément est d'un type incompatible: {}" }
+    , "Unused variable name '{}' in declaration" : { 'fr' : "La variable '{}' déclarée n'est pas utilisée" }
+    , "Tuple destruct error" : { 'fr' : "Erreur de destructuration de n'uplet" }
+    , "Wrong number of variables to destruct tuple, expecting {} variables but {} given" : { 'fr' : "J'attends {} variables pour destructurer le n-uplet mais vous en spécifiez {}"}
 }
 
 def tr(msg):

@@ -314,7 +314,7 @@ def type_check_MultiAssign(massign, ctx):
         return False
 
     if len(expr_type.elem_types) != len(massign.var_names):
-        ctx.add_type_error(TupleArityError(massign, expr_type))
+        ctx.add_type_error(TupleDestructArityError(massign, expr_type))
         return False
 
     expected_elem_types = []
@@ -1575,6 +1575,23 @@ class HeterogeneousElementError(TypeError):
         report.add_convention_error('error', tr("Heterogeneous elements (Python101 restriction)"), self.element.ast.lineno, self.element.ast.col_offset
                                     , tr("All elements of must be of the same type '{}' but this element has incompatible type: {}").format(self.container_type, self.element_type))
 
+
+class TupleDestructArityError(TypeError):
+    def __init__(self, destruct, expected_tuple_type):
+        self.destruct = destruct
+        self.expected_arity = len(expected_tuple_type.elem_types)
+        
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "TupleDestructArityError[{}]@{}:{}".format(self.expected_arity, self.destruct.ast.lineno, self.destruct.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Tuple destruct error"), self.destruct.ast.lineno, self.destruct.ast.col_offset
+                                    , tr("Wrong number of variables to destruct tuple, expecting {} variables but {} given").format(self.expected_arity, len(self.destruct.var_names)))
+    
+    
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()
     prog.build_from_ast(ast, filename, source)

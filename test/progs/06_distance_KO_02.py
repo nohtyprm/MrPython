@@ -1,4 +1,4 @@
-##!FAIL:DeclarationError[header-char]@12:4
+##!FAIL:TupleDestructArityError[2]@12:4
 
 import math # pour math.sqrt
 
