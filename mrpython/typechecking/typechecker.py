@@ -418,7 +418,6 @@ def type_check_Assign(assign, ctx):
         else:
             ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())    
 
-
     return True
 
 Assign.type_check = type_check_Assign
@@ -442,16 +441,14 @@ def type_check_For(for_node, ctx):
         else:
             declared_types = dict()
 
-    print("declared_types={}".format(declared_types))
+    #print("declared_types={}".format(declared_types))
             
     # next infer type of initialization expression
     iter_type = for_node.iter.type_infer(ctx)
     if iter_type is None:
         return False
 
-    print("iter_type={}".format(iter_type))
-
-    raise NotImplementedError("iter/for type checking not yet fully implemented")
+    #print("iter_type={}".format(iter_type))
     
     if isinstance(iter_type, IterableType) \
        or isinstance(iter_type, SequenceType) \
@@ -459,27 +456,58 @@ def type_check_For(for_node, ctx):
        or isinstance(iter_type, SetType) \
        or isinstance(iter_type, StrType):
 
+        ctx.push_parent(for_node)
+
         # === do like in Assign ===
 
-                
-        # Step 3) fetch declared type
-        declared_type = fetch_iter_declaration_type(ctx, for_node)
-        if ctx.fatal_error:
-            return False
-
-        if declared_type:
-            if not declared_type.type_compare(ctx, for_node
-                                              , iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()):
+        # treat the simpler "mono-var" case first
+        if for_node.target.arity() == 1:
+            var = for_node.target.variables()[0]
+            if var.var_name not in declared_types:
+                # XXX: this is strict, need a dedicated error message ?
+                ctx.pop_parent()
                 return False
-            else:
-                iter_element_type = declared_type
-        else: # use inferred type
-            iter_element_type = iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()
+        
+            # compare inferred type wrt. declared type
+            if not declared_types[var.var_name].type_compare(ctx, for_node.iter, iter_type.elem_type):
+                ctx.pop_parent()
+                return False
 
+            # register declared type in environment
+            ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
 
-        # Step 4) type check body
-        ctx.push_parent(for_node)
-        ctx.local_env[for_node.var_name] = (iter_element_type, 'for_scope')
+        else:
+            # here we have a destructured initialization
+            expr_type = iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()
+            
+            if not isinstance(expr_type, TupleType):
+                ctx.add_type_error(TypeComparisonError(ctx.function_def, TupleType(), for_node.iter, expr_type,
+                                                       tr("Expecting an iterator of tuples")))
+                ctx.pop_parent()
+                return False
+
+            expr_var_types = linearize_tuple_type(expr_type)
+
+            if len(expr_var_types) != len(for_node.target.variables()):
+                ctx.add_type_error(TupleDestructArityError(for_node.target, expr_type, len(expr_var_types), len(for_node.target.variables())))
+                ctx.pop_parent()
+                return False
+
+            for (i, var) in zip(range(0, len(for_node.target.variables())), for_node.target.variables()):
+                if var.var_name == '_': # just skip this check
+                    continue
+
+                if var.var_name in declared_types:
+                    if not declared_types[var.var_name].type_compare(ctx, var, expr_var_types[i], raise_error=False):
+                        ctx.add_type_error(VariableTypeError(for_node.target, var, declared_types[var_name], expr_var_types[i]))
+                        ctx.pop_parent()
+                        return False
+        
+                    ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
+                else:
+                    ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())    
+
+        # and now type check the body in the constructed local env
 
         for instr in for_node.body:
             if not instr.type_check(ctx):
@@ -488,11 +516,12 @@ def type_check_For(for_node, ctx):
 
         ctx.pop_parent()
         return True
+    
     # dictionary
     elif isinstance(iter_type, DictType):
         raise NotImplementedError("Dictionary type not yet supported")
     else: # unsupported iterator type
-        ctx.add_type_error(IteratorTypeError(for_nod, iter_type))
+        ctx.add_type_error(IteratorTypeError(for_node, iter_type))
         return False
 
 For.type_check = type_check_For
@@ -804,7 +833,7 @@ EPow.type_infer = type_infer_EPow
 def type_infer_EVar(var, ctx):
     # check if the variable is dead
     if var.name in ctx.dead_variables:
-        ctx.add_type_error(DeadVariableUse(var.name, var))
+        ctx.add_type_error(DeadVariableUseError(var.name, var))
         return None
 
     # check if the var is a parameter
@@ -1537,7 +1566,7 @@ class DeadVariableUseError(TypeError):
         return False
 
     def fail_string(self):
-        return "DeadVariableUse[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
+        return "DeadVariableUseError[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
