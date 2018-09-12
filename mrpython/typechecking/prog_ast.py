@@ -196,6 +196,20 @@ class Assign:
 
         self.expr = parse_expression(self.ast.value)
 
+class For:
+    def __init__(self, node):
+        self.ast = node
+        #print(astpp.dump(node))
+
+        self.target = build_lhs_destruct(self.ast.target)
+
+        self.iter = parse_expression(node.iter)
+        self.body = []
+        for instr in node.body:
+            iinstr = parse_instruction(instr)
+            self.body.append(iinstr)
+
+        
 class Return:
     def __init__(self, node):
         self.ast = node
@@ -225,19 +239,6 @@ class While:
         for instr in self.ast.body:
             iinstr = parse_instruction(instr)
             self.body.append(iinstr)
-
-class For:
-    def __init__(self, node):
-        self.ast = node
-        #print(astpp.dump(node))
-        self.target = node.target
-        self.var_name = self.target.id
-        self.iter = parse_expression(node.iter)
-        self.body = []
-        for instr in node.body:
-            iinstr = parse_instruction(instr)
-            self.body.append(iinstr)
-
 
 def parse_expression_as_instruction(node):
     # XXX: do something here or way until typing for

@@ -425,22 +425,43 @@ Assign.type_check = type_check_Assign
 
 def type_check_For(for_node, ctx):
 
-    # Step 1) let's see if the variable is dead
-    if for_node.var_name in ctx.dead_variables:
-        ctx.add_type_error(DeadVariableUse(for_node.var_name, for_node))
-        return False
+    # first let's see if the iter variables are dead or in the local environment
+    for var_name in for_node.target.var_names():
+        if var_name in ctx.dead_variables:
+            ctx.add_type_error(DeadVariableUseError(var_name, for_node))
+            return False
 
-    # Step 2) check/infer iterator type
+        if var_name in ctx.local_env:
+            ctx.add_type_error(IterVariableInEnvError(for_node.target, var_name))
+            return False
+
+    declared_types = fetch_assign_declaration_types(ctx, for_node.target, True if for_node.target.arity() == 1 else False)
+    if declared_types is None:
+        if for_node.target.arity() == 1:
+            return False
+        else:
+            declared_types = dict()
+
+    print("declared_types={}".format(declared_types))
+            
+    # next infer type of initialization expression
     iter_type = for_node.iter.type_infer(ctx)
     if iter_type is None:
         return False
 
+    print("iter_type={}".format(iter_type))
+
+    raise NotImplementedError("iter/for type checking not yet fully implemented")
+    
     if isinstance(iter_type, IterableType) \
        or isinstance(iter_type, SequenceType) \
        or isinstance(iter_type, ListType) \
        or isinstance(iter_type, SetType) \
        or isinstance(iter_type, StrType):
 
+        # === do like in Assign ===
+
+                
         # Step 3) fetch declared type
         declared_type = fetch_iter_declaration_type(ctx, for_node)
         if ctx.fatal_error:
