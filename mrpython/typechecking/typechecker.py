@@ -283,7 +283,7 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
     lineno = assign_target.ast.lineno - 1
 
     # the required variables (except underscore)
-    req_vars = { v for v in assign_target.var_names() if "v" != "_" }
+    req_vars = { v for v in assign_target.var_names() if v != "_" }
     if not req_vars:  # if there is no required var, this means all vars are _'s
         ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("The special variable '_' cannot be use alone")))
         return None
@@ -296,7 +296,9 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
         if var_name is None:
             if strict: # in strict mode we require the declaration (only for mono-vars, for now)
                 ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, err_cat, assign_target.ast.lineno if err_cat=='header-char' else lineno, decl_type))
-            return None
+                return None
+
+            return declared_types
 
         if var_name in declared_types:
             ctx.add_type_error(DuplicateMultiAssign(var, assign_target))
@@ -352,8 +354,6 @@ def type_check_Assign(assign, ctx):
             else:
                 mono_assign = True
 
-    # import pdb ; pdb.set_trace()
-
     if mono_assign:
         expr_type = assign.expr.type_infer(ctx)
         if expr_type is None:
@@ -365,10 +365,11 @@ def type_check_Assign(assign, ctx):
     # here we consider an initialization and not an actual assignment
     
     # next fetch the declared types  (only required for mono-variables)
+
     declared_types = fetch_assign_declaration_types(ctx, assign.target, True if assign.target.arity() == 1 else False)
     if declared_types is None:
         declared_types = dict()
-    
+
     # next infer type of initialization expression
     expr_type = assign.expr.type_infer(ctx)
     if expr_type is None:
@@ -392,6 +393,7 @@ def type_check_Assign(assign, ctx):
         
     # here we have a destructured initialization
 
+    
     if not isinstance(expr_type, TupleType):
         ctx.add_type_error(TypeComparisonError(ctx.function_def, TupleType(), expr, expr_type,
                                                tr("Expecting a tuple")))
@@ -403,16 +405,18 @@ def type_check_Assign(assign, ctx):
         ctx.add_type_error(TupleDestructArityError(assign, expr_type, len(expr_var_types), len(assign.target.var_names())))
         return False
 
-    i = 0
     for (i, var_name) in zip(range(0, len(assign.target.var_names())), assign.target.var_names()):
         if var_name == '_': # just skip this check
             continue
 
         if var_name in declared_types:
-            if not type_expect(ctx, expr_var_types[i], declared_types[var_name]):
+            if not declared_types[var_name].type_compare(ctx, assign.target, expr_var_types[i], raise_error=False):
+                ctx.add_type_error(VariableTypeError(assign.target, var_name, declared_types[var_name], expr_var_types[i]))
                 return False
         
-        ctx.local_env[var_name] = (declared_types[var_name], ctx.fetch_scope_mode())
+            ctx.local_env[var_name] = (declared_types[var_name], ctx.fetch_scope_mode())
+        else:
+            ctx.local_env[var_name] = (expr_var_types[i], ctx.fetch_scope_mode())    
 
 
     return True
