@@ -469,7 +469,7 @@ def type_check_For(for_node, ctx):
                 return False
         
             # compare inferred type wrt. declared type
-            if not declared_types[var.var_name].type_compare(ctx, for_node.iter, iter_type.elem_type):
+            if not declared_types[var.var_name].type_compare(ctx, for_node.iter, iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()):
                 ctx.pop_parent()
                 return False
 
