@@ -139,32 +139,62 @@ class TestCase:
 
         self.expr = parse_expression(self.ast.test)
 
+class LHSVar:
+    def __init__(self, node):
+        self.ast = node
+        self.var_name = node.id
+
+    def var_names(self):
+        return [self.var_name]
+
+    def arity(self):
+        return 1
+
+    def __str__(self):
+        return self.var_name
+
+    def __repr__(self):
+        return "LHSVar({})".format(self.var_name)
+        
+class LHSTuple:
+    def __init__(self, node, elements):
+        self.ast = node
+        self.elements = elements
+
+    def var_names(self):
+        var_names = []
+        for element in self.elements:
+            var_names.extend(element.var_names())
+        return var_names
+
+    def arity(self):
+        return len(self.elements)
+        
+    def __str__(self):
+        return ", ".join( ( str(elt) for elt in self.elements) )
+
+    def __repr__(self):
+        return "LHSTuple({})".format(", ".join ( ( repr(elt) for elt in self.elements ) ))
+
+def build_lhs_destruct(node):
+    if isinstance(node, ast.Name):
+        return LHSVar(node)
+    elif isinstance(node, ast.Tuple):
+        elements = []
+        for elt in node.elts:
+            elements.append(build_lhs_destruct(elt))
+        return LHSTuple(node, elements)
+    else:
+        raise NotSupportedError("Can only destructure names and tuples (please report)")    
+        
 class Assign:
     def __init__(self, node):
         self.ast = node
         #print(astpp.dump(node))
 
-        target = self.ast.targets[0]
-        self.var_name = target.id
-        #print("  ==> var_name =", self.var_name)
+        self.target = build_lhs_destruct(self.ast.targets[0])
 
         self.expr = parse_expression(self.ast.value)
-
-class MultiAssign:
-    def __init__(self, node):
-        self.ast = node
-        self.var_names = []
-        for elt in node.targets[0].elts:
-            self.var_names.append(elt.id)
-
-        self.expr = parse_expression(node.value)
-
-def parse_assign(node):
-    
-    if isinstance(node.targets[0], ast.Name):
-        return Assign(node)
-    else:
-        return MultiAssign(node)
 
 class Return:
     def __init__(self, node):
@@ -215,7 +245,7 @@ def parse_expression_as_instruction(node):
     # For now, just parse as an expression
     return parse_expression(node.value)
 
-INSTRUCTION_CLASSES = {"Assign" : parse_assign
+INSTRUCTION_CLASSES = {"Assign" : Assign
                        , "Return" : Return
                        , "If" : If
                        , "While" : While

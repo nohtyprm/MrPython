@@ -235,106 +235,189 @@ def type_check_FunctionDef(func_def, ctx):
 
 FunctionDef.type_check = type_check_FunctionDef
 
+def parse_var_name(declaration):
+    vdecl = ""
+    expect_colon = False
+    for i in range(0, len(declaration)):
+        if declaration[i] == ':' and expect_colon:
+            return (vdecl, declaration[i:])
+        elif not declaration[i].isspace():
+            if expect_colon:
+                return vdecl, declaration[i-1:]
+            vdecl += declaration[i]
+        else:
+            if vdecl != "":
+                expect_colon = True
+
+    return None, None
+
+def parse_declaration_type(ctx, lineno):
+    """parse a declared type: returns a pair (v, T) with v the declared
+variable name and T its type, or (None, msg, err_cat) with an informational message if the parsing fails."""
+    
+    decl_line = ctx.prog.get_source_line(lineno).strip()
+    
+    if (not decl_line) or decl_line[0] != '#':
+        return (None, tr("Missing variable declaration"), 'header-char')
+    
+    decl_line = decl_line[1:].strip()
+    var_name, decl_line = parse_var_name(decl_line)
+
+    #print(var_name)
+    if (not decl_line) or decl_line[0] != ':':
+        return (None, tr("Missing ':' character before variable type declaration"), 'colon')
+
+    decl_line = decl_line[1:].strip()
+    decl_type = type_expression_parser(decl_line)
+    #print("rest='{}'".format(decl_line[decl_type.end_pos.offset:]))
+    if decl_type.iserror: # or decl_line[decl_type.end_pos.offset:]!='': (TODO some sanity check ?)
+        return (None, tr("I don't understand the declared type for variable '{}'").format(var_name), 'parse')
+
+    remaining = decl_line[decl_type.end_pos.offset:].strip()
+    if remaining != '' and not remaining.startswith('('):
+        return (None, tr("The declared type for variable '{}' has strange appended string: {}").format(var_name, remaining), 'parse')
+        
+    return (var_name, decl_type.content, "")
+
+def fetch_assign_declaration_types(ctx, assign_target, strict=False):
+    lineno = assign_target.ast.lineno - 1
+
+    # the required variables (except underscore)
+    req_vars = { v for v in assign_target.var_names() if "v" != "_" }
+    if not req_vars:  # if there is no required var, this means all vars are _'s
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("The special variable '_' cannot be use alone")))
+        return None
+    
+    declared_types = dict()
+
+    for _ in assign_target.var_names():
+
+        var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
+        if var_name is None:
+            if strict: # in strict mode we require the declaration (only for mono-vars, for now)
+                ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, err_cat, assign_target.ast.lineno if err_cat=='header-char' else lineno, decl_type))
+            return None
+
+        if var_name in declared_types:
+            ctx.add_type_error(DuplicateMultiAssign(var, assign_target))
+            return None
+
+        if var_name == "_":
+            ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("The special variable '_' cannot be declared")))
+            return None
+
+        if var_name not in req_vars: # if not a special var, it must be required
+            ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("Unused variable name '{}' in declaration").format(var_name)))
+        
+        else:
+            req_vars.remove(var_name)
+            declared_types[var_name] = decl_type.unalias(ctx.type_defs)
+
+        lineno -= 1
+
+    if strict and req_vars: # need all declarations in strict mode
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'unknown-vars', assign_target.ast.lineno, tr("Variables not declared: {}").format(req_vars)))
+        return None
+
+    return declared_types
+
+def linearize_tuple_type(tuple_type):
+    if not isinstance(tuple_type, TupleType):
+        raise NotSupportedError("Can only linearize tuple types (please report)")
+
+    elem_types = []
+
+    for elem_type in tuple_type.elem_types:
+        if isinstance(elem_type, TupleType):
+            elem_types.extend(linearize_tuple_type(elem_type))
+        else:
+            elem_types.append(elem_type)
+
+    return elem_types
+    
 def type_check_Assign(assign, ctx):
     
-    # first let's see if the variable is dead
-    if assign.var_name in ctx.dead_variables:
-        ctx.add_type_error(DeadVariableUse(assign.var_name, assign))
-        return False
-
-
-    # Step 1: distinguish between initialization and proper assignment
-    if assign.var_name not in ctx.local_env:
-        # initialization
-        # Step 2a) check if declaration is allowed here  <<<=== XXX: This convention is maybe too restrictive (?)
-        # if not ctx.allow_declarations:
-        #     ctx.add_type_error(DisallowedDeclaration(ctx.function_def, assign))
-        #     return
-        # Step 3a) fetch declared type
-        declared_type = fetch_assign_declaration_type(ctx, assign)
-        if declared_type is None:
-            return False
-
-        # Step 4a) infer type of initialization expression
-        expr_type = assign.expr.type_infer(ctx)
-        if expr_type is None:
-            return False
-        # Step 5a) compare inferred type wrt. declared type
-        if not declared_type.type_compare(ctx, assign.expr, expr_type):
-            return False
-        # Step 6a) register declared type in environment
-        ctx.local_env[assign.var_name] = (declared_type, ctx.fetch_scope_mode())
-        return True
-
-    else: # proper assignment
-
-        # XXX: check if the student does not try a new declaration ?
-
-        declared_type, scope_mode = ctx.local_env[assign.var_name]
-
-        expr_type = assign.expr.type_infer(ctx)
-        if expr_type is None:
-            return False
-
-        if not declared_type.type_compare(ctx, assign.expr, expr_type):
-            return False
-
-        return True
-
-Assign.type_check = type_check_Assign
-    
-def type_check_MultiAssign(massign, ctx):
     # first let's see if the variables are dead
-    for var_name in massign.var_names:
+    mono_assign = False # is this an actual assignment (and not an initialization ?)
+    for var_name in assign.target.var_names():
         if var_name in ctx.dead_variables:
-            ctx.add_type_error(DeadVariableUse(var_name, massign))
+            ctx.add_type_error(DeadVariableUse(var_name, assign))
             return False
 
         if var_name in ctx.local_env:
-            # Multiple assigment is forbidden
-            ctx.add_type_error(ForbiddenMultiAssign(var_name, massign))
-            return False   
+            if assign.target.arity() > 1:
+                # Multiple assigment is forbidden (only multi-declaration allowed)
+                ctx.add_type_error(ForbiddenMultiAssign(var_name, assign))
+                return False
+            else:
+                mono_assign = True
 
-    #import pdb ; pdb.set_trace()
+    # import pdb ; pdb.set_trace()
 
-        
-    # second fetch the declared types
-    declared_types = fetch_massign_declaration_types(ctx, massign)
+    if mono_assign:
+        expr_type = assign.expr.type_infer(ctx)
+        if expr_type is None:
+            return False
+
+        # nothing else to do for actual assignment
+        return True
+
+    # here we consider an initialization and not an actual assignment
+    
+    # next fetch the declared types  (only required for mono-variables)
+    declared_types = fetch_assign_declaration_types(ctx, assign.target, True if assign.target.arity() == 1 else False)
     if declared_types is None:
         declared_types = dict()
     
-    # third infer type of initialization expression
-    expr_type = massign.expr.type_infer(ctx)
+    # next infer type of initialization expression
+    expr_type = assign.expr.type_infer(ctx)
     if expr_type is None:
         return False
+    
+    # treat the simpler "mono-var" case first
+    if assign.target.arity() == 1:
+        var_name = assign.target.var_names()[0]
+        if var_name not in declared_types:
+            # XXX: this is strict, need a dedicated error message ?
+            return False
+        
+        # compare inferred type wrt. declared type
+        if not declared_types[var_name].type_compare(ctx, assign.expr, expr_type):
+            return False
+
+        # register declared type in environment
+        ctx.local_env[var_name] = (declared_types[var_name], ctx.fetch_scope_mode())
+
+        return True
+        
+    # here we have a destructured initialization
 
     if not isinstance(expr_type, TupleType):
         ctx.add_type_error(TypeComparisonError(ctx.function_def, TupleType(), expr, expr_type,
                                                tr("Expecting a tuple")))
         return False
 
-    if len(expr_type.elem_types) != len(massign.var_names):
-        ctx.add_type_error(TupleDestructArityError(massign, expr_type))
+    expr_var_types = linearize_tuple_type(expr_type)
+
+    if len(expr_var_types) != len(assign.target.var_names()):
+        ctx.add_type_error(TupleDestructArityError(assign, expr_type, len(expr_var_types), len(assign.target.var_names())))
         return False
 
-    expected_elem_types = []
-    for (i, var_name) in zip(range(0, len(massign.var_names)), massign.var_names):
-        if var_name not in declared_types:
-            declared_types[var_name] = expr_type.elem_types[i]
-            
-        expected_elem_types.append(declared_types[var_name])
-            
-    expected_tuple_type = TupleType(expected_elem_types)
+    i = 0
+    for (i, var_name) in zip(range(0, len(assign.target.var_names())), assign.target.var_names()):
+        if var_name == '_': # just skip this check
+            continue
 
-    if not type_expect(ctx, massign.expr, expected_tuple_type):
-        return False
+        if var_name in declared_types:
+            if not type_expect(ctx, expr_var_types[i], declared_types[var_name]):
+                return False
         
-    for var_name in massign.var_names:
         ctx.local_env[var_name] = (declared_types[var_name], ctx.fetch_scope_mode())
+
 
     return True
 
-MultiAssign.type_check = type_check_MultiAssign
+Assign.type_check = type_check_Assign
 
 def type_check_For(for_node, ctx):
 
@@ -388,97 +471,6 @@ def type_check_For(for_node, ctx):
         return False
 
 For.type_check = type_check_For
-
-def parse_var_name(declaration):
-    vdecl = ""
-    expect_colon = False
-    for i in range(0, len(declaration)):
-        if declaration[i] == ':' and expect_colon:
-            return (vdecl, declaration[i:])
-        elif not declaration[i].isspace():
-            if expect_colon:
-                return vdecl, declaration[i-1:]
-            vdecl += declaration[i]
-        else:
-            if vdecl != "":
-                expect_colon = True
-
-    return None, None
-
-def parse_declaration_type(ctx, lineno):
-    """parse a declared type: returns a pair (v, T) with v the declared
-variable name and T its type, or (None, msg, err_cat) with an informational message if the parsing fails."""
-    
-    decl_line = ctx.prog.get_source_line(lineno).strip()
-    
-    if (not decl_line) or decl_line[0] != '#':
-        return (None, tr("Missing variable declaration"), 'header-char')
-    
-    decl_line = decl_line[1:].strip()
-    var_name, decl_line = parse_var_name(decl_line)
-
-    #print(var_name)
-    if (not decl_line) or decl_line[0] != ':':
-        return (None, tr("Missing ':' character before variable type declaration"), 'colon')
-
-    decl_line = decl_line[1:].strip()
-    decl_type = type_expression_parser(decl_line)
-    #print("rest='{}'".format(decl_line[decl_type.end_pos.offset:]))
-    if decl_type.iserror: # or decl_line[decl_type.end_pos.offset:]!='': (TODO some sanity check ?)
-        return (None, tr("I don't understand the declared type for variable '{}'").format(var_name), 'parse')
-
-    remaining = decl_line[decl_type.end_pos.offset:].strip()
-    if remaining != '' and not remaining.startswith('('):
-        return (None, tr("The declared type for variable '{}' has strange appended string: {}").format(var_name, remaining), 'parse')
-        
-    return (var_name, decl_type.content, "")
-
-def fetch_assign_declaration_type(ctx, assign):
-    lineno = assign.ast.lineno - 1
-
-    var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
-    if var_name is None:
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign, err_cat, lineno + 1 if err_cat=='header-char' else lineno, decl_type))
-        return None
-
-    if var_name != assign.var_name:
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'var-name', lineno, tr("Wrong variable name in declaration, it should be '{}'").format(assign.var_name)))
-        return None
-    
-    return decl_type.unalias(ctx.type_defs)
-
-def fetch_massign_declaration_types(ctx, massign):
-    lineno = massign.ast.lineno - 1
-
-    req_vars = { v for v in massign.var_names }
-    
-    declared_types = dict()
-    for _ in massign.var_names:
-
-        var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
-        if var_name is None:
-            #ctx.add_type_error(DeclarationError(ctx.function_def, massign, err_cat, massign.ast.lineno if err_cat=='header-char' else lineno, decl_type))
-            return None
-
-        if var_name in declared_types:
-            ctx.add_type_error(DuplicateMultiAssign(var, massign))
-            return None
-
-        if var_name not in req_vars:
-            ctx.add_type_error(DeclarationError(ctx.function_def, massign, 'var-name', lineno, tr("Unused variable name '{}' in declaration").format(var_name)))
-            return None
-
-        req_vars.remove(var_name)
-
-        declared_types[var_name] = decl_type.unalias(ctx.type_defs)
-
-        lineno -= 1
-
-    if req_vars:
-        ctx.add_type_error(DeclarationError(ctx.function_def, massign, 'unknown-vars', massign.ast.lineno, tr("Variables not declared: {}").format(req_vars)))
-        return None
-
-    return declared_types
 
 
 def fetch_iter_declaration_type(ctx, iter_node):
@@ -1577,9 +1569,10 @@ class HeterogeneousElementError(TypeError):
 
 
 class TupleDestructArityError(TypeError):
-    def __init__(self, destruct, expected_tuple_type):
+    def __init__(self, destruct, expected_tuple_type, expected_arity, actual_arity):
         self.destruct = destruct
-        self.expected_arity = len(expected_tuple_type.elem_types)
+        self.expected_arity = expected_arity
+        self.actual_arity = actual_arity
         
     def is_fatal(self):
         return True
@@ -1589,7 +1582,7 @@ class TupleDestructArityError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Tuple destruct error"), self.destruct.ast.lineno, self.destruct.ast.col_offset
-                                    , tr("Wrong number of variables to destruct tuple, expecting {} variables but {} given").format(self.expected_arity, len(self.destruct.var_names)))
+                                    , tr("Wrong number of variables to destruct tuple, expecting {} variables but {} given").format(self.expected_arity, self.actual_arity))
     
     
 def typecheck_from_ast(ast, filename=None, source=None):
