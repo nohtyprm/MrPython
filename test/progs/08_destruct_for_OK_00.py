@@ -1,7 +1,7 @@
 
 
 def f(L):
-    """ Iterable[Tuple[Number,Tuple[Number,Number,Tuple[Number,Number,Number], Number], Number]] -> Number """
+    """ Iterable[tuple[Number,tuple[Number,Number,tuple[Number,Number,Number], Number], Number]] -> Number """
 
     # a : Number
     a = 0

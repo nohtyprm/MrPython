@@ -283,14 +283,14 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
     lineno = assign_target.ast.lineno - 1
 
     # the required variables (except underscore)
-    req_vars = { v for v in assign_target.var_names() if v != "_" }
+    req_vars = { v.var_name for v in assign_target.variables() if v.var_name != "_" }
     if not req_vars:  # if there is no required var, this means all vars are _'s
         ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("The special variable '_' cannot be use alone")))
         return None
     
     declared_types = dict()
 
-    for _ in assign_target.var_names():
+    for _ in assign_target.variables():
 
         var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
         if var_name is None:
@@ -318,7 +318,7 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
         lineno -= 1
 
     if strict and req_vars: # need all declarations in strict mode
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'unknown-vars', assign_target.ast.lineno, tr("Variables not declared: {}").format(req_vars)))
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'unknown-vars', assign_target.ast.lineno, tr("Variables not declared: {}").format((v.var_name for f in req_vars))))
         return None
 
     return declared_types
@@ -341,15 +341,15 @@ def type_check_Assign(assign, ctx):
     
     # first let's see if the variables are dead
     mono_assign = False # is this an actual assignment (and not an initialization ?)
-    for var_name in assign.target.var_names():
-        if var_name in ctx.dead_variables:
-            ctx.add_type_error(DeadVariableUse(var_name, assign))
+    for var in assign.target.variables():
+        if var.var_name in ctx.dead_variables:
+            ctx.add_type_error(DeadVariableUseError(var.var_name, var))
             return False
 
-        if var_name in ctx.local_env:
+        if var.var_name in ctx.local_env:
             if assign.target.arity() > 1:
                 # Multiple assigment is forbidden (only multi-declaration allowed)
-                ctx.add_type_error(ForbiddenMultiAssign(var_name, assign))
+                ctx.add_type_error(ForbiddenMultiAssign(var.var_name, var))
                 return False
             else:
                 mono_assign = True
@@ -377,17 +377,17 @@ def type_check_Assign(assign, ctx):
     
     # treat the simpler "mono-var" case first
     if assign.target.arity() == 1:
-        var_name = assign.target.var_names()[0]
-        if var_name not in declared_types:
+        var = assign.target.variables()[0]
+        if var.var_name not in declared_types:
             # XXX: this is strict, need a dedicated error message ?
             return False
         
         # compare inferred type wrt. declared type
-        if not declared_types[var_name].type_compare(ctx, assign.expr, expr_type):
+        if not declared_types[var.var_name].type_compare(ctx, assign.expr, expr_type):
             return False
 
         # register declared type in environment
-        ctx.local_env[var_name] = (declared_types[var_name], ctx.fetch_scope_mode())
+        ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
 
         return True
         
@@ -401,22 +401,22 @@ def type_check_Assign(assign, ctx):
 
     expr_var_types = linearize_tuple_type(expr_type)
 
-    if len(expr_var_types) != len(assign.target.var_names()):
-        ctx.add_type_error(TupleDestructArityError(assign, expr_type, len(expr_var_types), len(assign.target.var_names())))
+    if len(expr_var_types) != len(assign.target.variables()):
+        ctx.add_type_error(TupleDestructArityError(assign, expr_type, len(expr_var_types), len(assign.target.variables())))
         return False
 
-    for (i, var_name) in zip(range(0, len(assign.target.var_names())), assign.target.var_names()):
-        if var_name == '_': # just skip this check
+    for (i, var) in zip(range(0, len(assign.target.variables())), assign.target.variables()):
+        if var.var_name == '_': # just skip this check
             continue
 
-        if var_name in declared_types:
-            if not declared_types[var_name].type_compare(ctx, assign.target, expr_var_types[i], raise_error=False):
-                ctx.add_type_error(VariableTypeError(assign.target, var_name, declared_types[var_name], expr_var_types[i]))
+        if var.var_name in declared_types:
+            if not declared_types[var.var_name].type_compare(ctx, assign.target, expr_var_types[i], raise_error=False):
+                ctx.add_type_error(VariableTypeError(assign.target, var, declared_types[var_name], expr_var_types[i]))
                 return False
         
-            ctx.local_env[var_name] = (declared_types[var_name], ctx.fetch_scope_mode())
+            ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
         else:
-            ctx.local_env[var_name] = (expr_var_types[i], ctx.fetch_scope_mode())    
+            ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())    
 
 
     return True
@@ -426,13 +426,13 @@ Assign.type_check = type_check_Assign
 def type_check_For(for_node, ctx):
 
     # first let's see if the iter variables are dead or in the local environment
-    for var_name in for_node.target.var_names():
-        if var_name in ctx.dead_variables:
-            ctx.add_type_error(DeadVariableUseError(var_name, for_node))
+    for var in for_node.target.variables():
+        if var.var_name in ctx.dead_variables:
+            ctx.add_type_error(DeadVariableUseError(var.var_name, var))
             return False
 
-        if var_name in ctx.local_env:
-            ctx.add_type_error(IterVariableInEnvError(for_node.target, var_name))
+        if var.var_name in ctx.local_env:
+            ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
             return False
 
     declared_types = fetch_assign_declaration_types(ctx, for_node.target, True if for_node.target.arity() == 1 else False)
@@ -1528,7 +1528,7 @@ class CompareConditionError(TypeError):
         report.add_convention_error('error', tr("Comparison error"), self.compare.ast.lineno, self.compare.ast.col_offset
                                     , tr("The two operands of the comparision should have the same type"))
 
-class DeadVariableUse(TypeError):
+class DeadVariableUseError(TypeError):
     def __init__(self, var_name, node):
         self.var_name = var_name
         self.node = node

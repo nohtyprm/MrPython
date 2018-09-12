@@ -144,8 +144,8 @@ class LHSVar:
         self.ast = node
         self.var_name = node.id
 
-    def var_names(self):
-        return [self.var_name]
+    def variables(self):
+        return [self]
 
     def arity(self):
         return 1
@@ -161,11 +161,11 @@ class LHSTuple:
         self.ast = node
         self.elements = elements
 
-    def var_names(self):
-        var_names = []
+    def variables(self):
+        vs = []
         for element in self.elements:
-            var_names.extend(element.var_names())
-        return var_names
+            vs.extend(element.variables())
+        return vs
 
     def arity(self):
         return len(self.elements)
