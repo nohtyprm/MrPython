@@ -173,7 +173,7 @@ class StudentRunner:
 
 
     def evaluate(self, expr, locals):
-        """ Lanches the evaluation with the locals dict built before """
+        """ Launches the evaluation with the locals dict built before """
         locals = install_locals(locals)
         (ok, result) = self._exec_or_eval('eval', expr, locals, locals)
         if not ok:

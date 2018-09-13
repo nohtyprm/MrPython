@@ -51,10 +51,10 @@ def type_tokenizer():
     # compound types
     tokenizer.add_rule(tokens.Literal('Iterable_type', 'Iterable'))
     tokenizer.add_rule(tokens.Literal('Sequence_type', 'Sequence'))
-    tokenizer.add_rule(tokens.Literal('list_type', 'list'))
-    tokenizer.add_rule(tokens.Literal('set_type', 'set'))
-    tokenizer.add_rule(tokens.Literal('dict_type', 'dict'))
-    tokenizer.add_rule(tokens.Literal('tuple_type', 'tuple'))
+    tokenizer.add_rule(tokens.LiteralSet('list_type', 'list', 'List'))
+    tokenizer.add_rule(tokens.LiteralSet('set_type', 'set', 'Set'))
+    tokenizer.add_rule(tokens.LiteralSet('dict_type', 'dict', 'Dict'))
+    tokenizer.add_rule(tokens.LiteralSet('tuple_type', 'tuple', 'Tuple'))
 
     # type variables
     tokenizer.add_rule(tokens.LiteralSet('type_var'
