@@ -21,7 +21,7 @@ class PyEditor(Text):
     from UndoDelegator import  UndoDelegator
     from Percolator import Percolator
     from ColorDelegator import  ColorDelegator
-    
+
     def __init__(self, parent, open=False, filename=None):
 
         Text.__init__(self,parent)
@@ -39,7 +39,7 @@ class PyEditor(Text):
             sys.ps1
         except AttributeError:
             sys.ps1 = ''
-            
+
 
         # usetabs true  -> literal tab characters are used by indent and
         #                  dedent cmds, possibly mixed with spaces if
@@ -284,7 +284,7 @@ class PyEditor(Text):
         self.tkinter_vars = None
         self.per.close()
         self.per = None
-    
+
     def update_recent_files_list(self, new_file=None):
         self.list.add_recent_file(new_file)
 
@@ -383,14 +383,13 @@ class PyEditor(Text):
             lines[pos] = '##' + line
         self.set_region(head, tail, chars, lines)
 
-    
+
     def change_font_size(self, console, line_widget, change_fun):
         fsize = self.font.cget('size')
         self.font.configure(size=change_fun(fsize))
         line_widget.configure(font=self.font)
         console.change_font(self.font)
         #edit.configure(font=font)
-        
 
     #
     # Event propre au pyEditor

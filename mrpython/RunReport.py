@@ -18,11 +18,11 @@ class ErrorReport:
         s = ""
         if self.severity == 'warning':
             s = "{}{}".format(tr("Warning"),
-                              ": line {}\n".format(self.line) if self.line else "")
+                              tr(": line {}\n").format(self.line) if self.line else "")
             s = s + self.error_details()
         elif self.severity == 'error':
             s = "{}{}".format(tr("Error"),
-                              ": line {}\n".format(self.line) if self.line else "")
+                              tr(": line {}\n").format(self.line) if self.line else "")
             s = s + self.error_details()
         else:
             s = self.details

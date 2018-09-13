@@ -10,6 +10,8 @@ from translate import tr
 import studentlib.gfx.image
 import studentlib.gfx.img_canvas
 
+from typechecking.typechecker import typecheck_from_ast
+
 def install_locals(locals):
     #locals = { k:v for (k,v) in locs.items() }
     locals['draw_line'] = studentlib.gfx.image.draw_line
@@ -39,7 +41,7 @@ class StudentRunner:
         self.report = RunReport()
         self.tk_root = tk_root
         self.running = True
-        
+
         ## This is a hack so let's check...
         try:
             self.tk_root.nametowidget('.')
@@ -75,10 +77,13 @@ class StudentRunner:
         # No parsing error here
 
         # perform the local checks
+        ret_val = True
         if not self.check_rules(self.report):
-            return False
+            ret_val = False
         else:
-            return self.run(locals) # Run the code if it passed all the convention tests
+            ret_val = self.run(locals) # Run the code if it passed all the convention tests
+
+        return ret_val
 
     def _extract_error_details(self, err):
         err_str = err.args[0]
@@ -145,14 +150,14 @@ class StudentRunner:
         locals = install_locals(locals)
         code = None
         try:
-            code = compile(self.source, self.filename, 'exec')            
+            code = compile(self.source, self.filename, 'exec')
         except SyntaxError as err:
             self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=str(err))
             return False
         except Exception as err:
             typ, exc, tb = sys.exc_info()
             self.report.add_compilation_error('error', str(typ), err.lineno, err.offset, details=str(err))
-            
+
             return False
 
         (ok, result) = self._exec_or_eval('exec', code, locals, locals)
@@ -168,7 +173,7 @@ class StudentRunner:
 
 
     def evaluate(self, expr, locals):
-        """ Lanches the evaluation with the locals dict built before """
+        """ Launches the evaluation with the locals dict built before """
         locals = install_locals(locals)
         (ok, result) = self._exec_or_eval('eval', expr, locals, locals)
         if not ok:
@@ -186,6 +191,10 @@ class StudentRunner:
             return False
         if not self.check_specifications():
             return False
+
+        if not self.check_types():
+            return False
+
         return True
 
     def check_specifications(self):
@@ -196,7 +205,7 @@ class StudentRunner:
 
     def check_asserts(self):
         """ Are there asserts at the end of the source code ? """
-        
+
         defined_funs = set()
         funcalls = set()
         for node in self.AST.body:
@@ -223,6 +232,24 @@ class StudentRunner:
             self.report.add_convention_error('run', tr('All functions tested'), details="==> " + tr("All functions tested (good)") + "\n")
 
         return True
+
+    def check_types(self):
+        type_ctx = typecheck_from_ast(self.AST, self.filename, self.source)
+        fatal_error = False
+        if len(type_ctx.type_errors) == 0:
+            # no type error
+            self.report.add_convention_error('run', tr('Program type-checked'), details=tr('==> the program is type-checked (very good)\n'))
+            return True
+
+        # convert type errors to report messages
+        for type_error in type_ctx.type_errors:
+            type_error.report(self.report)
+            if type_error.is_fatal():
+                fatal_error = True
+
+        #print("fatal_error = ", str(fatal_error))
+        return not fatal_error
+
 
 class FunCallsVisitor(ast.NodeVisitor):
     def __init__(self):
