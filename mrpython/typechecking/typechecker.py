@@ -1090,7 +1090,85 @@ def type_infer_Slicing(slicing, ctx):
     return result_type
 
 Slicing.type_infer = type_infer_Slicing
+
+def type_infer_EListComp(list_comp, ctx):
     
+    # we will modify the lexical environment
+    ctx.push_parent(list_comp)
+    
+    for generator in list_comp.generators:
+        # fetch the type of the iterator expr
+        iter_type = generator.iter.type_infer(ctx)
+        if iter_type is None:
+            ctx.pop_parent()
+            return None
+
+        if isinstance(iter_type, (IterableType, SequenceType, ListType, SetType, StrType)):
+            iter_elem_type = StrType() if isinstance(iter_type, StrType) else iter_type.elem_type
+            if generator.target.arity() == 1:
+                var = generator.target.variables()[0]
+                if var.var_name in ctx.dead_variables:
+                    ctx.add_type_error(DeadVariableUseError(var.var_name, var))
+                    ctx.pop_parent()
+                    return None
+                elif var.var_name in ctx.local_env:
+                    ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
+                    ctx.pop_parent()
+                    return None
+                elif var.var_name != "_":
+                    ctx.local_env[var.var_name] = (iter_elem_type, ctx.fetch_scope_mode())
+            else: # tuple destruct
+                if not isinstance(iter_elem_type, TupleType):
+                    ctx.add_type_error(TypeComparisonError(ctx.function_def, TupleType(), generator.iter, iter_elem_type,
+                                                           tr("Expecting an iterator of tuples")))
+                    ctx.pop_parent()
+                    return None
+
+                expr_var_types = linearize_tuple_type(iter_elem_type)
+
+                if len(expr_var_types) != len(generator.target.variables()):
+                    ctx.add_type_error(TupleDestructArityError(generator.target, iter_elem_type, len(expr_var_types), len(generator.target.variables())))
+                    ctx.pop_parent()
+                    return None
+
+                for (i, var) in zip(range(0, len(generator.target.variables())), generator.target.variables()):
+                    if var.var_name in ctx.dead_variables:
+                        ctx.add_type_error(DeadVariableUseError(var.var_name, var))
+                        ctx.pop_parent()
+                        return None
+                    elif var.var_name in ctx.local_env:
+                        ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
+                        ctx.pop_parent()
+                        return None
+                    elif var.var_name != "_":
+                        ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())
+
+            # now the lexical env is built for this generator conditions
+
+            for condition in generator.conditions:
+                if not type_expect(ctx, condition, BoolType()):
+                    ctx.pop_parent()
+                    return None
+
+        elif isinstance(iter_type, DictType):
+            raise NotImplementedError("list comprehensions over dictionnaries not yet implemented (please report)")
+
+        else:
+            ctx.add_type_error(IteratorTypeError(for_node, iter_type))
+            ctx.pop_parent()
+            return None
+                
+    # once all generators have been type checked
+
+    expr_type = list_comp.compr_expr.type_infer(ctx)
+    if expr_type is None:
+        ctx.pop_parent()
+        return None
+
+    ctx.pop_parent()
+    return ListType(expr_type)
+
+EListComp.type_infer = type_infer_EListComp
 
 ######################################
 # Type comparisons                   #

@@ -567,7 +567,24 @@ def parse_subscript(node):
     else:
         return Slicing(node)
 
-
+class Generator:
+    def __init__(self, generator):
+        self.ast = generator
+        self.target = build_lhs_destruct(self.ast.target)
+        self.iter = parse_expression(self.ast.iter)
+        self.conditions  = []
+        for ifcond in self.ast.ifs:
+            self.conditions.append(parse_expression(ifcond))
+        
+class EListComp:
+    def __init__(self, node):
+        self.ast = node
+        #print(astpp.dump(node))
+        self.compr_expr = parse_expression(node.elt)
+        self.generators = []
+        for gen in node.generators:
+            self.generators.append(Generator(gen))
+            
 EXPRESSION_CLASSES = { "Num" : ENum
                        , "Str" : EStr
                        , "NameConstant"  : parse_constant
@@ -580,6 +597,7 @@ EXPRESSION_CLASSES = { "Num" : ENum
                        , "Compare" : parse_compare
                        , "List" : EList
                        , "Subscript" : parse_subscript
+                       , "ListComp" : EListComp
 }
 
 def parse_expression(node):
