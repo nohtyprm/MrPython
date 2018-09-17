@@ -37,6 +37,7 @@ def type_tokenizer():
     tokenizer.add_rule(tokens.Literal('expr', "**"))
     tokenizer.add_rule(tokens.Char('mult', '*'))
     tokenizer.add_rule(tokens.Char('add', '+'))
+    tokenizer.add_rule(tokens.Char('pow', '^'))
 
     # basic types
     tokenizer.add_rule(tokens.Literal('bool_type', 'bool'))
@@ -67,6 +68,9 @@ def type_tokenizer():
                                          , "ε", "epsilon", "Epsilon", "EPSILON"
                                          , "ρ", "rho", "Rho", "RHO"))
 
+    # naturals
+    tokenizer.add_rule(tokens.Regexp('natural', "[1-9][0-9]*"))
+    
     # identifiers
     tokenizer.add_rule(tokens.Regexp('identifier',
                                      "[a-zA-Z_][a-zA-Z_0-9]*'*"))
@@ -245,8 +249,50 @@ def build_typeexpr_grammar(grammar=None):
     return grammar
 
 def build_functype_grammar(grammar):
-    domain_parser = parsers.List(grammar.ref('typeexpr'), sep='mult') \
+    
+    dom_elem_parser = parsers.Tuple() \
+                      .element(grammar.ref('typeexpr')) \
+                      .element(parsers.Optional(parsers.Tuple() \
+                                                .element(parsers.Token('pow')) \
+                                                .element(parsers.Token('natural'))))
+
+    def dom_elem_xform_result(result):
+
+        type_result = result.content[0]
+        repeat_result = result.content[1]
+
+        if repeat_result.content is None:
+            result.content = type_result.content
+            return result
+        else:
+
+            nb_repeat = int(repeat_result.content[1].content.value)
+            new_content = [type_result.content for _ in range(nb_repeat)]
+            result.content = new_content
+            return result
+        
+    dom_elem_parser.xform_result = dom_elem_xform_result
+    
+    grammar.register('dom_elem', dom_elem_parser)
+
+    domain_parser = parsers.List(grammar.ref('dom_elem'), sep='mult') \
                            .forget(grammar.ref('spaces'))
+
+    def domain_xform_result(result):
+        if result.content is None:
+            return result
+        
+        domain_types = []
+        for elem in result.content:
+            if isinstance(elem.content, TypeAST):
+                domain_types.append(elem.content)
+            else:
+                domain_types.extend(elem.content)
+
+        result.content = domain_types
+        return result
+                
+    domain_parser.xform_result = domain_xform_result
 
     grammar.register('domain_type', domain_parser)
 
@@ -269,11 +315,12 @@ def build_functype_grammar(grammar):
                       .element(grammar.ref('range_type'))
 
     def functype_parser_xform_result(result):
+        #import pdb ; pdb.set_trace()
         param_types = []
         params_content = result.content[0]
         if params_content.content:
             for param_content in params_content.content:
-                param_types.append(param_content.content)
+                param_types.append(param_content)
 
         range_content = result.content[1].content
         #print("range content=",range_content)
