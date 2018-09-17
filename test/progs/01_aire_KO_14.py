@@ -1,4 +1,4 @@
-##!FAIL: TypeComparisonError[int/Number]@14:8
+##!FAIL: TypeComparisonError[int/float]@14:8
 
 import math
 

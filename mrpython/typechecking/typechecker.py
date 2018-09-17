@@ -155,7 +155,7 @@ def type_check_Program(prog):
                 ctx.type_defs[type_name] = type_def
 
     # second step :  fill the global environment
-
+        
     # first register the builtins
     ctx.register_import(REGISTERED_IMPORTS[''])
 
@@ -163,6 +163,9 @@ def type_check_Program(prog):
     for import_name in prog.imports:
         if import_name in REGISTERED_IMPORTS:
             ctx.register_import(REGISTERED_IMPORTS[import_name])
+            # HACK : import the math.pi constant  (the only constant)
+            if import_name == "math":
+                ctx.local_env['math.pi'] = (type_expression_parser('float').content, "global")
         else:
             ctx.add_type_error(UnsupportedImportError(import_name, prog.imports[import_name]))
 
@@ -547,7 +550,8 @@ def type_check_Return(ret, ctx):
     if not expr_type:
         return False
     if not ctx.return_type.type_compare(ctx, ret.expr, expr_type):
-        ctx.add_type_error(WrongReturnTypeError(ctx.function_def, ret, ctx.return_type, ctx.partial_function))
+        # XXX: not really needed (?)
+        # ctx.add_type_error(WrongReturnTypeError(ctx.function_def, ret, ctx.return_type, ctx.partial_function))
         return False
 
     return True
@@ -644,18 +648,18 @@ UnsupportedNode.type_infer = type_infer_UnsupportedNode
 
 
 def infer_number_type(ctx, type1, type2):
-    # number always "wins"
-    if isinstance(type1, NumberType):
-        return type1
-    if isinstance(type2, NumberType):
-        return type2
-    # otherwise it's float
+    # float always "wins"
     if isinstance(type1, FloatType):
         return type1
     if isinstance(type2, FloatType):
         return type2
+    # otherwise Number wins
+    if isinstance(type1, NumberType):
+        return type1
+    if isinstance(type2, NumberType):
+        return type2
 
-    # otherwise it's either of the two
+    # otherwise it's either of the two (an int, guessing ...)
     return type1
 
 
@@ -1215,7 +1219,7 @@ def type_compare_IntType(expected_type, ctx, expr, expr_type, raise_error=True):
 IntType.type_compare = type_compare_IntType
 
 def type_compare_FloatType(expected_type, ctx, expr, expr_type, raise_error=True):
-    if isinstance(expr_type, FloatType):
+    if isinstance(expr_type, (FloatType, IntType, NumberType)):
         return True
 
     if raise_error:
