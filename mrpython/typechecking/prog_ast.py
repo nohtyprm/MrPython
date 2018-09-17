@@ -299,7 +299,24 @@ def parse_constant(node):
 class EVar:
     def __init__(self, node):
         self.ast = node
-        self.name = self.ast.id
+        if isinstance(self.ast, ast.Name):
+            self.name = self.ast.id
+        elif isinstance(self.ast, ast.Attribute):
+            node = self.ast
+            names = []
+            while isinstance(node, ast.Attribute):
+                names.append(node.attr)
+                node = node.value
+
+            if not isinstance(node, ast.Name):
+                raise ValueError("Node is not a Name (please report)")
+
+            names.append(node.id)
+            names.reverse()
+            self.name = ".".join(names)
+
+        else:
+            raise NotImplementedError("Unsupported EVar type (please report): {}".format(self.ast))
 
 class ETuple:
     def __init__(self, node):
@@ -589,6 +606,7 @@ EXPRESSION_CLASSES = { "Num" : ENum
                        , "Str" : EStr
                        , "NameConstant"  : parse_constant
                        , "Name" : EVar
+                       , "Attribute" : EVar
                        , "Tuple" : ETuple
                        , "BinOp" : EBinOp
                        , "BoolOp" : EBoolOp
