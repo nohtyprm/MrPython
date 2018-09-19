@@ -50,6 +50,9 @@ class RunReport:
         self.header = ""
         self.footer = ""
 
+        self.nb_passed_tests = 0
+
+
     def add_convention_error(self, severity, err_type, line=None, offset=None, details=""):
         self.convention_errors.append(ErrorReport(severity, err_type, line, offset, details))
 

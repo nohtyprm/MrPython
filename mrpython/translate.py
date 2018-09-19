@@ -29,7 +29,7 @@ TRANSLATOR_DICT = {
     ,"Interpretation of: " : { 'fr' : "Interprétation de : " }
     ,"Bad indentation" : { 'fr' : "Mauvaise indentation" }
     ,"Syntax error" : { 'fr' : "Erreur de syntaxe" }
-    ,"Type error" : { 'fr' : "Erreur de typage" }
+    ,"Type error" : { 'fr' : "Erreur Python" }
     ,"Name error (unitialized variable?)" : { 'fr': "Erreur de nommage (variable non initialisée ?)" }
     ,"Division by zero" : { 'fr' : "Division par zéro" }
     ,"Assertion error (failed test?)" : { 'fr' : "Erreur d'assertion (test invalide ?)" }
@@ -42,6 +42,9 @@ TRANSLATOR_DICT = {
     , '==> the program is type-checked (very good)\n' : {'fr' : '==> le programme est bien typé (très bien)\n' }
     # status
     ,"Saving file" : { 'fr' : "Enregistre" }
+    ,"All the {} tests passed with success" : { 'fr' : "Tous les {} tests sont passés avec succès" }
+    , "Only one (successful) test found, it's probably not enough" : { 'fr' : "Je n'ai trouvé qu'un seul test, il passe mais ce n'est sans doute pas suffisant" }
+    , "There is no test! you have to write tests!" : { 'fr' : "Je ne trouve pas de test, il faut tester vos fonctions !" }
 }
 
 def tr(msg):

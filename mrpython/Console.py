@@ -238,7 +238,7 @@ class Console:
         tag = 'run'
         if not status:
             tag = 'error'
-
+            
         self.hyperlinks.reset()
 
         self.write(report.header, tags=(tag))
@@ -265,6 +265,14 @@ class Console:
             if report.result is not None:
                 self.write(repr(report.result), tags=('normal'))
 
+        if status and self.mode == tr('student'):
+            if report.nb_passed_tests > 1:
+                self.write("==> " + tr("All the {} tests passed with success").format(report.nb_passed_tests), tags=('run'))
+            elif report.nb_passed_tests == 1:
+                self.write("==> " + tr("Only one (successful) test found, it's probably not enough"), tags=('warning'))
+            else:
+                self.write("==> " + tr("There is no test! you have to write tests!"), tags=('error'))
+        
         self.write(report.footer, tags=(tag))
 
     def evaluate_action(self, *args):

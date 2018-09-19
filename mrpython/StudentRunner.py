@@ -83,6 +83,8 @@ class StudentRunner:
             self.run(locals) # we still run the code even if there is a convention error
         else:
             ret_val = self.run(locals) # Run the code if it passed all the convention tests
+            if ret_val:
+                self.report.nb_passed_tests = self.nb_asserts
 
         return ret_val
 
@@ -206,7 +208,7 @@ class StudentRunner:
 
     def check_asserts(self):
         """ Are there asserts at the end of the source code ? """
-
+        self.nb_asserts = 0
         defined_funs = set()
         funcalls = set()
         for node in self.AST.body:
@@ -215,6 +217,7 @@ class StudentRunner:
                 #print("assert found: {}".format(node))
                 call_visit = FunCallsVisitor()
                 call_visit.visit(node)
+                self.nb_asserts += 1
                 funcalls.update(call_visit.funcalls)
             elif isinstance(node, ast.FunctionDef):
                 defined_funs.add(node.name)
