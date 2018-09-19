@@ -39,7 +39,7 @@ class Anything(TypeAST):
         return self
 
     def unalias(self, type_defs):
-        return self
+        return (self, None)
     
     def __eq__(self, other):
         return isinstance(other, Anything)
@@ -66,12 +66,12 @@ class TypeAlias(TypeAST):
 
     def unalias(self, type_defs):
         if self.alias_name not in type_defs:
-            raise KeyError("Type alias '{}' not found in type definitions (please report)".format(self.alias_name))
+            return (None, self.alias_name)
 
         unaliased_type = type_defs[self.alias_name].unalias(type_defs)
         unaliased_type.alias_name = self.alias_name
 
-        return unaliased_type
+        return (unaliased_type, None)
     
     def __eq__(self, other):
         return isinstance(other, BoolType)
@@ -97,7 +97,7 @@ class BoolType(TypeAST):
         return self
 
     def unalias(self, type_defs):
-        return self
+        return (self, None)
     
     def __eq__(self, other):
         return isinstance(other, BoolType)
@@ -122,7 +122,7 @@ class IntType(TypeAST):
         return self
 
     def unalias(self, type_defs):
-        return self
+        return (self, None)
 
     def __eq__(self, other):
         return isinstance(other, IntType)
@@ -147,7 +147,7 @@ class FloatType(TypeAST):
         return self
 
     def unalias(self, type_defs):
-        return self
+        return (self, None)
 
     def __eq__(self, other):
         return isinstance(other, FloatType)
@@ -173,7 +173,7 @@ class NumberType(TypeAST):
         return self
 
     def unalias(self, type_defs):
-        return self
+        return (self, None)
 
     def __eq__(self, other):
         return isinstance(other, NumberType)
@@ -199,7 +199,7 @@ class NoneTypeType(TypeAST):
         return self
 
     def unalias(self, type_defs):
-        return self
+        return (self, None)
 
     def __eq__(self, other):
         return isinstance(other, NoneTypeType)
@@ -228,7 +228,7 @@ class StrType(TypeAST):
         return True
 
     def unalias(self, type_defs):
-        return self
+        return (self, None)
 
     def __str__(self):
         return "str"
@@ -271,7 +271,7 @@ class TypeVariable(TypeAST):
             return False
 
     def unalias(self, type_defs):
-        return self
+        return (self, None)
     
     def __str__(self):
         return '_' if self.var_name.startswith('_') else self.var_name
@@ -313,8 +313,14 @@ class TupleType(TypeAST):
     def unalias(self, type_defs):
         nelem_types = []
         for elem_type in self.elem_types:
-            nelem_types.append(elem_type.unalias(type_defs))
-        return TupleType(nelem_types, self.annotation if self.annotated else None)
+            uelem_type, unknown_alias = elem_type.unalias(type_defs)
+            if uelem_type is None:
+                return (None, unknown_alias)
+            
+            nelem_types.append(uelem_type)
+            
+        return (TupleType(nelem_types, self.annotation if self.annotated else None)
+                , None)
 
     def __str__(self):
         return "tuple[{}]".format(",".join((str(et) for et in self.elem_types)))
@@ -337,7 +343,11 @@ class ListType(TypeAST):
         return ListType(self.elem_type.subst(type_env), self.annotation if self.annotated else None)
 
     def unalias(self, type_defs):
-        return ListType(self.elem_type.unalias(type_defs), self.annotation if self.annotated else None)
+        uelem_type, unknown_alias = self.elem_type.unalias(type_defs)
+        if uelem_type is None:
+                return (None, unknown_alias)
+        return (ListType(uelem_type, self.annotation if self.annotated else None)
+                , None)
 
     def __eq__(self, other):
         return isinstance(other, ListType) and other.elem_type == self.elem_type
@@ -381,7 +391,11 @@ class SetType(TypeAST):
         return self.elem_type is None
 
     def unalias(self, type_defs):
-        return SetType(self.elem_type.unalias(type_defs), self.annotation if self.annotated else None)
+        uelem_type, unknown_alias = self.elem_type.unalias(type_defs)
+        if uelem_type is None:
+                return (None, unknown_alias)
+        return (SetType(uelem_type, self.annotation if self.annotated else None)
+                , None)
 
     def __str__(self):
         if self.elem_type:
@@ -418,9 +432,16 @@ class DictType(TypeAST):
         return False
 
     def unalias(self, type_defs):
-        return DictType(self.key_type.unalias(type_defs)
-                        , self.value_type.unalias(type_defs)
-                        , self.annotation if self.annotated else None)
+        ukey_type, unknown_alias = self.key_type.unalias(type_defs)
+        if ukey_type is None:
+            return (None, unknown_alias)
+        uvalue_type, unknown_alias = self.value_type.unalias(type_defs)
+        if uvalue_type is None:
+            return (None, unknown_alias)
+
+        return (DictType(ukey_type, uvalue_type
+                         , self.annotation if self.annotated else None)
+                , None)
 
     
     def __eq__(self, other):
@@ -454,7 +475,11 @@ class IterableType(TypeAST):
         return IterableType(self.elem_type.subst(type_env), self.annotation)
 
     def unalias(self, type_defs):
-        return IterableType(self.elem_type.unalias(type_defs), self.annotation if self.annotated else None)
+        uelem_type, unknown_alias = self.elem_type.unalias(type_defs)
+        if uelem_type is None:
+            return (None, unknown_alias)
+        return (IterableType(uelem_type, self.annotation if self.annotated else None)
+                , None)
 
     def is_hashable(self):
         return False
@@ -486,7 +511,12 @@ class SequenceType(TypeAST):
         return False
 
     def unalias(self, type_defs):
-        return SequenceType(self.elem_type.unalias(type_defs), self.annotation if self.annotated else None)
+        uelem_type, unknown_alias = self.elem_type.unalias(type_defs)
+        if uelem_type is None:
+                return (None, unknown_alias)
+
+        return (SequenceType(uelem_type, self.annotation if self.annotated else None)
+                , None)
 
     
     def __eq__(self, other):
@@ -513,7 +543,12 @@ class OptionType(TypeAST):
         return OptionType(self.elem_type.subst(type_env), self.annotation if self.annotated else None)
 
     def unalias(self, type_defs):
-        return OptionType(self.elem_type.unalias(type_defs), self.annotation if self.annotated else None)
+        uelem_type, unknown_alias = self.elem_type.unalias(type_defs)
+        if uelem_type is None:
+                return (None, unknown_alias)
+
+        return (OptionType(uelem_type, self.annotation if self.annotated else None)
+                , None)
     
     def is_hashable(self):
         return False
@@ -565,11 +600,19 @@ class FunctionType:
     def unalias(self, type_defs):
         nparam_types = []
         for param_type in self.param_types:
-            nparam_types.append(param_type.unalias(type_defs))
-        nret_type = self.ret_type.unalias(type_defs)
+            uparam_type, unknown_alias = param_type.unalias(type_defs)
+            if uparam_type is None:
+                return (None, unknown_alias)
+            else:
+                nparam_types.append(uparam_type)
+
+        nret_type, unknown_alias = self.ret_type.unalias(type_defs)
+        if nret_type is None:
+            return (None, unknown_alias)
+        
         nfntype = FunctionType(nparam_types, self.ret_type, self.partial, self.annotation if self.annotated else None)
         nfntype.ret_type = nret_type
-        return nfntype
+        return (nfntype, None)
     
     def __str__(self):
         return "{} -> {}".format(" * ".join((str(pt) for pt in self.param_types))
