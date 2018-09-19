@@ -53,12 +53,21 @@ class RunReport:
     def add_convention_error(self, severity, err_type, line=None, offset=None, details=""):
         self.convention_errors.append(ErrorReport(severity, err_type, line, offset, details))
 
+    def has_convention_error(self):
+        return bool(self.convention_errors)
+        
     def add_compilation_error(self, severity, err_type, line=None, offset=None, details=""):
         self.compilation_errors.append(ErrorReport(severity, err_type, line, offset, details))
+
+    def has_compilation_error(self):
+        return bool(self.compilation_errors)
 
     def add_execution_error(self, severity, err_type, line=None, offset=None, details=""):
         self.execution_errors.append(ErrorReport(severity, err_type, line, offset, details))
 
+    def has_execution_error(self):
+        return bool(self.execution_errors)
+        
     def set_output(self, output):
         """Set the (standard) output of an execution."""
         self.output = output

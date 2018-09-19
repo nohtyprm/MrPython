@@ -80,6 +80,7 @@ class StudentRunner:
         ret_val = True
         if not self.check_rules(self.report):
             ret_val = False
+            self.run(locals) # we still run the code even if there is a convention error
         else:
             ret_val = self.run(locals) # Run the code if it passed all the convention tests
 

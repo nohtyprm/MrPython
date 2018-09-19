@@ -357,15 +357,14 @@ class Console:
             self.write_report(ok, report)
 
             # Enable or disable the evaluation bar according to the execution status
-            if ok:
-                self.input_console.focus_set()
-                #self.switch_input_status(True)
-            else:
+            if report.has_compilation_error() or report.has_execution_error():
                 # kill the interpreter
                 self.interpreter.kill()
                 self.interpreter = None
-                self.app.running_interpreter_proxy = None
-                
+                self.app.running_interpreter_proxy = None            
+            else:
+                self.input_console.focus_set()
+                #self.switch_input_status(True)
 
             self.app.icon_widget.disable_icon_running()
             self.app.running_interpreter_callback = None
