@@ -37,7 +37,7 @@ TRANSLATOR_DICT = {
     , "Call problem" : { 'fr' : "Problème d'appel"}
     , "I don't know any function named '{}'" : { 'fr' : "je ne connais pas de fonction dont le nom est '{}'"}
     , "Incompatible types" : { 'fr' : "Types incompatibles"}
-    , "Expecting type {} but found {} instead" : { 'fr' : "j'attendais le type {} mais cette expression est plutôt de type: {}"}
+    , "Expecting type '{}' but instead found: {}" : { 'fr' : "j'attendais le type '{}' mais cette expression est plutôt de type: {}"}
     , "Comparison error" : { 'fr' : "Erreur de comparaison"}
     , "The two operands of the comparision should have the same type" : { 'fr' : "Les deux opérandes de la comparaison devraient être du même type"}
     , "Bad variable" : { 'fr' : "Mauvaise utilisation de variable"}

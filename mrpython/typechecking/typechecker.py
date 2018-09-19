@@ -1584,7 +1584,7 @@ class TypeComparisonError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Incompatible types"), self.expr.ast.lineno, self.expr.ast.col_offset
-                                    , tr("Expecting type {} but found {} instead").format(self.expected_type, self.expr_type))
+                                    , tr( "Expecting type '{}' but instead found: {}").format(self.expected_type, self.expr_type))
 
 class UnsupportedNumericTypeError(TypeError):
     def __init__(self, in_function, num):
