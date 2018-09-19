@@ -234,7 +234,7 @@ class Console:
         self.hyperlinks.reset()
         #self.switch_input_status(False)
 
-    def write_report(self, status, report):
+    def write_report(self, status, report, exec_mode):
         tag = 'run'
         if not status:
             tag = 'error'
@@ -265,7 +265,7 @@ class Console:
             if report.result is not None:
                 self.write(repr(report.result), tags=('normal'))
 
-        if status and self.mode == tr('student'):
+        if exec_mode == 'exec' and status and self.mode == tr('student') and report.nb_defined_funs > 0:
             if report.nb_passed_tests > 1:
                 self.write("==> " + tr("All the {} tests passed with success").format(report.nb_passed_tests), tags=('run'))
             elif report.nb_passed_tests == 1:
@@ -298,7 +298,7 @@ class Console:
                 self.input_history.record(expr)
 
             self.input_console.delete(0, END)
-            self.write_report(ok, report)
+            self.write_report(ok, report, 'eval')
 
             if local_interpreter:
                 self.interpreter.kill()
@@ -366,7 +366,7 @@ class Console:
                 callback_called = True
 
             #print("[console] CALLBACK: exec ok ? {}  report={}".format(ok, report))
-            self.write_report(ok, report)
+            self.write_report(ok, report, 'exec')
 
             # Enable or disable the evaluation bar according to the execution status
             if report.has_compilation_error() or report.has_execution_error():

@@ -225,6 +225,8 @@ class StudentRunner:
         #print("defined funs = {}".format(defined_funs))
         #print("funcalls = {}".format(funcalls))
 
+        self.report.nb_defined_funs = len(defined_funs)
+        
         missing = defined_funs.difference(funcalls)
 
         if missing:
