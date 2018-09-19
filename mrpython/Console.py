@@ -355,6 +355,10 @@ class Console:
         callback_called = False
         
         def callback(ok, report):
+            # XXX: the ok is not trustable
+            if report.has_compilation_error() or report.has_execution_error():
+                ok = False
+            
             nonlocal callback_called
             if callback_called:
                 return
