@@ -943,9 +943,14 @@ def type_infer_ECall(call, ctx):
     #print("rename_map = {}".format(rename_map))
     #print(repr(signature))
 
-    # step 2 : check the call arity
-    if len(signature.param_types) != len(arguments):
-        ctx.add_type_error(CallArityError(ctx.function_def, method_call, signature, call))
+    # step 2 : check the call arity (only if TypeAnything is not present)
+    check_arity = True
+    for param_type in signature.param_types:
+        if isinstance(param_type, Anything):
+            check_arity = False
+            
+    if check_arity and (len(signature.param_types) != len(arguments)):
+        ctx.add_type_error(CallArityError(method_call, arguments, call))
         return None
 
     # step 3 : check the argument types
@@ -1258,6 +1263,17 @@ def type_compare_BoolType(expected_type, ctx, expr, expr_type, raise_error=True)
 
 BoolType.type_compare = type_compare_BoolType
 
+def type_compare_ImageType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, ImageType):
+        return True
+
+    if raise_error:
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an image (type Image)")))
+
+    return False
+
+ImageType.type_compare = type_compare_ImageType
+
 def type_compare_StrType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, StrType):
         return True
@@ -1408,6 +1424,15 @@ BUILTINS_IMPORTS = {
     ,'print' : function_type_parser("Ω -> NoneType").content
     ,'range' : function_type_parser("int * int -> Iterable[int]").content
     , '.append' : function_type_parser("list[α] * α -> NoneType").content
+    # images   ... TODO: the type system is not precise enough (for now)
+    , 'draw_line' : function_type_parser("float * float * float * float * Ω -> Image").content
+    , 'overlay' : function_type_parser("Image * Image * Ω -> Image").content
+    , 'underlay' : function_type_parser("Image * Image * Ω -> Image").content
+    , 'fill_triangle' : function_type_parser("float * float * float * float * float * float * Ω -> Image").content
+    , 'draw_triangle' : function_type_parser("float * float * float * float * float * float * Ω -> Image").content
+    , 'draw_ellipse' : function_type_parser("float * float * float * float * Ω -> Image").content
+    , 'fill_ellipse' : function_type_parser("float * float * float * float * Ω -> Image").content
+    , 'show_image' : function_type_parser("Image -> NoneType").content
 }
 
 MATH_IMPORTS = {
@@ -1602,15 +1627,24 @@ class UnknownFunctionError(TypeError):
                                     , tr("I don't know any function named '{}'").format(self.call.full_fun_name))
 
 class CallArityError(TypeError):
-    def __init__(self, in_function, method_call, signature, call):
-        self.in_function = in_function
-        self.signature = signature
-        self.call = call
+    def __init__(self, method_call, param_types, arguments, call):
         self.method_call = method_call
-
+        self.arguments = arguments
+        self.param_types = param_types
+        self.call = call
+        
     def is_fatal(self):
         return True
-    
+
+    def fail_string(self):
+        return "CallArityError[{}:{}/{}]@{}:{}".format(self.call.fun_name, len(self.param_types), len(self.arguments), self.arg.ast.lineno, self.arg.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Call problem"), self.call.ast.lineno, self.call.ast.col_offset
+                                    , tr("calling '{}' with {} argument(s) but expecting: {}").format(self.call.fun_name
+                                                                                                      , len(self.arguments)
+                                                                                                      , len(self.param_types)))
+
 class CallArgumentError(TypeError):
     def __init__(self, in_function, method_call, call, num_arg, arg, param_type):
         self.in_function = in_function

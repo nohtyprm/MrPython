@@ -45,6 +45,7 @@ def type_tokenizer():
     tokenizer.add_rule(tokens.Literal('float_type', 'float'))
     tokenizer.add_rule(tokens.Literal('Number_type', 'Number'))
     tokenizer.add_rule(tokens.Literal('NoneType_type', 'NoneType'))
+    tokenizer.add_rule(tokens.Literal('Image_type', 'Image'))
     tokenizer.add_rule(tokens.Literal('str_type', 'str'))
 
     tokenizer.add_rule(tokens.Literal('Anything_type', 'Ω'))
@@ -130,6 +131,13 @@ def build_typeexpr_grammar(grammar=None):
         return result
     Number_parser.xform_result = Number_xform_result
     grammar.register('Number_type', Number_parser)
+
+    Image_parser = parsers.Token('Image_type')
+    def Image_xform_result(result):
+        result.content = ImageType(annotation=result)
+        return result
+    Image_parser.xform_result = Image_xform_result
+    grammar.register('Image_type', Image_parser)
 
     str_parser = parsers.Token('str_type')
     def str_xform_result(result):
@@ -232,6 +240,7 @@ def build_typeexpr_grammar(grammar=None):
                        .orelse(grammar.ref('int_type')) \
                        .orelse(grammar.ref('float_type')) \
                        .orelse(grammar.ref('Number_type')) \
+                       .orelse(grammar.ref('Image_type')) \
                        .orelse(grammar.ref('str_type')) \
                        .orelse(grammar.ref('NoneType_type')) \
                        .orelse(grammar.ref('Anything_type')) \

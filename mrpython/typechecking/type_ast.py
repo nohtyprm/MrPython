@@ -210,6 +210,32 @@ class NoneTypeType(TypeAST):
     def __repr__(self):
         return "NoneType()"
 
+class ImageType(TypeAST):
+    def __init__(self, annotation=None):
+        super().__init__(annotation)
+
+    def is_hashable(self):
+        return True
+
+    def rename_type_variables(self, rmap):
+        return self
+
+    def subst(self, type_env):
+        return self
+
+    def unalias(self, type_defs):
+        return (self, None)
+
+    def __eq__(self, other):
+        return isinstance(other, ImageType)
+
+    def __str__(self):
+        return "Image"
+
+    def __repr__(self):
+        return "ImageType()"
+
+    
 class StrType(TypeAST):
     def __init__(self, annotation=None):
         super().__init__(annotation)
