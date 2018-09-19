@@ -68,7 +68,9 @@ class TypeAlias(TypeAST):
         if self.alias_name not in type_defs:
             return (None, self.alias_name)
 
-        unaliased_type = type_defs[self.alias_name].unalias(type_defs)
+        unaliased_type, unknown_alias = type_defs[self.alias_name].unalias(type_defs)
+        if unaliased_type is None:
+            return (None, unknown_alias)
         unaliased_type.alias_name = self.alias_name
 
         return (unaliased_type, None)
