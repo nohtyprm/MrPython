@@ -649,6 +649,17 @@ def type_check_ECall(enode, ctx):
 
 ECall.type_check = type_check_ECall
 
+def type_check_Assertion(assertion, ctx):
+    # always generate a warning for asserts in functions
+    ctx.add_type_error(AssertionInFunctionWarning(ctx.function_def.name, assertion))
+    
+    expr_type = type_expect(ctx, assertion.test, BoolType())
+    if expr_type is None:
+        return False
+    return True
+
+Assertion.type_check = type_check_Assertion
+
 ######################################
 # Type inference                     #
 ######################################
@@ -1480,6 +1491,20 @@ class SignatureParseError(TypeError):
     def is_fatal(self):
         return False
 
+class AssertionInFunctionWarning(TypeError):
+    def __init__(self, fun_name, assertion):
+        self.fun_name = fun_name
+        self.assertion = assertion
+
+    def fail_string(self):
+        return "AssertionInFunctionWarning[{}]@{}:{}".format(self.fun_name, self.assertion.ast.lineno, self.assertion.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Assertion issue"), self.assertion.ast.lineno, self.assertion.ast.col_offset
+                                    , details=tr("In Python101 the `asserts` are reserved for test cases, however one assert is present in the body of function '{}'").format(self.fun_name))
+
+    def is_fatal(self):
+        return False
 
 class FunctionArityError(TypeError):
     def __init__(self, func_def, signature):

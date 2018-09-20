@@ -240,6 +240,12 @@ class While:
             iinstr = parse_instruction(instr)
             self.body.append(iinstr)
 
+class Assertion:
+    def __init__(self, node):
+        self.ast = node
+        #print(astpp.dump(node))
+        self.test = parse_expression(self.ast.test)
+            
 def parse_expression_as_instruction(node):
     # XXX: do something here or way until typing for
     #      losing the returned value (except if None)
@@ -252,6 +258,7 @@ INSTRUCTION_CLASSES = {"Assign" : Assign
                        , "While" : While
                        , "Expr" : parse_expression_as_instruction
                        , "For" : For
+                       , "Assert" : Assertion
 }
 
 def parse_instruction(node):
@@ -647,6 +654,12 @@ def python_show_tokenized(filename):
     return modtxt
 
 if __name__ == "__main__":
+    import sys
     prog1 = Program()
-    prog1.build_from_file("../../examples/aire.py")
-    #print(astpp.dump(prog1.ast))
+    if len(sys.argv) > 1:
+        filename = sys.argv[1]
+    else:
+        filename = "../../examples/aire.py"
+        
+    prog1.build_from_file(filename)
+    print(astpp.dump(prog1.ast))

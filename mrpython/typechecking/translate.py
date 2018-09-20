@@ -51,6 +51,8 @@ TRANSLATOR_DICT = {
     , "Unused variable name '{}' in declaration" : { 'fr' : "La variable '{}' déclarée n'est pas utilisée" }
     , "Tuple destruct error" : { 'fr' : "Erreur de destructuration de n'uplet" }
     , "Wrong number of variables to destruct tuple, expecting {} variables but {} given" : { 'fr' : "J'attends {} variables pour destructurer le n-uplet mais vous en spécifiez {}"}
+    , "In Python101 the `asserts` are reserved for test cases, however one assert is present in the body of function '{}'" : { 'fr' : "En Python101 `assert` est réservé pour les jeux de tests, mais vous utilisez `assert` dans le corps de la fonction '{}'" }
+    , "Assertion issue" : { 'fr' : "Problème d'assertion" }
 }
 
 def tr(msg):
