@@ -567,9 +567,8 @@ def type_check_Return(ret, ctx):
     expr_type = ret.expr.type_infer(ctx)
     if not expr_type:
         return False
-    if not ctx.return_type.type_compare(ctx, ret.expr, expr_type):
-        # XXX: not really needed (?)
-        # ctx.add_type_error(WrongReturnTypeError(ctx.function_def, ret, ctx.return_type, ctx.partial_function))
+    if not ctx.return_type.type_compare(ctx, ret.expr, expr_type, raise_error=False):
+        ctx.add_type_error(WrongReturnTypeError(ctx.function_def, ctx.return_type, expr_type, ret))
         return False
 
     return True
@@ -1627,15 +1626,23 @@ class UnsupportedNumericTypeError(TypeError):
                                     , tr("this numeric value is not supported in Python 101: {} ({})").format(self.num.value, type(self.num.value)))
 
 class WrongReturnTypeError(TypeError):
-    def __init__(self, in_function, ret, ret_type, partial_function):
+    def __init__(self, in_function, expected_type, ret_type, ret_expr):
         self.in_function = in_function
-        self.ret = ret
+        self.expected_type = expected_type
         self.ret_type = ret_type
-        self.partial_function = partial_function
-
+        self.ret_expr = ret_expr
+        
     def is_fatal(self):
         return True
 
+    def fail_string(self):
+        return "WrongReturnTypeError[{}/{}]@{}:{}".format(self.expected_type, self.ret_type, self.ret_expr.ast.lineno, self.ret_expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Wrong return type"), self.ret_expr.ast.lineno, self.ret_expr.ast.col_offset
+                                    , tr("The declared return type for function '{}' is '{}' but the return expression has incompatible type: {}").format(self.in_function.name, self.expected_type, self.ret_type))
+
+    
 class UnknownFunctionError(TypeError):
     def __init__(self, in_function, call):
         self.in_function = in_function

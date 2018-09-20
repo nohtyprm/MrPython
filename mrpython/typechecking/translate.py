@@ -53,6 +53,8 @@ TRANSLATOR_DICT = {
     , "Wrong number of variables to destruct tuple, expecting {} variables but {} given" : { 'fr' : "J'attends {} variables pour destructurer le n-uplet mais vous en spécifiez {}"}
     , "In Python101 the `asserts` are reserved for test cases, however one assert is present in the body of function '{}'" : { 'fr' : "En Python101 `assert` est réservé pour les jeux de tests, mais vous utilisez `assert` dans le corps de la fonction '{}'" }
     , "Assertion issue" : { 'fr' : "Problème d'assertion" }
+    , "Wrong return type" : { 'fr' : "Type de retour erroné" }
+    , "The declared return type for function '{}' is '{}' but the return expression has incompatible type: {}" : { 'fr' : "Le type de retour déclaré pour la fonction '{}' est '{}' mais l'expression du `return` est de type incompatible: {}" }
 }
 
 def tr(msg):
