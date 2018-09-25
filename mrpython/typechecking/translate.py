@@ -55,6 +55,8 @@ TRANSLATOR_DICT = {
     , "Assertion issue" : { 'fr' : "Problème d'assertion" }
     , "Wrong return type" : { 'fr' : "Type de retour erroné" }
     , "The declared return type for function '{}' is '{}' but the return expression has incompatible type: {}" : { 'fr' : "Le type de retour déclaré pour la fonction '{}' est '{}' mais l'expression du `return` est de type incompatible: {}" }
+    , "Expression problem" : { 'fr' : "Problème d'expression" }
+    , "This expression is in instruction position, the computed value is lost" : { 'fr' : "Cette expression est placée en position d'instruction, la valeur calculée est perdue" }
 }
 
 def tr(msg):

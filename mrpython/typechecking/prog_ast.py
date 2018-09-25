@@ -271,25 +271,28 @@ def parse_instruction(node):
         #print(">>>> not supported")
         return UnsupportedNode(node)
 
-class ENum:
+class Expr:
+    pass
+    
+class ENum(Expr):
     def __init__(self, node):
         self.ast = node
         self.value = node.n
 
-class EStr:
+class EStr(Expr):
     def __init__(self, node):
         self.ast = node
         self.value = node.s
 
-class ETrue:
+class ETrue(Expr):
     def __init__(self, node):
         self.ast = node
 
-class EFalse:
+class EFalse(Expr):
     def __init__(self, node):
         self.ast = node
 
-class ENone:
+class ENone(Expr):
     def __init__(self, node):
         self.ast = node
 
@@ -303,7 +306,7 @@ def parse_constant(node):
 
     raise ValueError("Constant not supported: {} (please report)".format(node.value))
 
-class EVar:
+class EVar(Expr):
     def __init__(self, node):
         self.ast = node
         if isinstance(self.ast, ast.Name):
@@ -325,7 +328,7 @@ class EVar:
         else:
             raise NotImplementedError("Unsupported EVar type (please report): {}".format(self.ast))
 
-class ETuple:
+class ETuple(Expr):
     def __init__(self, node):
         self.ast = node
         self.elements = []
@@ -333,43 +336,43 @@ class ETuple:
             elem = parse_expression(elem_node)
             self.elements.append(elem)
         
-class EAdd:
+class EAdd(Expr):
     def __init__(self, node, left, right):
         self.ast = node
         self.left = left
         self.right = right
 
-class ESub:
+class ESub(Expr):
     def __init__(self, node, left, right):
         self.ast = node
         self.left = left
         self.right = right
 
-class EMult:
+class EMult(Expr):
     def __init__(self, node, left, right):
         self.ast = node
         self.left = left
         self.right = right
 
-class EDiv:
+class EDiv(Expr):
     def __init__(self, node, left, right):
         self.ast = node
         self.left = left
         self.right = right
 
-class EFloorDiv:
+class EFloorDiv(Expr):
     def __init__(self, node, left, right):
         self.ast = node
         self.left = left
         self.right = right
         
-class EMod:
+class EMod(Expr):
     def __init__(self, node, left, right):
         self.ast = node
         self.left = left
         self.right = right
 
-class EPow:
+class EPow(Expr):
     def __init__(self, node, left, right):
         self.ast = node
         self.left = left
@@ -396,12 +399,12 @@ def EBinOp(node):
     else:
         return UnsupportedNode(node)
 
-class EAnd:
+class EAnd(Expr):
     def __init__(self, node, operands):
         self.ast = node
         self.operands = operands
 
-class EOr:
+class EOr(Expr):
     def __init__(self, node, operands):
         self.ast = node
         self.operands = operands
@@ -424,12 +427,12 @@ def EBoolOp(node):
     else:
         return UnsupportedNode(node)
 
-class EUSub:
+class EUSub(Expr):
     def __init__(self, node, operand):
         self.ast = node
         self.operand = operand
 
-class ENot:
+class ENot(Expr):
     def __init__(self, node, operand):
         self.ast = node
         self.operand = operand
@@ -447,7 +450,7 @@ def EUnaryOp(node):
         return UnsupportedNode(node)
 
 
-class ECompare:
+class ECompare(Expr):
     def __init__(self, node, conds):
         self.ast = node
         self.conds = conds
@@ -527,7 +530,7 @@ def parse_function(func_descr):
     #print("parts={}".format(parts))
     return parts
 
-class ECall:
+class ECall(Expr):
     def __init__(self, node):
         self.ast = node
         #print(astpp.dump(node))
@@ -556,7 +559,7 @@ class ECall:
             self.arguments.append(earg)
             #print("---")
 
-class EList:
+class EList(Expr):
     def __init__(self, node):
         self.ast = node
         #print(astpp.dump(node))
@@ -565,13 +568,13 @@ class EList:
             elt_expr = parse_expression(elt)
             self.elements.append(elt_expr)
 
-class Indexing:
+class Indexing(Expr):
     def __init__(self, node):
         self.ast = node
         self.subject = parse_expression(node.value)
         self.index = parse_expression(node.slice.value)
 
-class Slicing:
+class Slicing(Expr):
     def __init__(self, node):
         self.ast = node
         self.subject = parse_expression(node.value)
@@ -600,7 +603,7 @@ class Generator:
         for ifcond in self.ast.ifs:
             self.conditions.append(parse_expression(ifcond))
         
-class EListComp:
+class EListComp(Expr):
     def __init__(self, node):
         self.ast = node
         #print(astpp.dump(node))

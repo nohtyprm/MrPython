@@ -637,6 +637,16 @@ def type_check_While(wnode, ctx):
 
 While.type_check = type_check_While
 
+def type_check_Expr(enode, ctx):
+    expr_type = enode.type_infer(ctx)
+    if expr_type is None:
+        return False
+
+    ctx.add_type_error(ExprAsInstrWarning(enode))
+    return True
+
+Expr.type_check = type_check_Expr
+
 def type_check_ECall(enode, ctx):
     call_type = enode.type_infer(ctx)
     if call_type is None:
@@ -645,6 +655,7 @@ def type_check_ECall(enode, ctx):
         return True
     else: # the return type is not None: it's a warning
         ctx.add_type_error(CallNotNoneError(enode, call_type))
+        return True
 
 ECall.type_check = type_check_ECall
 
@@ -1821,7 +1832,21 @@ class UnknownTypeAliasError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Type name error"), self.lineno, self.col_offset
                                     , tr("I don't find any definition for the type: {}").format(self.unknown_alias))
-    
+
+class ExprAsInstrWarning(TypeError):
+    def __init__(self, enode):
+        self.enode = enode
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "ExprAsInstrWarning@{}:{}".format(self.enode.ast.lineno, self.enode.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Expression problem"), self.enode.ast.lineno, self.enode.ast.col_offset
+                                    , tr("This expression is in instruction position, the computed value is lost"))
+        
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()
     prog.build_from_ast(ast, filename, source)
