@@ -278,6 +278,8 @@ class Console:
     def evaluate_action(self, *args):
         """ Evaluate the expression in the input console """
         expr = self.input_console.get()
+        if not expr:
+            return
         local_interpreter = False
         if self.interpreter is None:
             self.interpreter = InterpreterProxy(self.app.root, self.app.mode, "<<console>>")
