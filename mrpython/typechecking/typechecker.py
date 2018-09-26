@@ -146,7 +146,7 @@ def type_check_Program(prog):
             ctx.add_type_error(WrongFunctionDefError(top_def))
             return ctx
         else:
-            ctx.add_type_error(UnsupportedNodeError(top_def))
+            ctx.add_type_error(UnsupportedTopLevelNodeError(top_def))
             return ctx
 
     # type checking begins here
@@ -1576,6 +1576,22 @@ class UnsupportedNodeError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr('Not-Python101'), self.node.ast.lineno, self.node.ast.col_offset
                                     , tr("this construction is not available in Python101 (try expert mode for standard Python)"))
+
+class UnsupportedTopLevelNodeError(TypeError):
+    def __init__(self, node):
+        self.node = node
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "UnsupportedTopLevelNodeError[{}]@{}:{}".format(str(self.node.ast.__class__.__name__)
+                                                       , self.node.ast.lineno
+                                                       , self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr('Wrong statement'), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("In Python 101 this statement cannot be done outside a function body (try expert mode for standard Python)"))
 
 class WrongFunctionDefError(TypeError):
     def __init__(self, fun_def):

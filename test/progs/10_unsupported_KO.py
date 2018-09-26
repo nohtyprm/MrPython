@@ -1,4 +1,4 @@
-##!FAIL: UnsupportedNodeError[Expr]@3:0
+##!FAIL: UnsupportedTopLevelNodeError[Expr]@3:0
 
 42 + 3
 

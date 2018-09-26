@@ -61,6 +61,9 @@ TRANSLATOR_DICT = {
     , "The function '{}' should have `return` statement(s)" : { 'fr' : "Il n'y a aucun `return` dans la fonction '{}', ce n'est pas normal" }
     , 'Wrong definition' : { 'fr' : "Mauvaise définition" }
     , "The function '{}' has no correct specification." : { 'fr' : "La fonction '{}' n'est pas spécifée correctement." }
+    , 'Wrong statement' : { 'fr' : "Instruction non-supportée" }
+    , "In Python 101 this statement cannot be done outside a function body (try expert mode for standard Python)"
+    : { 'fr' : "En Python101 cette d'instruction ne peut apparaître en dehors du corps d'une fonction (essayez le mode expert pour faire du Python standard)" }
 }
 
 def tr(msg):
