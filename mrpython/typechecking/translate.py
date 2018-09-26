@@ -57,6 +57,8 @@ TRANSLATOR_DICT = {
     , "The declared return type for function '{}' is '{}' but the return expression has incompatible type: {}" : { 'fr' : "Le type de retour déclaré pour la fonction '{}' est '{}' mais l'expression du `return` est de type incompatible: {}" }
     , "Expression problem" : { 'fr' : "Problème d'expression" }
     , "This expression is in instruction position, the computed value is lost" : { 'fr' : "Cette expression est placée en position d'instruction, la valeur calculée est perdue" }
+    , "Return problem" : { 'fr' : "Problème de retour" }
+    , "The function '{}' should have `return` statement(s)" : { 'fr' : "Il n'y a aucun `return` dans la fonction '{}', ce n'est pas normal" }
 }
 
 def tr(msg):

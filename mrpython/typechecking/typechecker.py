@@ -230,18 +230,24 @@ def type_check_FunctionDef(func_def, ctx):
     ctx.register_function_def(func_def, signature.partial)
 
     # Step 3 : type-check body
+    ctx.nb_returns = 0  # counting the number of returns encountered
     for instr in func_def.body:
         if isinstance(instr, UnsupportedNode):
             ctx.add_type_error(UnsupportedNodeError(func_def, instr))
             # we abort the type-checking of this function
+            ctx.nb_returns = 0
             ctx.unregister_function_def()
             return
 
         #print(repr(instr))
         instr.type_check(ctx)
         if ctx.has_error():
+            ctx.nb_returns = 0
             ctx.unregister_function_def()
             return
+
+    if ctx.nb_returns == 0 and not isinstance(signature.ret_type, NoneTypeType):
+        ctx.add_type_error(NoReturnInFunctionError(func_def))
 
     ctx.unregister_function_def()
 
@@ -564,6 +570,7 @@ def fetch_iter_declaration_type(ctx, iter_node):
         return udecl_type
 
 def type_check_Return(ret, ctx):
+    ctx.nb_returns += 1
     expr_type = ret.expr.type_infer(ctx)
     if not expr_type:
         return False
@@ -1847,6 +1854,21 @@ class ExprAsInstrWarning(TypeError):
         report.add_convention_error('warning', tr("Expression problem"), self.enode.ast.lineno, self.enode.ast.col_offset
                                     , tr("This expression is in instruction position, the computed value is lost"))
         
+class NoReturnInFunctionError(TypeError):
+    def __init__(self, fun_def):
+        self.fun_def = fun_def
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "NoReturnInFunctionError[{}]@{}:{}".format(self.fun_def.name, self.fun_def.ast.lineno, self.fun_def.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Return problem"), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
+                                    , tr("The function '{}' should have `return` statement(s)").format(self.fun_def.name))
+    
+
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()
     prog.build_from_ast(ast, filename, source)
