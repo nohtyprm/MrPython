@@ -1462,6 +1462,7 @@ TupleType.type_compare = type_compare_TupleType
 
 BUILTINS_IMPORTS = {
     'len' : function_type_parser("Iterable[α] -> int").content
+    ,'abs' : function_type_parser("Number -> Number").content
     ,'print' : function_type_parser("Ω -> NoneType").content
     ,'range' : function_type_parser("int * int -> Iterable[int]").content
     , '.append' : function_type_parser("list[α] * α -> NoneType").content
