@@ -59,6 +59,8 @@ TRANSLATOR_DICT = {
     , "This expression is in instruction position, the computed value is lost" : { 'fr' : "Cette expression est placée en position d'instruction, la valeur calculée est perdue" }
     , "Return problem" : { 'fr' : "Problème de retour" }
     , "The function '{}' should have `return` statement(s)" : { 'fr' : "Il n'y a aucun `return` dans la fonction '{}', ce n'est pas normal" }
+    , 'Wrong definition' : { 'fr' : "Mauvaise définition" }
+    , "The function '{}' has no correct specification." : { 'fr' : "La fonction '{}' n'est pas spécifée correctement." }
 }
 
 def tr(msg):

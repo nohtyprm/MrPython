@@ -1,4 +1,5 @@
 import os.path, sys
+import ast
 
 if __name__ == "__main__":
     main_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir)
@@ -127,18 +128,28 @@ def type_check_UnsupportedNode(node, ctx):
     print("Error: Type checking not supported for this node")
     import astpp
     print(astpp.dump(node.ast))
-    ctx.add_type_error(UnsupportedNodeError(None, node))
+    ctx.add_type_error(UnsupportedNodeError(node))
 
-    return ctx
+    return False
 
 UnsupportedNode.type_check = type_check_UnsupportedNode
 
 # Takes a program, and returns a
 # (possibly empty) list of type errors
 def type_check_Program(prog):
-    #for top_def in prog.other_top_defs:
-    #    print(top_def)
+    
     ctx = TypingContext(prog) 
+    
+    # we do not type check a program with unsupported top-level nodes
+    for top_def in prog.other_top_defs:
+        if isinstance(top_def.ast, ast.FunctionDef):
+            ctx.add_type_error(WrongFunctionDefError(top_def))
+            return ctx
+        else:
+            ctx.add_type_error(UnsupportedNodeError(top_def))
+            return ctx
+
+    # type checking begins here
 
     # first step : parse all type definitions
     if prog.source_lines is None: # Hackish ...
@@ -235,7 +246,7 @@ def type_check_FunctionDef(func_def, ctx):
     ctx.nb_returns = 0  # counting the number of returns encountered
     for instr in func_def.body:
         if isinstance(instr, UnsupportedNode):
-            ctx.add_type_error(UnsupportedNodeError(func_def, instr))
+            ctx.add_type_error(UnsupportedNodeError(instr))
             # we abort the type-checking of this function
             ctx.nb_returns = 0
             ctx.unregister_function_def()
@@ -684,12 +695,12 @@ Assertion.type_check = type_check_Assertion
 ######################################
 
 def type_infer_UnsupportedNode(node, ctx):
-    print("Error: Type inference for unsupported node")
-    import astpp
-    print(astpp.dump(node.ast))
-    ctx.add_type_error(UnsupportedNodeError(None, node))
+    #print("Error: Type inference for unsupported node")
+    #import astpp
+    #print(astpp.dump(node.ast))
+    ctx.add_type_error(UnsupportedNodeError(node))
 
-    return False
+    return None
 
 
 UnsupportedNode.type_infer = type_infer_UnsupportedNode
@@ -1550,11 +1561,8 @@ class FunctionArityError(TypeError):
 
 
 class UnsupportedNodeError(TypeError):
-    def __init__(self, in_function, node):
-        self.in_function = in_function
+    def __init__(self, node):
         self.node = node
-        #print("Unsupported Node:")
-        #print(astpp.dump(self.node.ast))
 
     def is_fatal(self):
         return False
@@ -1568,6 +1576,24 @@ class UnsupportedNodeError(TypeError):
         report.add_convention_error('error', tr('Not-Python101'), self.node.ast.lineno, self.node.ast.col_offset
                                     , tr("this construction is not available in Python101 (try expert mode for standard Python)"))
 
+class WrongFunctionDefError(TypeError):
+    def __init__(self, fun_def):
+        self.fun_def = fun_def
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "WrongFunctionDefError[{}]@{}:{}".format(str(self.fun_def.ast.name)
+                                                        , self.fun_def.ast.lineno
+                                                        , self.fun_def.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr('Wrong definition'), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
+                                    , tr("The function '{}' has no correct specification.").format(self.fun_def.ast.name))
+
+
+        
 class DisallowedDeclarationError(TypeError):
     def __init__(self, in_function, node):
         self.in_function = in_function
