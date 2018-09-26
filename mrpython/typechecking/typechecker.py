@@ -136,6 +136,8 @@ UnsupportedNode.type_check = type_check_UnsupportedNode
 # Takes a program, and returns a
 # (possibly empty) list of type errors
 def type_check_Program(prog):
+    #for top_def in prog.other_top_defs:
+    #    print(top_def)
     ctx = TypingContext(prog) 
 
     # first step : parse all type definitions
