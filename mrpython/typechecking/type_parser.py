@@ -261,10 +261,13 @@ def build_functype_grammar(grammar):
     
     dom_elem_parser = parsers.Tuple() \
                       .element(grammar.ref('typeexpr')) \
+                      .skip(grammar.ref('nspaces')) \
                       .element(parsers.Optional(parsers.Tuple() \
+                                                .skip(grammar.ref('spaces')) \
                                                 .element(parsers.Choice() \
-                                                         .either(parsers.Token('pow'))
+                                                         .either(parsers.Token('pow')) \
                                                          .orelse(parsers.Token('expr'))) \
+                                                .skip(grammar.ref('spaces')) \
                                                 .element(parsers.Token('natural'))))
 
     def dom_elem_xform_result(result):
