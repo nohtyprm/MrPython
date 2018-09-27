@@ -35,7 +35,7 @@ def type_tokenizer():
     # symbols
     tokenizer.add_rule(tokens.Literal('arrow', "->"))
     tokenizer.add_rule(tokens.Literal('expr', "**"))
-    tokenizer.add_rule(tokens.Char('mult', '*'))
+    tokenizer.add_rule(tokens.Literal('mult', '*'))
     tokenizer.add_rule(tokens.Char('add', '+'))
     tokenizer.add_rule(tokens.Char('pow', '^'))
 
@@ -262,7 +262,9 @@ def build_functype_grammar(grammar):
     dom_elem_parser = parsers.Tuple() \
                       .element(grammar.ref('typeexpr')) \
                       .element(parsers.Optional(parsers.Tuple() \
-                                                .element(parsers.Token('pow')) \
+                                                .element(parsers.Choice() \
+                                                         .either(parsers.Token('pow'))
+                                                         .orelse(parsers.Token('expr'))) \
                                                 .element(parsers.Token('natural'))))
 
     def dom_elem_xform_result(result):
@@ -365,7 +367,6 @@ class TypeParser:
         return parser.parse()
 
     def parse_functype_from_string(self, string):
-        #import pdb ; pdb.set_trace()
         parser = LLParsing(self.functype_grammar)
         parser.tokenizer = self.tokenizer
         self.tokenizer.from_string(string)
@@ -431,4 +432,8 @@ if __name__ == "__main__":
     # function types
     fresult1 = type_parser.parse_functype_from_string("int * float -> bool")
     print(repr(fresult1.content))
+
+    fresult2 = type_parser.parse_functype_from_string("Number**3 -> Number")
+
+    
 
