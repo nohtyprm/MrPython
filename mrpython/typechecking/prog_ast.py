@@ -533,7 +533,7 @@ def parse_function(func_descr):
 class ECall(Expr):
     def __init__(self, node):
         self.ast = node
-        #print(astpp.dump(node))
+        print(astpp.dump(node))
 
         if isinstance(node.func, ast.Name):
             self.receiver = None
@@ -558,6 +558,12 @@ class ECall(Expr):
             earg = parse_expression(arg)
             self.arguments.append(earg)
             #print("---")
+
+def parse_call(node):
+    if isinstance(node.func, (ast.Name, ast.Attribute)):
+        return ECall(node)
+    else:
+        return UnsupportedNode(node)
 
 class EList(Expr):
     def __init__(self, node):
@@ -621,7 +627,7 @@ EXPRESSION_CLASSES = { "Num" : ENum
                        , "BinOp" : EBinOp
                        , "BoolOp" : EBoolOp
                        , "UnaryOp" : EUnaryOp
-                       , "Call" : ECall
+                       , "Call" : parse_call
                        , "Compare" : parse_compare
                        , "List" : EList
                        , "Subscript" : parse_subscript
