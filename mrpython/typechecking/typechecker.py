@@ -998,7 +998,7 @@ def type_infer_ECall(call, ctx):
             check_arity = False
             
     if check_arity and (len(signature.param_types) != len(arguments)):
-        ctx.add_type_error(CallArityError(method_call, arguments, call))
+        ctx.add_type_error(CallArityError(method_call, signature.param_types, arguments, call))
         return None
 
     # step 3 : check the argument types

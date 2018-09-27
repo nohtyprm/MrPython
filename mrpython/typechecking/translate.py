@@ -64,6 +64,7 @@ TRANSLATOR_DICT = {
     , 'Wrong statement' : { 'fr' : "Instruction non-supportée" }
     , "In Python 101 this statement cannot be done outside a function body (try expert mode for standard Python)"
     : { 'fr' : "En Python101 cette d'instruction ne peut apparaître en dehors du corps d'une fonction (essayez le mode expert pour faire du Python standard)" }
+    , "calling '{}' with {} argument(s) but expecting: {}" : { 'fr' : "La fonction '{}' est appelée avec {} argument(s) mais elle en attend : {}" }
 }
 
 def tr(msg):
