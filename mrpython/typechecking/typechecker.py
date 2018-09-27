@@ -146,8 +146,15 @@ def type_check_Program(prog):
             ctx.add_type_error(WrongFunctionDefError(top_def))
             return ctx
         else:
-            ctx.add_type_error(UnsupportedTopLevelNodeError(top_def))
-            return ctx
+            # HACK : top-level commands are allowed (but not checked)
+            if isinstance(top_def.ast, ast.Expr) \
+               and isinstance(top_def.ast.value, ast.Call) \
+               and isinstance(top_def.ast.value.func, ast.Name) \
+               and top_def.ast.value.func.id in { "show_image", "print" }:
+                pass # do nothing
+            else:
+                ctx.add_type_error(UnsupportedTopLevelNodeError(top_def))
+                return ctx
 
     # type checking begins here
 
