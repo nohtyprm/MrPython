@@ -1061,12 +1061,23 @@ def type_infer_ECompare(ecomp, ctx):
 ECompare.type_infer = type_infer_ECompare
 
 def type_check_Condition(cond, ctx, compare):
+    left_right_ok = False
     left_type = cond.left.type_infer(ctx)
     if left_type is None:
         return False
-    if type_expect(ctx, cond.right, left_type, raise_error=False) is None:
+    if type_expect(ctx, cond.right, left_type, raise_error=False) is not None:
+        left_right_ok = True
+
+    right_type = cond.right.type_infer(ctx)
+    if right_type is None:
+        return False
+
+    if left_right_ok:
+        return True
+    elif type_expect(ctx, cond.left, right_type, raise_error=False) is None:
         ctx.add_type_error(CompareConditionError(compare, cond))
         return False
+    
     return True
 
 Condition.type_check = type_check_Condition
