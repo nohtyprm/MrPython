@@ -199,14 +199,27 @@ def type_check_Program(prog):
         #print(fun_def.docstring)
         signature = function_type_parser(fun_def.docstring)
         #print(repr(signature))
+        
+        # HACK : Temporary patch for issue #58 without touching popparser.
+        # We duplicate a signature with no spaces and descriptions deleted after the right arrow, then delete the last character.
+        # If the original signature is valid, the newly created signature will NOT be valid as expected.
+        # Thus, if the signature actually works, we will take over and raise an unknown type alias error instead.
+        _string = fun_def.docstring.strip()  # HACK
+        _signature = function_type_parser(_string[:_string.find("\n", _string.find("->"))].rstrip()[:-1])  # HACK
         if signature.iserror:
             ctx.add_type_error(SignatureParseError(fun_name, fun_def, signature))
         else:
             fun_type, unknown_alias = signature.content.unalias(ctx.type_defs)
+            _fun_type, _unknown_alias = _signature.content.unalias(ctx.type_defs)  # HACK
             if fun_type is None:
                 # position is a little bit ad-hoc
-                ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno+ 1, fun_def.ast.col_offset + 7))
+                ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno + 1, fun_def.ast.col_offset + 7))
                 return ctx
+            elif _fun_type is not None:  # HACK
+                _string = fun_def.docstring  # HACK
+                unknown_alias = _string[_string.find("->")+2:_string.find("\n", _string.find("->"))].lstrip().rstrip()  # HACK
+                ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno + 1, fun_def.ast.col_offset + 7))  # HACK
+                return ctx  # HACK
             else: 
                 ctx.register_function(fun_name, fun_type, fun_def)
 
