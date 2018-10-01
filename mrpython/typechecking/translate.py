@@ -69,6 +69,9 @@ TRANSLATOR_DICT = {
     : { 'fr' : "La signature de la fonction '{}' contient des caractères que je ne comprends pas à la fin: {}" }
     , "Assignment problem" : { 'fr' : "Problème d'affectation" }
     , "This assignment to variable '{}' is forbidden in Python101." : { 'fr' : "Cette affectation de la variable '{}' n'est pas permise en Python101 (uniquement disponible en mode expert)." }
+    , "Expecting type '{}' but found '{}': there is a risk of imprecision (but it's maybe not a bug)" : { 'fr' : "J'attends le type '{}' mais j'ai trouvé '{}': il y a un risque d'imprécision (mais ce n'est peut-être pas une erreur)" }
+    , "Imprecise typing" : { 'fr' : "Typage imprécis" }
+                                                                                                          
 }
 
 def tr(msg):

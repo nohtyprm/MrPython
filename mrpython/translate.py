@@ -42,7 +42,7 @@ TRANSLATOR_DICT = {
     , '==> the program is type-checked (very good)\n' : {'fr' : '==> le programme est bien typé (très bien)\n' }
     # status
     ,"Saving file" : { 'fr' : "Enregistre" }
-    ,"All the {} tests passed with success" : { 'fr' : "Tous les {} tests sont passés avec succès" }
+    ,"All the {} tests passed with success" : { 'fr' : "Les {} tests sont passés avec succès" }
     , "Only one (successful) test found, it's probably not enough" : { 'fr' : "Je n'ai trouvé qu'un seul test, il passe mais ce n'est sans doute pas suffisant" }
     , "There is no test! you have to write tests!" : { 'fr' : "Je ne trouve pas de test, il faut tester vos fonctions !" }
     , "-----\nPython101 convention errors:\n-----\n" : { 'fr' : "-----\nErreurs de convention (Python101) :\n-----\n" }

@@ -1292,6 +1292,10 @@ def type_compare_IntType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, IntType):
         return True
 
+    if isinstance(expr_type, NumberType):
+        ctx.add_type_error(TypeImprecisionWarning(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an int")))
+        return True
+
     if raise_error:
         ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an int")))
 
@@ -1482,6 +1486,7 @@ BUILTINS_IMPORTS = {
     ,'abs' : function_type_parser("Number -> Number").content
     ,'print' : function_type_parser("Ω -> NoneType").content
     ,'range' : function_type_parser("int * int -> Iterable[int]").content
+    , 'int' : function_type_parser("Number -> int").content
     , '.append' : function_type_parser("list[α] * α -> NoneType").content
     # images   ... TODO: the type system is not precise enough (for now)
     , 'draw_line' : function_type_parser("float * float * float * float * Ω -> Image").content
@@ -1710,6 +1715,24 @@ class TypeComparisonError(TypeError):
         report.add_convention_error('error', tr("Incompatible types"), self.expr.ast.lineno, self.expr.ast.col_offset
                                     , tr( "Expecting type '{}' but instead found: {}").format(self.expected_type, self.expr_type))
 
+class TypeImprecisionWarning(TypeError):
+    def __init__(self, in_function, expected_type, expr, expr_type, explain):
+        self.in_function = in_function
+        self.expected_type = expected_type
+        self.expr = expr
+        self.expr_type = expr_type
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "TypeImprecisionWarning[{}/{}]@{}:{}".format(self.expected_type, self.expr_type, self.expr.ast.lineno, self.expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Imprecise typing"), self.expr.ast.lineno, self.expr.ast.col_offset
+                                    , tr("Expecting type '{}' but found '{}': there is a risk of imprecision (but it's maybe not a bug)").format(self.expected_type, self.expr_type))
+
+        
 class UnsupportedNumericTypeError(TypeError):
     def __init__(self, in_function, num):
         self.in_function = in_function
