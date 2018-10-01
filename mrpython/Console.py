@@ -242,7 +242,7 @@ class Console:
         self.hyperlinks.reset()
 
         self.write(report.header, tags=(tag))
-        self.write("\n")
+        #self.write("\n")
         
         has_convention_error = False
         

@@ -1502,6 +1502,8 @@ BUILTINS_IMPORTS = {
     ,'print' : function_type_parser("Ω -> NoneType").content
     ,'range' : function_type_parser("int * int -> Iterable[int]").content
     , 'int' : function_type_parser("Number -> int").content
+    , 'float' : function_type_parser("Number -> float").content
+    , 'round' : function_type_parser("Number -> int").content
     , '.append' : function_type_parser("list[α] * α -> NoneType").content
     # images   ... TODO: the type system is not precise enough (for now)
     , 'draw_line' : function_type_parser("float * float * float * float * Ω -> Image").content

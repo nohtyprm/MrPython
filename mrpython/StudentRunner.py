@@ -235,7 +235,7 @@ class StudentRunner:
                                              + "{}".format(missing) + "\n")
         elif defined_funs:
             # all the functions are tested at least once
-            self.report.add_convention_error('run', tr('All functions tested'), details="==> " + tr("All functions tested (good)") + "\n")
+            self.report.add_convention_error('run', tr('All functions tested'), details="==> " + tr("All functions tested (good)"))
 
         return True
 
