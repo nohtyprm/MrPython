@@ -201,14 +201,22 @@ def type_check_Program(prog):
         #print(repr(signature))
         if signature.iserror:
             ctx.add_type_error(SignatureParseError(fun_name, fun_def, signature))
-        else:
-            fun_type, unknown_alias = signature.content.unalias(ctx.type_defs)
-            if fun_type is None:
-                # position is a little bit ad-hoc
-                ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno+ 1, fun_def.ast.col_offset + 7))
-                return ctx
-            else: 
-                ctx.register_function(fun_name, fun_type, fun_def)
+        else: # HACK: trailing non-whistespace characters at the end of the signature
+            #parsed = fun_def.docstring[0:signature.end_pos.offset:]
+            #print("parsed = '{}'".format(parsed))
+            remaining = fun_def.docstring[signature.end_pos.offset:]
+            #print("remaining = '{}'".format(remaining))
+            if not fun_def.docstring[signature.end_pos.offset-1].isspace() and remaining and not remaining[0].isspace():
+                ctx.add_type_error(SignatureTrailingError(fun_name, fun_def, remaining))
+                # XXX: Not fatal ?
+            else:
+                fun_type, unknown_alias = signature.content.unalias(ctx.type_defs)
+                if fun_type is None:
+                    # position is a little bit ad-hoc
+                    ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno+ 1, fun_def.ast.col_offset + 7))
+                    return ctx
+                else: 
+                    ctx.register_function(fun_name, fun_type, fun_def)
 
     # fourth step : type-check each function
     for (fun_name, fun_def) in ctx.functions.items():
@@ -1523,11 +1531,31 @@ class SignatureParseError(TypeError):
         return "SignatureParseError[{}]@{}:{}".format(self.fun_name, self.fun_def.ast.lineno, self.fun_def.ast.col_offset)
 
     def report(self, report):
-        report.add_convention_error('warning', tr("Signature problem"), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
+        report.add_convention_error('error', tr("Signature problem"), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
                                     , details=tr("I don't understand the signature of function '{}'").format(self.fun_name))
 
     def is_fatal(self):
         return False
+
+class SignatureTrailingError(TypeError):
+    def __init__(self, fun_name, fun_def, remaining):
+        self.fun_name = fun_name
+        self.fun_def = fun_def
+        self.trailing = ""
+        while remaining and not remaining[0].isspace():
+            self.trailing += remaining[0]
+            remaining = remaining[1:]
+
+    def fail_string(self):
+        return "SignatureTrailingError[{}/{}]@{}:{}".format(self.fun_name, self.trailing, self.fun_def.ast.lineno, self.fun_def.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Signature problem"), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
+                                    , details=tr("The signature of function '{}' contains some characters at the end that I do not understand: {}").format(self.fun_name, self.trailing))
+
+    def is_fatal(self):
+        return False
+    
 
 class AssertionInFunctionWarning(TypeError):
     def __init__(self, fun_name, assertion):
