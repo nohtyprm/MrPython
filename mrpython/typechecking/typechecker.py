@@ -227,7 +227,8 @@ def type_check_Program(prog):
     # fifth step: process each global variable definitions
     # (should not be usable from functions so it comes after)
     for global_var in prog.global_vars:
-        global_var.type_check(ctx)
+        #import pdb ; pdb.set_trace()
+        global_var.type_check(ctx, global_scope=True)
         if ctx.fatal_error:
             return ctx
 
@@ -388,7 +389,7 @@ def linearize_tuple_type(tuple_type):
 
     return elem_types
     
-def type_check_Assign(assign, ctx):
+def type_check_Assign(assign, ctx, global_scope = False):
     
     # first let's see if the variables are dead
     mono_assign = False # is this an actual assignment (and not an initialization ?)
@@ -398,9 +399,10 @@ def type_check_Assign(assign, ctx):
             return False
 
         if var.var_name in ctx.local_env:
-            if assign.target.arity() > 1:
+            if assign.target.arity() > 1 or global_scope == True:
                 # Multiple assigment is forbidden (only multi-declaration allowed)
-                ctx.add_type_error(ForbiddenMultiAssign(var.var_name, var))
+                # either for global variables, or for destructuring tuples (distinct from assignment)
+                ctx.add_type_error(ForbiddenMultiAssign(var))
                 return False
             else:
                 mono_assign = True
@@ -1947,6 +1949,21 @@ class NoReturnInFunctionError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Return problem"), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
                                     , tr("The function '{}' should have `return` statement(s)").format(self.fun_def.name))
+
+
+class ForbiddenMultiAssign(TypeError):
+    def __init__(self, var):
+        self.var = var
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "ForbiddenMultiAssign[{}]@{}:{}".format(self.var.var_name, self.var.ast.lineno, self.var.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Assignment problem"), self.var.ast.lineno, self.var.ast.col_offset
+                                    , tr("This assignment to variable '{}' is forbidden in Python101.").format(self.var.var_name))
     
 
 def typecheck_from_ast(ast, filename=None, source=None):

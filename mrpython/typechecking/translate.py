@@ -67,6 +67,8 @@ TRANSLATOR_DICT = {
     , "calling '{}' with {} argument(s) but expecting: {}" : { 'fr' : "La fonction '{}' est appelée avec {} argument(s) mais elle en attend : {}" }
     , "The signature of function '{}' contains some characters at the end that I do not understand: {}"
     : { 'fr' : "La signature de la fonction '{}' contient des caractères que je ne comprends pas à la fin: {}" }
+    , "Assignment problem" : { 'fr' : "Problème d'affectation" }
+    , "This assignment to variable '{}' is forbidden in Python101." : { 'fr' : "Cette affectation de la variable '{}' n'est pas permise en Python101 (uniquement disponible en mode expert)." }
 }
 
 def tr(msg):
