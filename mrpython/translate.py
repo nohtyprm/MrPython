@@ -45,6 +45,10 @@ TRANSLATOR_DICT = {
     ,"All the {} tests passed with success" : { 'fr' : "Tous les {} tests sont passés avec succès" }
     , "Only one (successful) test found, it's probably not enough" : { 'fr' : "Je n'ai trouvé qu'un seul test, il passe mais ce n'est sans doute pas suffisant" }
     , "There is no test! you have to write tests!" : { 'fr' : "Je ne trouve pas de test, il faut tester vos fonctions !" }
+    , "-----\nPython101 convention errors:\n-----\n" : { 'fr' : "-----\nErreurs de convention (Python101) :\n-----\n" }
+    , "\n-----\nCompilation errors (Python interpreter):\n-----\n" : { 'fr' : "\n-----\nErreurs de compilation (Interprète Python) :\n-----\n" }
+    , "\n-----\nExecution errors (Python interpreter):\n-----\n" : { 'fr' : "\n-----\nErreurs à l'exécution (Interprète Python) :\n-----\n" }
+    
 }
 
 def tr(msg):

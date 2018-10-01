@@ -123,11 +123,11 @@ class Console:
 
     SHELL_TITLE = "Python " + python_version() + " Shell"
     TEXT_COLORS_BY_MODE = {
-                            'run':'green',
-                            'error':'red',
-                            'normal':'black',
-                            'warning':'orange'
-                          }
+        'run': 'green'
+        , 'error': 'red'
+        , 'normal': 'black'
+        , 'warning': 'orange'
+        , 'info' : 'blue'    }
 
     def __init__(self, output_parent, input_parent, app):
         """
@@ -212,8 +212,8 @@ class Console:
         self.output_console.tag_config('error', foreground='red')
         self.output_console.tag_config('normal', foreground='black')
         self.output_console.tag_config('warning', foreground='orange')
+        self.output_console.tag_config('info', foreground='brown')
         self.output_console.tag_config('stdout', foreground='gray')
-
 
     def reset_output(self):
         """ Clear all the output console """
@@ -242,24 +242,57 @@ class Console:
         self.hyperlinks.reset()
 
         self.write(report.header, tags=(tag))
+        self.write("\n")
+        
+        has_convention_error = False
+        
         for error in report.convention_errors:
+            if error.severity == "error" and not has_convention_error:
+                self.write(tr("-----\nPython101 convention errors:\n-----\n"), tags='info')
+                has_convention_error = True
+
             hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
             #print("hyper={}".format(hyper))
             #print("hyper_spec={}".format(hyper_spec))
+            self.write("\n")
             self.write(str(error), tags=(error.severity, hyper, hyper_spec))
             self.write("\n")
 
         if not status:
+            has_compilation_error = False
             for error in report.compilation_errors:
+                if error.severity == "error" and not has_compilation_error:
+                    self.write(tr("\n-----\nCompilation errors (Python interpreter):\n-----\n"), tags='info')
+                    has_compilation_error = True
                 hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
+                self.write("\n")
                 self.write(str(error), tags=(error.severity, hyper, hyper_spec))
+                self.write("\n")
+
+
+            has_execution_error = False
             for error in report.execution_errors:
+                if error.severity == "error" and not has_execution_error:
+                    self.write(tr("\n-----\nExecution errors (Python interpreter):\n-----\n"), tags='info')
+                    has_execution_error = True
+                    
                 hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
+                self.write("\n")
                 self.write(str(error), tags=(error.severity, hyper, hyper_spec))
+                self.write("\n")
+
         else:
+            has_execution_error = False
             for error in report.execution_errors:
+                if error.severity == "error" and not has_execution_error:
+                    self.write(tr("\n-----\nExecution errors (Python interpreter):\n-----\n"), tags='info')
+                    has_execution_error = True
+
                 hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
+                self.write("\n")
                 self.write(str(error), tags=(error.severity, hyper, hyper_spec))
+                self.write("\n")
+
 
             self.write(str(report.output), tags=('stdout'))
             if report.result is not None:

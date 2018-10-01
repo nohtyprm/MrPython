@@ -11,7 +11,7 @@ def aire_triangle(a,b,c):
     # p : float
     p = (a + b + c) / 2
 
-    return math.sqrt(p * (p - a) * (p - b) * (p - c))
+return math.sqrt(p * (p - a) * (p - b) * (p - c))
 
 # Jeu de tests (Etape 3)
 assert aire_triangle(3, 4, 5) == 6.0
