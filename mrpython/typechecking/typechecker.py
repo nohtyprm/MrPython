@@ -227,7 +227,6 @@ def type_check_Program(prog):
     # fifth step: process each global variable definitions
     # (should not be usable from functions so it comes after)
     for global_var in prog.global_vars:
-        #import pdb ; pdb.set_trace()
         global_var.type_check(ctx, global_scope=True)
         if ctx.fatal_error:
             return ctx
@@ -1065,9 +1064,12 @@ def type_check_Condition(cond, ctx, compare):
     left_type = cond.left.type_infer(ctx)
     if left_type is None:
         return False
+    # HACK : will see if a warning is raised
+    nb_errors = len(ctx.type_errors)
+
     if type_expect(ctx, cond.right, left_type, raise_error=False) is not None:
         left_right_ok = True
-
+        
     right_type = cond.right.type_infer(ctx)
     if right_type is None:
         return False
@@ -1304,7 +1306,9 @@ def type_compare_IntType(expected_type, ctx, expr, expr_type, raise_error=True):
         return True
 
     if isinstance(expr_type, NumberType):
-        ctx.add_type_error(TypeImprecisionWarning(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an int")))
+        if raise_error:
+            ctx.add_type_error(TypeImprecisionWarning(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an int")))
+        # the comparision is imprecise, but there's no failure
         return True
 
     if raise_error:
