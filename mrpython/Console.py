@@ -371,7 +371,7 @@ class Console:
             self.write_report(ok, report, 'exec')
 
             # Enable or disable the evaluation bar according to the execution status
-            if report.has_compilation_error() or report.has_execution_error():
+            if report.has_compilation_error(): # XXX: only for compilation ? , otherwise:  or report.has_execution_error():
                 # kill the interpreter
                 self.interpreter.kill()
                 self.interpreter = None
