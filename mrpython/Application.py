@@ -23,13 +23,16 @@ class Application:
         import locale
 
         language = None
-        loc = locale.getdefaultlocale()
-        if loc:
-            for el in loc:
-                if str(el).upper().startswith("FR"):
-                    language = "fr"
-                    break
-
+        try: # Work around a possible Python3.7 bug on MacOS
+            loc = locale.getdefaultlocale()
+            if loc:
+                for el in loc:
+                    if str(el).upper().startswith("FR"):
+                        language = "fr"
+                        break
+        except ValueError:
+            pass # language is still None
+                    
         if language is not None:
             set_translator_locale(language)
 
