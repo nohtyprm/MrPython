@@ -221,6 +221,7 @@ class Application:
     def goto_position(self, lineno, col_offset):
         editor = self.editor_list.get_current_editor()
         editor.mark_set("insert", "%d.%d" % (lineno, col_offset))
+        editor.see("insert")
         editor.focus()
 
     # TODO: Continue ?

@@ -25,6 +25,7 @@ class PyEditor(Text):
     def __init__(self, parent, open=False, filename=None):
 
         Text.__init__(self,parent)
+
         self.scroll = scroll=Scrollbar(self)
         scroll['command'] = self.yview
         scroll.pack(side=RIGHT, fill=Y)
