@@ -402,6 +402,7 @@ class Console:
 
             #print("[console] CALLBACK: exec ok ? {}  report={}".format(ok, report))
             self.write_report(ok, report, 'exec')
+            self.output_console.see('1.0')
 
             # Enable or disable the evaluation bar according to the execution status
             if report.has_compilation_error(): # XXX: only for compilation ? , otherwise:  or report.has_execution_error():
