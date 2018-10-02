@@ -51,9 +51,6 @@ class TypingContext:
         if error.is_fatal():
             self.fatal_error = True
 
-    def has_error(self):
-        return len(self.type_errors) > 0
-
     def register_import(self, import_map):
         for (fname, ftype) in import_map.items():
             self.global_env[fname] = ftype
@@ -269,7 +266,7 @@ def type_check_FunctionDef(func_def, ctx):
 
         #print(repr(instr))
         instr.type_check(ctx)
-        if ctx.has_error():
+        if ctx.fatal_error:
             ctx.nb_returns = 0
             ctx.unregister_function_def()
             return
