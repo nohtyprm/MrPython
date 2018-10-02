@@ -263,14 +263,15 @@ class IOBinding:
         # the user should declare a non-ASCII encoding
         try:
             # Wait for the editor window to appear
-            self.editwin.text.update()
+            #self.editwin.text.update()
+            self.editwin.update()
             enc = askstring(
                 "Specify file encoding",
                 "The file's encoding is invalid for Python 3.x.\n"
                 "MRPYTHON will convert it to UTF-8.\n"
                 "What is the current encoding of the file?",
                 initialvalue = locale_encoding,
-                parent = self.editwin.text)
+                parent = self.editwin)
 
             if enc:
                 chars = str(bytes, enc)
