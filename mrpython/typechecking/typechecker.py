@@ -143,11 +143,15 @@ def type_check_Program(prog):
             ctx.add_type_error(WrongFunctionDefError(top_def))
             return ctx
         else:
-            # HACK : top-level commands are allowed (but not checked)
-            if isinstance(top_def.ast, ast.Expr) \
-               and isinstance(top_def.ast.value, ast.Call) \
-               and isinstance(top_def.ast.value.func, ast.Name) \
-               and top_def.ast.value.func.id in { "show_image", "print" }:
+            # HACK : (some) top-level commands are allowed (but not checked)
+            # TODO : more proper type checking of top-level forms
+            #print("top level : {}".format(astpp.dump(top_def.ast)))
+            if (isinstance(top_def.ast, ast.Expr)
+                and isinstance(top_def.ast.value, ast.Call)
+                and (isinstance(top_def.ast.value.func, ast.Name)
+                     and top_def.ast.value.func.id in { "show_image", "print" })
+                or (isinstance(top_def.ast.value.func, ast.Attribute) # random.seed case
+                    and top_def.ast.value.func.attr == "seed")):
                 pass # do nothing
             else:
                 ctx.add_type_error(UnsupportedTopLevelNodeError(top_def))
@@ -1515,11 +1519,18 @@ BUILTINS_IMPORTS = {
 
 MATH_IMPORTS = {
     'math.sqrt' : function_type_parser("Number -> float").content
+    , 'math.floor' : function_type_parser("Number -> int").content
+}
+
+RANDOM_IMPORTS = {
+    'random.random' : function_type_parser("-> float").content
+    , 'random.seed' : function_type_parser("int -> NoneType").content
 }
 
 REGISTERED_IMPORTS = {
     '' : BUILTINS_IMPORTS
     , 'math' : MATH_IMPORTS
+    , 'random' : RANDOM_IMPORTS
 }
 
 
