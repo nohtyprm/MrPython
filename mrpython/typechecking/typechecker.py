@@ -145,7 +145,7 @@ def type_check_Program(prog):
         else:
             # HACK : (some) top-level commands are allowed (but not checked)
             # TODO : more proper type checking of top-level forms
-            print("top level : {}".format(astpp.dump(top_def.ast)))
+            #print("top level : {}".format(astpp.dump(top_def.ast)))
             if (isinstance(top_def.ast, ast.Expr)
                 and isinstance(top_def.ast.value, ast.Call)
                 and ((isinstance(top_def.ast.value.func, ast.Name)
