@@ -284,19 +284,20 @@ FunctionDef.type_check = type_check_FunctionDef
 
 def parse_var_name(declaration):
     vdecl = ""
-    expect_colon = False
+    allow_colon = False
     for i in range(0, len(declaration)):
-        if declaration[i] == ':' and expect_colon:
-            return (vdecl, declaration[i:])
+        if declaration[i] == ':':
+            if allow_colon:
+                return (vdecl, declaration[i:])
+            else:
+                return (None, tr("Missing variable name before ':'"))
         elif not declaration[i].isspace():
-            if expect_colon:
-                return vdecl, declaration[i-1:]
             vdecl += declaration[i]
-        else:
-            if vdecl != "":
-                expect_colon = True
+            allow_colon = True
+        else: # a space character
+            pass
 
-    return None, None
+    return (None, tr("Missing ':' in variable declaration"))
 
 def parse_declaration_type(ctx, lineno):
     """parse a declared type: returns a pair (v, T) with v the declared
@@ -309,10 +310,8 @@ variable name and T its type, or (None, msg, err_cat) with an informational mess
     
     decl_line = decl_line[1:].strip()
     var_name, decl_line = parse_var_name(decl_line)
-
-    #print(var_name)
-    if (not decl_line) or decl_line[0] != ':':
-        return (None, tr("Missing ':' character before variable type declaration"), 'colon')
+    if var_name is None:
+        return (None, decl_line, 'colon')
 
     decl_line = decl_line[1:].strip()
     decl_type = type_expression_parser(decl_line)
