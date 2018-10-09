@@ -14,7 +14,7 @@ def aire_triangle(a,b,c):
     return math.sqrt(p * (p - a) * (p - b) * (p - c))
 
 # Jeu de tests (Etape 3)
-assert aire_triangle(3, 4, 5) == 4.0 # bad test
 assert aire_triangle(13, 14, 15) == 84.0
+assert aire_triangle(3, 4, 5) == 4.0 # bad test
 assert aire_triangle(1, 1, 1) == math.sqrt(3 / 16)
 assert aire_triangle(2, 3, 5) == 0.0  # c'est un triangle plat...

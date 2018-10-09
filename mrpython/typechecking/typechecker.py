@@ -389,14 +389,21 @@ def linearize_tuple_type(tuple_type):
     return elem_types
     
 def type_check_Assign(assign, ctx, global_scope = False):
-    
+
     # first let's see if the variables are dead
     mono_assign = False # is this an actual assignment (and not an initialization ?)
     for var in assign.target.variables():
+        # check that the variable is not "dead"  (out of scope)
         if var.var_name in ctx.dead_variables:
             ctx.add_type_error(DeadVariableUseError(var.var_name, var))
             return False
 
+        # check that the variable is not a parameter
+        if ctx.param_env and var.var_name in ctx.param_env:
+            ctx.add_type_error(ParameterInAssignmentError(var.var_name, var))
+            return False        
+        
+        # distinguish between a first assignment (initialization) or a reassignemt (mono_assign)
         if var.var_name in ctx.local_env:
             if assign.target.arity() > 1 or global_scope == True:
                 # Multiple assigment is forbidden (only multi-declaration allowed)
@@ -1876,7 +1883,7 @@ class DeadVariableUseError(TypeError):
         self.node = node
 
     def is_fatal(self):
-        return False
+        return True
 
     def fail_string(self):
         return "DeadVariableUseError[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
@@ -1885,6 +1892,22 @@ class DeadVariableUseError(TypeError):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
                                     , tr("Forbidden use of a variable that is not in scope (Python101 scoping rule)"))
 
+class ParameterInAssignmentError(TypeError):
+    def __init__(self, var_name, node):
+        self.var_name = var_name
+        self.node = node
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "ParameterInAssignmentError[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("Forbidden use of parameter '{}' in assignment").format(self.var_name))
+
+        
 class IndexingError(TypeError):
     def __init__(self, indexing, subject_type):
         self.indexing = indexing
