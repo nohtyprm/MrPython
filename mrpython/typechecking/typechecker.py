@@ -489,6 +489,12 @@ def type_check_For(for_node, ctx):
             ctx.add_type_error(DeadVariableUseError(var.var_name, var))
             return False
 
+        # check that the variable is not a parameter
+        if ctx.param_env and var.var_name in ctx.param_env:
+            ctx.add_type_error(ParameterInAssignmentError(var.var_name, var))
+            return False        
+
+
         if var.var_name in ctx.local_env:
             ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
             return False
@@ -1220,6 +1226,10 @@ def type_infer_EListComp(list_comp, ctx):
                     ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
                     ctx.pop_parent()
                     return None
+                # check that the variable is not a parameter
+                elif ctx.param_env and var.var_name in ctx.param_env:
+                    ctx.add_type_error(ParameterInAssignmentError(var.var_name, var))
+                    return None
                 elif var.var_name != "_":
                     ctx.local_env[var.var_name] = (iter_elem_type, ctx.fetch_scope_mode())
             else: # tuple destruct
@@ -1241,6 +1251,10 @@ def type_infer_EListComp(list_comp, ctx):
                         ctx.add_type_error(DeadVariableUseError(var.var_name, var))
                         ctx.pop_parent()
                         return None
+                    # check that the variable is not a parameter
+                    elif ctx.param_env and var.var_name in ctx.param_env:
+                        ctx.add_type_error(ParameterInAssignmentError(var.var_name, var))
+                        return None 
                     elif var.var_name in ctx.local_env:
                         ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
                         ctx.pop_parent()
