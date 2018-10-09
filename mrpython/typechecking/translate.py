@@ -24,7 +24,7 @@ TRANSLATOR_DICT = {
     , "this construction is not available in Python101 (try expert mode for standard Python)"
     : { 'fr' : "cette construction n'est pas disponible en Python101 (vous pouvez essayer le mode expert pour faire du Python standard)" }
     , "Declaration problem" : { 'fr' : 'Problème de déclaration'}
-    , "Missing variable declaration '{}'" : { 'fr' : "Il manque la declaration de la variable '{}'" }
+    , "Missing variable declaration" : { 'fr' : "La déclaration de variable est manquante." }
     , "Wrong variable name in declaration, it should be '{}'" : { 'fr' : "le nom de variable est erroné dans la déclaration, cela devrait être '{}'"}
     , "Missing ':' character before variable type declaration" : { 'fr' : "il manque le caractère ':' avant le type de la variable"}
     , "I don't understand the declared type for variable '{}'" : { 'fr' : "je ne comprends pas le type déclaré pour la variable '{}'"}
