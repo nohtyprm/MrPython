@@ -1543,6 +1543,9 @@ BUILTINS_IMPORTS = {
     ,'range' : function_type_parser("int * int -> Iterable[int]").content
     , 'int' : function_type_parser("Ω -> int").content
     , 'float' : function_type_parser("Ω -> float").content
+    , 'str' : function_type_parser("Ω -> str").content
+    , 'ord' : function_type_parser("str -> int").content
+    , 'chr' : function_type_parser("int -> str").content
     , 'round' : function_type_parser("Number -> int").content
     , '.append' : function_type_parser("list[α] * α -> NoneType").content
     # images   ... TODO: the type system is not precise enough (for now)
