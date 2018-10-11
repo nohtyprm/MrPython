@@ -813,10 +813,6 @@ def type_infer_EAdd(expr, ctx):
         ctx.add_type_error(TypeComparisonError(ctx.function_def, ListType(), expr.left, left_type,
                                                tr("Expecting a list")))
         return None
-            
-    
-
-        
 
 EAdd.type_infer = type_infer_EAdd
 
@@ -848,6 +844,24 @@ EUSub.type_infer = type_infer_EUSub
 
 
 def type_infer_EMult(expr, ctx):
+
+    #import pdb ; pdb.set_trace()
+
+    left_type = expr.left.type_infer(ctx)
+    if not left_type:
+        return None
+
+    # first case if the left operand is a string
+
+    if isinstance(left_type, StrType):
+        right_type = type_expect(ctx, expr.right, IntType())
+        if not right_type:
+            return None
+        else:
+            return StrType()
+
+    # second case : the normal multiplication for numbers
+
     left_type = type_expect(ctx, expr.left, NumberType())
     if not left_type:
         return None
@@ -1527,8 +1541,8 @@ BUILTINS_IMPORTS = {
     ,'abs' : function_type_parser("Number -> Number").content
     ,'print' : function_type_parser("Ω -> NoneType").content
     ,'range' : function_type_parser("int * int -> Iterable[int]").content
-    , 'int' : function_type_parser("Number -> int").content
-    , 'float' : function_type_parser("Number -> float").content
+    , 'int' : function_type_parser("Ω -> int").content
+    , 'float' : function_type_parser("Ω -> float").content
     , 'round' : function_type_parser("Number -> int").content
     , '.append' : function_type_parser("list[α] * α -> NoneType").content
     # images   ... TODO: the type system is not precise enough (for now)
