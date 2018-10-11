@@ -257,6 +257,33 @@ def build_typeexpr_grammar(grammar=None):
 
     return grammar
 
+def build_vartype_grammar(grammar):
+    var_parser = parsers.Tuple() \
+                          .element(grammar.ref('typeexpr')) \
+                          .skip(grammar.ref('spaces')) \
+                          .element(parsers.Optional(parsers.Tuple() \
+                                                    .skip(parsers.Token('add')) \
+                                                    .skip(grammar.ref('spaces')) \
+                                                    .element(parsers.Token('NoneType_type'))))
+
+    def var_parser_xform_result(result):
+        base_type = result.content[0].content
+        if result.content[1].content is not None:
+            result.content = OptionType(base_type, annotation=result)
+        else:
+            result.content = base_type
+
+        return result
+
+    var_parser.xform_result = var_parser_xform_result
+
+    grammar.register('var_type', var_parser)
+
+    grammar.entry = var_parser
+
+    return grammar
+    
+
 def build_functype_grammar(grammar):
     
     dom_elem_parser = parsers.Tuple() \
@@ -361,6 +388,7 @@ class TypeParser:
     def __init__(self):
         self.tokenizer = type_tokenizer()
         self.typeexpr_grammar = build_typeexpr_grammar()
+        self.vartype_grammar = build_vartype_grammar(build_typeexpr_grammar())
         self.functype_grammar = build_functype_grammar(build_typeexpr_grammar())
 
     def parse_typeexpr_from_string(self, string):
@@ -368,6 +396,12 @@ class TypeParser:
         parser.tokenizer = self.tokenizer
         self.tokenizer.from_string(string)
         return parser.parse()
+
+    def parse_vartype_from_string(self, string):
+        parser = LLParsing(self.vartype_grammar)
+        parser.tokenizer = self.tokenizer
+        self.tokenizer.from_string(string)
+        return parser.parse()        
 
     def parse_functype_from_string(self, string):
         parser = LLParsing(self.functype_grammar)
@@ -382,6 +416,10 @@ def function_type_parser(string):
 def type_expression_parser(string):
     parser = TypeParser()
     return parser.parse_typeexpr_from_string(string)
+
+def var_type_parser(string):
+    parser = TypeParser()
+    return parser.parse_vartype_from_string(string)
 
 TYPE_DEF_REGEXP = re.compile(r"\A#[ \t]+type[ \t]+([a-zA-Z][a-zA-Z_0-9]*)[ \t]*=[ \t]*(.*)$")
 

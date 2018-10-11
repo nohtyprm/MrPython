@@ -13,13 +13,13 @@ if __name__ == "__main__":
 
     from prog_ast import *
     from type_ast import *
-    from type_parser import (type_expression_parser, function_type_parser, type_def_parser)
+    from type_parser import (type_expression_parser, function_type_parser, var_type_parser, type_def_parser)
 
     from translate import tr
 else:
     from .prog_ast import *
     from .type_ast import *
-    from .type_parser import (type_expression_parser, function_type_parser, type_def_parser)
+    from .type_parser import (type_expression_parser, function_type_parser, var_type_parser, type_def_parser)
 
     from .translate import tr
 
@@ -314,7 +314,7 @@ variable name and T its type, or (None, msg, err_cat) with an informational mess
         return (None, decl_line, 'colon')
 
     decl_line = decl_line[1:].strip()
-    decl_type = type_expression_parser(decl_line)
+    decl_type = var_type_parser(decl_line)
     #print("rest='{}'".format(decl_line[decl_type.end_pos.offset:]))
     if decl_type.iserror: # or decl_line[decl_type.end_pos.offset:]!='': (TODO some sanity check ?)
         return (None, tr("I don't understand the declared type for variable '{}'").format(var_name), 'parse')
@@ -393,6 +393,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
     # first let's see if the variables are dead
     mono_assign = False # is this an actual assignment (and not an initialization ?)
     for var in assign.target.variables():
+
         # check that the variable is not "dead"  (out of scope)
         if var.var_name in ctx.dead_variables:
             ctx.add_type_error(DeadVariableUseError(var.var_name, var))
@@ -424,6 +425,10 @@ def type_check_Assign(assign, ctx, global_scope = False):
     # here we consider an initialization and not an actual assignment
     
     # next fetch the declared types  (only required for mono-variables)
+
+    # for var in assign.target.variables():
+    #     if var.var_name == 'res':
+    #         import pdb ; pdb.set_trace()
 
     declared_types = fetch_assign_declaration_types(ctx, assign.target, True if assign.target.arity() == 1 else False)
     if declared_types is None:
