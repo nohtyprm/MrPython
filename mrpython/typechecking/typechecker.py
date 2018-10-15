@@ -2130,6 +2130,23 @@ def typecheck_from_file(filename):
     ctx = prog.type_check()
     return ctx
 
+class IterVariableInEnvError(TypeError):
+    def __init__(self, var_name, node):
+        self.var_name = var_name
+        self.node = node
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "IterVariableInEnvError[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("The iterator variable '{}' is already declared").format(self.var_name))
+
+
+
 if __name__ == '__main__':
 
     ctx = typecheck_from_file("../../test/progs/01_aire_KO_14.py")

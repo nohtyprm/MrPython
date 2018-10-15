@@ -72,7 +72,8 @@ TRANSLATOR_DICT = {
     , "Expecting type '{}' but found '{}': there is a risk of imprecision (but it's maybe not a bug)" : { 'fr' : "J'attends le type '{}' mais j'ai trouvé '{}': il y a un risque d'imprécision (mais ce n'est peut-être pas une erreur)" }
     , "Imprecise typing" : { 'fr' : "Typage imprécis" }
     , "Forbidden use of parameter '{}' in assignment" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé dans une affectation (ou initialisation)" }
-    , "the arguments of `range` are incorrect." : { 'fr' : 'les arguments de `range` sont incorrects.' }
+    , "the arguments of `range` are incorrect." : { 'fr' : 'les arguments de `range` sont incorrects.'  }
+    , "The iterator variable '{}' is already declared" : { 'fr' : "La variable d'itération '{}' est déjà déclarée" }
 }
 
 def tr(msg):
