@@ -559,8 +559,33 @@ class ECall(Expr):
             self.arguments.append(earg)
             #print("---")
 
+class ERange(Expr):
+    def __init__(self, node):
+
+        self.ast = node
+        self.start = None
+        if len(node.args) >= 1:
+            self.start = parse_expression(node.args[0])
+        self.stop = None
+        if len(node.args) >= 2:
+            self.stop = parse_expression(node.args[1])
+        self.step = None
+        if len(node.args) == 3:
+            self.step = parse_expression(node.args[1])
+        if len(node.args) > 3:
+            self.start = None
+            self.stop = None
+            self.step = None
+
+        if self.start is not None and self.stop is None:
+            self.stop = self.start
+            self.start = None
+
+
 def parse_call(node):
-    if isinstance(node.func, (ast.Name, ast.Attribute)):
+    if isinstance(node.func, ast.Name) and node.func.id == 'range':
+        return ERange(node)
+    elif isinstance(node.func, (ast.Name, ast.Attribute)):
         return ECall(node)
     else:
         return UnsupportedNode(node)
