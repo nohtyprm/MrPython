@@ -1173,9 +1173,13 @@ def type_infer_EList(lst, ctx):
         if lst_type is None:
             lst_type = element_type
         else:
-            if not lst_type.type_compare(ctx, element, element_type, raise_error=False):
-                ctx.add_type_error(HeterogeneousElementError('list', lst, lst_type, element_type, element))
-                return None
+            if (isinstance(lst_type, (IntType, FloatType, NumberType)) 
+                and isinstance(element_type, (IntType, FloatType, NumberType))):
+                lst_type = infer_number_type(ctx, lst_type, element_type)
+            else: 
+                if not lst_type.type_compare(ctx, element, element_type, raise_error=False):
+                    ctx.add_type_error(HeterogeneousElementError('list', lst, lst_type, element_type, element))
+                    return None
 
     return ListType(lst_type)
 
