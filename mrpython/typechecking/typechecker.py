@@ -426,10 +426,6 @@ def type_check_Assign(assign, ctx, global_scope = False):
     
     # next fetch the declared types  (only required for mono-variables)
 
-    # for var in assign.target.variables():
-    #     if var.var_name == 'res':
-    #         import pdb ; pdb.set_trace()
-
     declared_types = fetch_assign_declaration_types(ctx, assign.target, True if assign.target.arity() == 1 else False)
     if declared_types is None:
         declared_types = dict()
@@ -713,6 +709,16 @@ def type_check_ECall(enode, ctx):
 
 ECall.type_check = type_check_ECall
 
+def type_check_ERange(erange, ctx):
+    erange_type = erange.type_infer(ctx)
+    if erange_type is None:
+        return False
+    # the return type is not None: it's a warning
+    ctx.add_type_error(CallNotNoneError(erange, erange_type))
+    return True
+
+ERange.type_check = type_check_ERange
+
 def type_check_Assertion(assertion, ctx):
     # always generate a warning for asserts in functions
     ctx.add_type_error(AssertionInFunctionWarning(ctx.function_def.name, assertion))
@@ -844,8 +850,6 @@ EUSub.type_infer = type_infer_EUSub
 
 
 def type_infer_EMult(expr, ctx):
-
-    #import pdb ; pdb.set_trace()
 
     left_type = expr.left.type_infer(ctx)
     if not left_type:
@@ -1082,6 +1086,29 @@ def type_infer_ECall(call, ctx):
 
 ECall.type_infer = type_infer_ECall
 
+
+def type_infer_ERange(erange, ctx):
+    if erange.start is None and erange.stop is None:
+        ctx.add_type_error(ERangeArgumentError(erange))
+        return None
+
+    if erange.start is not None:
+        start_type = type_expect(ctx, erange.start, IntType())
+        if start_type is None:
+            return None
+
+    stop_type = type_expect(ctx, erange.stop, IntType())
+    if stop_type is None:
+        return None
+
+    if erange.step:
+        if type_expect(ctx, erange.step, IntType()) is None:
+            return None
+
+    return IterableType(IntType())
+
+ERange.type_infer = type_infer_ERange
+
 def type_infer_ECompare(ecomp, ctx):
     for cond in ecomp.conds:
         if not cond.type_check(ctx, ecomp):
@@ -1146,9 +1173,13 @@ def type_infer_EList(lst, ctx):
         if lst_type is None:
             lst_type = element_type
         else:
-            if not lst_type.type_compare(ctx, element, element_type, raise_error=False):
-                ctx.add_type_error(HeterogeneousElementError('list', lst, lst_type, element_type, element))
-                return None
+            if (isinstance(lst_type, (IntType, FloatType, NumberType)) 
+                and isinstance(element_type, (IntType, FloatType, NumberType))):
+                lst_type = infer_number_type(ctx, lst_type, element_type)
+            else: 
+                if not lst_type.type_compare(ctx, element, element_type, raise_error=False):
+                    ctx.add_type_error(HeterogeneousElementError('list', lst, lst_type, element_type, element))
+                    return None
 
     return ListType(lst_type)
 
@@ -1540,7 +1571,7 @@ BUILTINS_IMPORTS = {
     'len' : function_type_parser("Iterable[α] -> int").content
     ,'abs' : function_type_parser("Number -> Number").content
     ,'print' : function_type_parser("Ω -> NoneType").content
-    ,'range' : function_type_parser("int * int -> Iterable[int]").content
+    # ,'range' : function_type_parser("int * int -> Iterable[int]").content  # range is an expression now
     , 'int' : function_type_parser("Ω -> int").content
     , 'float' : function_type_parser("Ω -> float").content
     , 'str' : function_type_parser("Ω -> str").content
@@ -1859,7 +1890,7 @@ class CallArityError(TypeError):
         return True
 
     def fail_string(self):
-        return "CallArityError[{}:{}/{}]@{}:{}".format(self.call.fun_name, len(self.param_types), len(self.arguments), self.arg.ast.lineno, self.arg.ast.col_offset)
+        return "CallArityError[{}:{}/{}]@{}:{}".format(self.call.fun_name, len(self.param_types), len(self.arguments), self.call.ast.lineno, self.call.ast.col_offset)
 
     def report(self, report):
         report.add_convention_error('error', tr("Call problem"), self.call.ast.lineno, self.call.ast.col_offset
@@ -2072,6 +2103,21 @@ class ForbiddenMultiAssign(TypeError):
                                     , tr("This assignment to variable '{}' is forbidden in Python101.").format(self.var.var_name))
     
 
+
+class ERangeArgumentError(TypeError):
+    def __init__(self, erange):
+        self.erange = erange
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "ERangeArgumentError@{}:{}".format(self.erange.ast.lineno, self.erange.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Range problem"), self.erange.ast.lineno, self.erange.ast.col_offset
+                                    , tr("the arguments of `range` are incorrect."))
+
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()
     prog.build_from_ast(ast, filename, source)
@@ -2083,6 +2129,23 @@ def typecheck_from_file(filename):
     prog.build_from_file(filename)
     ctx = prog.type_check()
     return ctx
+
+class IterVariableInEnvError(TypeError):
+    def __init__(self, var_name, node):
+        self.var_name = var_name
+        self.node = node
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "IterVariableInEnvError[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("The iterator variable '{}' is already declared").format(self.var_name))
+
+
 
 if __name__ == '__main__':
 
