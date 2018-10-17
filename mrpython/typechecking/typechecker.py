@@ -928,19 +928,19 @@ def type_infer_EMod(expr, ctx):
 EMod.type_infer = type_infer_EMod
 
 def type_infer_EPow(expr, ctx):
-    target_type = expr.left.type_infer(ctx)
-    if target_type is None:
+    left_type = type_expect(ctx, expr.left, NumberType())
+    if not left_type:
         return None
 
-    if isinstance(target_type, IntType) \
-       or isinstance(target_type, FloatType) \
-       or isinstance(target_type, NumberType):
-        exponent_type = type_expect(ctx, expr.right, IntType())
-        if exponent_type is None:
-            return None
-        return IntType()
-    else: # not a numeric type
-       return type_expect(ctx, expr.left, NumberType())
+    right_type = type_expect(ctx, expr.right, NumberType())
+    if not right_type:
+        return None
+
+    pow_type = infer_number_type(ctx, left_type, right_type)
+    if not pow_type:
+        return None
+
+    return pow_type
 
 EPow.type_infer = type_infer_EPow
 
