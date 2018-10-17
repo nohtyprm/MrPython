@@ -40,8 +40,7 @@ TRANSLATOR_DICT = {
     , "Expecting type '{}' but instead found: {}" : { 'fr' : "j'attendais le type '{}' mais cette expression est plutôt de type: {}"}
     , "Comparison error" : { 'fr' : "Erreur de comparaison"}
     , "The two operands of the comparision should have the same type" : { 'fr' : "Les deux opérandes de la comparaison devraient être du même type"}
-    , "Bad variable" : { 'fr' : "Mauvaise utilisation de variable"}
-    , "Forbidden use of a variable that is not in scope (Python101 scoping rule)" : { 'fr' : "Il n'est pas autorisé en Python101 d'utiliser cette variable dont la portée est erronée" }
+    , "Bad variable" : { 'fr' : "Problème de variable"}
     , "Bad indexing" : { 'fr' : "Problème d'indexation" }
     , "One can only index a sequence or a dictionnary, not a '{}'" : { 'fr' : "On ne peut indexer qu'une séquence ou un dictionnaire, pas un '{}'" }
     , "Bad index" : { 'fr' : "Erreur d'index"}
@@ -74,6 +73,10 @@ TRANSLATOR_DICT = {
     , "Forbidden use of parameter '{}' in assignment" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé dans une affectation (ou initialisation)" }
     , "the arguments of `range` are incorrect." : { 'fr' : 'les arguments de `range` sont incorrects.'  }
     , "The iterator variable '{}' is already declared" : { 'fr' : "La variable d'itération '{}' est déjà déclarée" }
+    , "Forbidden use of parameter '{}' as iteration variable" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé comme variable d'itération" }
+    , "Forbidden use of parameter '{}' as comprehension variable" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé comme variable de compréhension" }
+    , "Forbidden use of a \"dead\" variable name '{}' (Python101 rule)" : { 'fr' : "Il n'est pas autorisé en Python101 d'utiliser cette variable car le nom '{}' est déjà utilisé dans la fonction." }
+    , "Forbidden use of variable '{}' that is not in scope (Python101 scoping rule)" : { 'fr' : "La variable '{}' ne peut-être utilisée ici (règle de portée de Python101)." }
 }
 
 def tr(msg):

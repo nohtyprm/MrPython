@@ -396,7 +396,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
 
         # check that the variable is not "dead"  (out of scope)
         if var.var_name in ctx.dead_variables:
-            ctx.add_type_error(DeadVariableUseError(var.var_name, var))
+            ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
             return False
 
         # check that the variable is not a parameter
@@ -487,12 +487,12 @@ def type_check_For(for_node, ctx):
     # first let's see if the iter variables are dead or in the local environment
     for var in for_node.target.variables():
         if var.var_name in ctx.dead_variables:
-            ctx.add_type_error(DeadVariableUseError(var.var_name, var))
+            ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
             return False
 
         # check that the variable is not a parameter
         if ctx.param_env and var.var_name in ctx.param_env:
-            ctx.add_type_error(ParameterInAssignmentError(var.var_name, var))
+            ctx.add_type_error(ParameterInForError(var.var_name, var))
             return False        
 
 
@@ -1269,7 +1269,7 @@ def type_infer_EListComp(list_comp, ctx):
             if generator.target.arity() == 1:
                 var = generator.target.variables()[0]
                 if var.var_name in ctx.dead_variables:
-                    ctx.add_type_error(DeadVariableUseError(var.var_name, var))
+                    ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
                     ctx.pop_parent()
                     return None
                 elif var.var_name in ctx.local_env:
@@ -1278,7 +1278,7 @@ def type_infer_EListComp(list_comp, ctx):
                     return None
                 # check that the variable is not a parameter
                 elif ctx.param_env and var.var_name in ctx.param_env:
-                    ctx.add_type_error(ParameterInAssignmentError(var.var_name, var))
+                    ctx.add_type_error(ParameterInCompError(var.var_name, var))
                     return None
                 elif var.var_name != "_":
                     ctx.local_env[var.var_name] = (iter_elem_type, ctx.fetch_scope_mode())
@@ -1298,12 +1298,12 @@ def type_infer_EListComp(list_comp, ctx):
 
                 for (i, var) in zip(range(0, len(generator.target.variables())), generator.target.variables()):
                     if var.var_name in ctx.dead_variables:
-                        ctx.add_type_error(DeadVariableUseError(var.var_name, var))
+                        ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
                         ctx.pop_parent()
                         return None
                     # check that the variable is not a parameter
                     elif ctx.param_env and var.var_name in ctx.param_env:
-                        ctx.add_type_error(ParameterInAssignmentError(var.var_name, var))
+                        ctx.add_type_error(ParameterInCompError(var.var_name, var))
                         return None 
                     elif var.var_name in ctx.local_env:
                         ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
@@ -1957,7 +1957,22 @@ class DeadVariableUseError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
-                                    , tr("Forbidden use of a variable that is not in scope (Python101 scoping rule)"))
+                                    , tr("Forbidden use of variable '{}' that is not in scope (Python101 scoping rule)").format(self.var_name))
+
+class DeadVariableDefineError(TypeError):
+    def __init__(self, var_name, node):
+        self.var_name = var_name
+        self.node = node
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "DeadVariableDefineError[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("Forbidden use of a \"dead\" variable name '{}' (Python101 rule)").format(self.var_name))
 
 class ParameterInAssignmentError(TypeError):
     def __init__(self, var_name, node):
@@ -1973,6 +1988,36 @@ class ParameterInAssignmentError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
                                     , tr("Forbidden use of parameter '{}' in assignment").format(self.var_name))
+
+class ParameterInForError(TypeError):
+    def __init__(self, var_name, node):
+        self.var_name = var_name
+        self.node = node
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "ParameterInForError[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("Forbidden use of parameter '{}' as iteration variable").format(self.var_name))
+
+class ParameterInCompError(TypeError):
+    def __init__(self, var_name, node):
+        self.var_name = var_name
+        self.node = node
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "ParameterInCompError[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("Forbidden use of parameter '{}' as comprehension variable").format(self.var_name))
 
         
 class IndexingError(TypeError):
