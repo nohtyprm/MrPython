@@ -567,7 +567,7 @@ class OptionType(TypeAST):
         nelem_type = self.elem_type.rename_type_variables(rmap)
         return OptionType(nelem_type, self.annotation if self.annotated else None)
 
-    def susbt(self, type_env):
+    def subst(self, type_env):
         return OptionType(self.elem_type.subst(type_env), self.annotation if self.annotated else None)
 
     def unalias(self, type_defs):
@@ -585,7 +585,7 @@ class OptionType(TypeAST):
         return isinstance(other, OptionType) and other.elem_type == self.elem_type
 
     def __str__(self):
-        return "Option[{}]".format(str(self.elem_type))
+        return "{} + NoneType".format(str(self.elem_type))
 
     def __repr__(self):
         return "OptionType({})".format(repr(self.elem_type))
