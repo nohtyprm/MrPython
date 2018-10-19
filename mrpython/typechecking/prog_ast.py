@@ -190,7 +190,6 @@ def build_lhs_destruct(node):
 class Assign:
     def __init__(self, node):
         self.ast = node
-        #print(astpp.dump(node))
 
         self.target = build_lhs_destruct(self.ast.targets[0])
 
@@ -199,7 +198,6 @@ class Assign:
 class For:
     def __init__(self, node):
         self.ast = node
-        #print(astpp.dump(node))
 
         self.target = build_lhs_destruct(self.ast.target)
 
@@ -213,13 +211,11 @@ class For:
 class Return:
     def __init__(self, node):
         self.ast = node
-        #print(astpp.dump(node))
         self.expr = parse_expression(self.ast.value)
 
 class If:
     def __init__(self, node):
         self.ast = node
-        #print(astpp.dump(node))
         self.cond = parse_expression(self.ast.test)
         self.body = []
         for instr in self.ast.body:
@@ -233,7 +229,6 @@ class If:
 class While:
     def __init__(self, node):
         self.ast = node
-        #print(astpp.dump(node))
         self.cond = parse_expression(self.ast.test)
         self.body = []
         for instr in self.ast.body:
@@ -243,7 +238,6 @@ class While:
 class Assertion:
     def __init__(self, node):
         self.ast = node
-        #print(astpp.dump(node))
         self.test = parse_expression(self.ast.test)
             
 def parse_expression_as_instruction(node):
