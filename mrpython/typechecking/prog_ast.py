@@ -239,6 +239,12 @@ class Assertion:
     def __init__(self, node):
         self.ast = node
         self.test = parse_expression(self.ast.test)
+
+class With:
+    def __init__(self, node):
+        print(astpp.dump(node))
+        self.ast = node
+        raise NotImplementedError()
             
 def parse_expression_as_instruction(node):
     # XXX: do something here or way until typing for
@@ -253,6 +259,7 @@ INSTRUCTION_CLASSES = {"Assign" : Assign
                        , "Expr" : parse_expression_as_instruction
                        , "For" : For
                        , "Assert" : Assertion
+                       , "With" : With
 }
 
 def parse_instruction(node):
