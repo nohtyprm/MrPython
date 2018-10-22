@@ -172,9 +172,10 @@ def type_check_Program(prog):
             elif type_name in ctx.type_defs:
                 ctx.add_type_error(DuplicateTypeDefError(i+1, type_name))
             else:
+                #import pdb ; pdb.set_trace()
                 type_def, unknown_alias = parse_result.content.unalias(ctx.type_defs)
                 if type_def is None:
-                    ctx.add_type_error(UnknownTypeAliasError(parse_result.content, unknown_alias, i, char_pos))
+                    ctx.add_type_error(UnknownTypeAliasError(parse_result.content, unknown_alias, i+1, parse_result.start_pos.char_pos))
                     return ctx
                 else:
                     ctx.type_defs[type_name] = type_def

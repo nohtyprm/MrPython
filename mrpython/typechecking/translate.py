@@ -77,6 +77,8 @@ TRANSLATOR_DICT = {
     , "Forbidden use of parameter '{}' as comprehension variable" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé comme variable de compréhension" }
     , "Forbidden use of a \"dead\" variable name '{}' (Python101 rule)" : { 'fr' : "Il n'est pas autorisé en Python101 d'utiliser cette variable car le nom '{}' est déjà utilisé dans la fonction." }
     , "Forbidden use of variable '{}' that is not in scope (Python101 scoping rule)" : { 'fr' : "La variable '{}' ne peut-être utilisée ici (règle de portée de Python101)." }
+    , "Type name error" : { 'fr' : "Erreur de type nommé" }
+    , "I don't find any definition for the type: {}" : { 'fr' : "Je ne trouve pas de définition pour le type: {}" }
 }
 
 def tr(msg):
