@@ -1594,6 +1594,7 @@ BUILTINS_IMPORTS = {
 MATH_IMPORTS = {
     'math.sqrt' : function_type_parser("Number -> float").content
     , 'math.floor' : function_type_parser("Number -> int").content
+    , 'math.ceil' : function_type_parser("Number -> int").content
 }
 
 RANDOM_IMPORTS = {
