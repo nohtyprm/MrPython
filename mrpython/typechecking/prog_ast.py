@@ -185,7 +185,7 @@ def build_lhs_destruct(node):
             elements.append(build_lhs_destruct(elt))
         return LHSTuple(node, elements)
     else:
-        raise NotSupportedError("Can only destructure names and tuples (please report)")    
+        return UnsupportedNode(node)
         
 class Assign:
     def __init__(self, node):
@@ -194,6 +194,13 @@ class Assign:
         self.target = build_lhs_destruct(self.ast.targets[0])
 
         self.expr = parse_expression(self.ast.value)
+
+def parse_assign(node):
+    assign = Assign(node)
+    if isinstance(assign.target, UnsupportedNode):
+        return assign.target
+    else:
+        return assign
 
 class For:
     def __init__(self, node):
@@ -252,7 +259,7 @@ def parse_expression_as_instruction(node):
     # For now, just parse as an expression
     return parse_expression(node.value)
 
-INSTRUCTION_CLASSES = {"Assign" : Assign
+INSTRUCTION_CLASSES = {"Assign" : parse_assign
                        , "Return" : Return
                        , "If" : If
                        , "While" : While
