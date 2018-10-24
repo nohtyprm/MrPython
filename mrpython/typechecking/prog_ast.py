@@ -248,10 +248,35 @@ class Assertion:
         self.test = parse_expression(self.ast.test)
 
 class With:
-    def __init__(self, node):
-        print(astpp.dump(node))
+    def __init__(self, node, call, var, body):
         self.ast = node
-        raise NotImplementedError()
+        self.call = call
+        self.var = var
+        self.body = body
+
+def parse_with(node):
+    print(astpp.dump(node))
+
+    if not node.items:
+        return UnsupportedNode(node)
+
+    with_call = node.items[0].context_expr
+    if not isinstance(with_call, ast.Call):
+        return UnsupportedNode(node)
+    with_call = parse_expression(with_call)
+        
+    if not node.items[0].optional_vars:
+        return UnsupportedNode(node)
+        
+    with_var = node.items[0].optional_vars
+
+    with_body = []
+    for instr in node.body:
+        iinstr = parse_instruction(instr)
+        with_body.append(iinstr)
+        
+    return With(node, with_call, with_var, with_body)
+    
             
 def parse_expression_as_instruction(node):
     # XXX: do something here or way until typing for
@@ -266,7 +291,7 @@ INSTRUCTION_CLASSES = {"Assign" : parse_assign
                        , "Expr" : parse_expression_as_instruction
                        , "For" : For
                        , "Assert" : Assertion
-                       , "With" : With
+                       , "With" : parse_with
 }
 
 def parse_instruction(node):
