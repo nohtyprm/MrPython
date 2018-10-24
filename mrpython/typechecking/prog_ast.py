@@ -248,15 +248,13 @@ class Assertion:
         self.test = parse_expression(self.ast.test)
 
 class With:
-    def __init__(self, node, call, var, body):
+    def __init__(self, node, call, var_name, body):
         self.ast = node
         self.call = call
-        self.var = var
+        self.var_name = var_name
         self.body = body
 
 def parse_with(node):
-    print(astpp.dump(node))
-
     if not node.items:
         return UnsupportedNode(node)
 
@@ -268,7 +266,7 @@ def parse_with(node):
     if not node.items[0].optional_vars:
         return UnsupportedNode(node)
         
-    with_var = node.items[0].optional_vars
+    with_var = node.items[0].optional_vars.id
 
     with_body = []
     for instr in node.body:

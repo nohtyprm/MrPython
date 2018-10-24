@@ -84,7 +84,32 @@ class TypeAlias(TypeAST):
     def __repr__(self):
         return "TypeAlias({})".format(self.alias_name)
     
+class FileType(TypeAST):
+    def __init__(self, annotation=None):
+        super().__init__(annotation)
+
+    def is_hashable(self):
+        return True
+
+    def rename_type_variables(self, rmap):
+        return self
+
+    def subst(self, type_env):
+        return self
+
+    def unalias(self, type_defs):
+        return (self, None)
     
+    def __eq__(self, other):
+        return isinstance(other, FileType)
+
+    def __str__(self):
+        return "FILE"
+
+    def __repr__(self):
+        return "FileType()"
+    
+
 class BoolType(TypeAST):
     def __init__(self, annotation=None):
         super().__init__(annotation)

@@ -731,6 +731,49 @@ def type_check_Assertion(assertion, ctx):
 
 Assertion.type_check = type_check_Assertion
 
+
+def type_check_With(ewith, ctx):
+    # push the parent for the scoping rule
+    ctx.push_parent(ewith)
+
+    wtype = ewith.call.type_infer(ctx)
+    if wtype is None:
+        ctx.pop_parent()
+        return False
+
+    if ewith.var_name in ctx.dead_variables:
+        ctx.add_type_error(DeadVariableDefineError(ewith.var_name, ewith))
+        ctx.pop_parent()
+        return False
+
+    # check that the variable is not a parameter
+    if ctx.param_env and ewith.var_name in ctx.param_env:
+        ctx.add_type_error(ParameterInWithError(ewith.var_name, ewith))
+        ctx.pop_parent()
+        return False        
+         
+    # same for local environment
+    if ewith.var_name in ctx.local_env:
+        ctx.add_type_error(WithVariableInEnvError(var.var_name, ewith))
+        ctx.pop_parent()
+        return False
+
+    ctx.local_env[ewith.var_name] = (wtype, ctx.fetch_scope_mode())
+
+    # 2. check type of body
+    for instr in ewith.body:
+        if not instr.type_check(ctx):
+            ctx.pop_parent()
+            return False
+
+    # pop the parent and repush
+    ctx.pop_parent()
+
+    return True
+
+With.type_check = type_check_With
+    
+
 ######################################
 # Type inference                     #
 ######################################
@@ -1589,6 +1632,8 @@ BUILTINS_IMPORTS = {
     , 'draw_ellipse' : function_type_parser("float * float * float * float * Ω -> Image").content
     , 'fill_ellipse' : function_type_parser("float * float * float * float * Ω -> Image").content
     , 'show_image' : function_type_parser("Image -> NoneType").content
+    # fichiers
+    , 'open' : function_type_parser("str * str -> FILE").content
 }
 
 MATH_IMPORTS = {
@@ -2021,6 +2066,21 @@ class ParameterInCompError(TypeError):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
                                     , tr("Forbidden use of parameter '{}' as comprehension variable").format(self.var_name))
 
+class ParameterInWithError(TypeError):
+    def __init__(self, var_name, node):
+        self.var_name = var_name
+        self.node = node
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "ParameterInWithError[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("Forbidden use of parameter '{}' in with construct").format(self.var_name))
+
         
 class IndexingError(TypeError):
     def __init__(self, indexing, subject_type):
@@ -2191,6 +2251,21 @@ class IterVariableInEnvError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
                                     , tr("The iterator variable '{}' is already declared").format(self.var_name))
+
+class WithVariableInEnvError(TypeError):
+    def __init__(self, var_name, node):
+        self.var_name = var_name
+        self.node = node
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "WithVariableInEnvError[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("The `with` variable '{}' is already declared").format(self.var_name))
 
 
 

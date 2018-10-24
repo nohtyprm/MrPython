@@ -47,6 +47,7 @@ def type_tokenizer():
     tokenizer.add_rule(tokens.Literal('NoneType_type', 'NoneType'))
     tokenizer.add_rule(tokens.Literal('Image_type', 'Image'))
     tokenizer.add_rule(tokens.Literal('str_type', 'str'))
+    tokenizer.add_rule(tokens.Literal('file_type', 'FILE'))
 
     tokenizer.add_rule(tokens.Literal('Anything_type', 'Ω'))
 
@@ -103,6 +104,14 @@ def build_typeexpr_grammar(grammar=None):
 
     bool_parser.xform_result = bool_xform_result
     grammar.register('bool_type', bool_parser)
+
+    file_parser = parsers.Token('file_type')
+    def file_xform_result(result):
+        result.content = FileType(annotation=result)
+        return result
+
+    file_parser.xform_result = file_xform_result
+    grammar.register('file_type', file_parser)
 
     anything_parser = parsers.Token('Anything_type')
     def anything_xform_result(result):
@@ -242,6 +251,7 @@ def build_typeexpr_grammar(grammar=None):
                        .orelse(grammar.ref('Number_type')) \
                        .orelse(grammar.ref('Image_type')) \
                        .orelse(grammar.ref('str_type')) \
+                       .orelse(grammar.ref('file_type')) \
                        .orelse(grammar.ref('NoneType_type')) \
                        .orelse(grammar.ref('Anything_type')) \
                        .orelse(grammar.ref('Iterable_type')) \
