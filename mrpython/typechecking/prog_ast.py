@@ -564,7 +564,6 @@ def parse_function(func_descr):
 class ECall(Expr):
     def __init__(self, node):
         self.ast = node
-        #print(astpp.dump(node))
 
         if isinstance(node.func, ast.Name):
             self.receiver = None

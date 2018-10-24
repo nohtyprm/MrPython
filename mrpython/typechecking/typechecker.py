@@ -760,6 +760,8 @@ def type_check_With(ewith, ctx):
 
     ctx.local_env[ewith.var_name] = (wtype, ctx.fetch_scope_mode())
 
+    # import pdb ; pdb.set_trace()
+
     # 2. check type of body
     for instr in ewith.body:
         if not instr.type_check(ctx):
@@ -1064,7 +1066,7 @@ def type_infer_ECall(call, ctx):
         method_call = False
         signature = ctx.global_env[call.full_fun_name]
         arguments = call.arguments
-    elif "." + call.fun_name in { ".append" } and not call.multi_receivers:
+    elif "." + call.fun_name in { ".append", ".readlines", ".write" } and not call.multi_receivers:
         method_call = True
         signature = ctx.global_env["." + call.fun_name]
         arguments = []
@@ -1455,6 +1457,17 @@ def type_compare_BoolType(expected_type, ctx, expr, expr_type, raise_error=True)
 
 BoolType.type_compare = type_compare_BoolType
 
+def type_compare_FileType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, FileType):
+        return True
+
+    if raise_error:
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a File")))
+
+    return False
+
+FileType.type_compare = type_compare_FileType
+
 def type_compare_ImageType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, ImageType):
         return True
@@ -1634,6 +1647,8 @@ BUILTINS_IMPORTS = {
     , 'show_image' : function_type_parser("Image -> NoneType").content
     # fichiers
     , 'open' : function_type_parser("str * str -> FILE").content
+    , '.readlines' : function_type_parser("FILE -> list[str]").content
+    , '.write' : function_type_parser("FILE * str -> NoneType").content
 }
 
 MATH_IMPORTS = {
