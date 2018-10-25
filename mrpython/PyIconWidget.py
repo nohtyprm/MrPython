@@ -18,7 +18,7 @@ class PyIconWidget(Frame):
         Frame.__init__(self, parent, background="white")
         #self.config(borderwidth=1, relief=GROOVE)
         # Loading icon pictures
-        icon_new_file_gif = PhotoImage(file=expand_filename("icons/new_file_icon3.gif"))
+        icon_new_file_gif = PhotoImage(file=expand_filename("icons/new_file_icon4.gif"))
         icon_save_gif = PhotoImage(file=expand_filename("icons/save_icon2.gif"))
         icon_open_gif = PhotoImage(file=expand_filename("icons/open_icon2.gif"))
         self.icon_student_gif = PhotoImage(file=expand_filename("icons/student_icon2.gif"))
