@@ -1,4 +1,4 @@
-##!FAIL: DeadVariableUseError[p]@20:11
+##!FAIL: UnknownVariableError[p]@20:11
 
 def valeur_absolue(x):
     """ Number -> Number

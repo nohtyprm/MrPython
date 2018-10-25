@@ -1,4 +1,4 @@
-##!FAIL: DeadVariableDefineError[p]@20:4
+##!FAIL: DeclarationError[header-char]@20:4
 
 def valeur_absolue(x):
     """ Number -> Number

@@ -78,6 +78,8 @@ class TypingContext:
 
     def push_parent(self, parent_node):
         parent_local_env = { var_name : var_info for (var_name, var_info) in self.local_env.items() }
+        if not self.parent_stack:
+            self.parent_stack = []
         self.parent_stack.append((parent_node, parent_local_env))
 
     def pop_parent(self):
@@ -88,7 +90,9 @@ class TypingContext:
         _, parent_local_env = self.parent_stack.pop()
         for var in self.local_env:
             if var not in parent_local_env:
-                self.dead_variables.add(var)
+                pass
+                # XXX: barendregt convention too strong ?
+                # self.dead_variables.add(var)
 
         self.local_env = parent_local_env
 
