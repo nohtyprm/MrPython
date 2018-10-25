@@ -18,13 +18,13 @@ class PyIconWidget(Frame):
         Frame.__init__(self, parent, background="white")
         #self.config(borderwidth=1, relief=GROOVE)
         # Loading icon pictures
-        icon_new_file_gif = PhotoImage(file=expand_filename("icons/new_file_icon.gif"))
-        icon_save_gif = PhotoImage(file=expand_filename("icons/save_icon.gif"))
-        icon_open_gif = PhotoImage(file=expand_filename("icons/open_icon.gif"))
-        self.icon_student_gif = PhotoImage(file=expand_filename("icons/student_icon.gif"))
-        self.icon_pro_gif = PhotoImage(file=expand_filename("icons/pro_icon.gif"))
-        self.icon_run_gif = PhotoImage(file=expand_filename("icons/run_icon.gif"))
-        self.icon_stop_gif = PhotoImage(file=expand_filename("icons/stop_icon.gif"))
+        icon_new_file_gif = PhotoImage(file=expand_filename("icons/new_file_icon3.gif"))
+        icon_save_gif = PhotoImage(file=expand_filename("icons/save_icon2.gif"))
+        icon_open_gif = PhotoImage(file=expand_filename("icons/open_icon2.gif"))
+        self.icon_student_gif = PhotoImage(file=expand_filename("icons/student_icon2.gif"))
+        self.icon_pro_gif = PhotoImage(file=expand_filename("icons/pro_icon3.gif"))
+        self.icon_run_gif = PhotoImage(file=expand_filename("icons/run_icon2.gif"))
+        self.icon_stop_gif = PhotoImage(file=expand_filename("icons/stop_icon2.gif"))
 
         # Creating the labels
         self.icons = dict()  # dict[str:Label]
