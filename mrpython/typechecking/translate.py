@@ -83,6 +83,7 @@ TRANSLATOR_DICT = {
     , "I don't find any definition for the type: {}" : { 'fr' : "Je ne trouve pas de définition pour le type: {}" }
     , "Bad iterator" : { 'fr' : "Problème d'itération" }
     , "Not an iterable type: {}" : { 'fr' : "Type non itérable: {}" }
+    , "Expecting precise type '{}' but found less precise type: {}" : { 'fr' : "J'attends le type précis '{}' mais le type de cette expression est moins précis: {}" }
 }
 
 def tr(msg):

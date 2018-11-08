@@ -1409,7 +1409,22 @@ def type_compare_Anything(expected_type, ctx, expr, expr_type, raise_error=True)
 
 Anything.type_compare = type_compare_Anything
 
+def check_option_type(cause_fn, expected_precise_type, ctx, expr, expr_option_type, raise_error=True):
+    # precondition 1: expected type is not an option type
+    # precondition 2: expr_type is an option type
+    ok = cause_fn(expected_precise_type, ctx, expr, expr_option_type.elem_type, raise_error)
+    if ok:
+        ctx.add_type_error(OptionCoercionWarning(expr, expr_option_type, expected_precise_type))
+        # in any case there is no error
+        return True
+    else:
+        return False
+
 def type_compare_NumberType(expected_type, ctx, expr, expr_type, raise_error=True):
+    # XXX: boilerplate ... could use a decorator of some sort ?
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_NumberType, expected_type, ctx, expr, expr_type, raise_error)
+
     if isinstance(expr_type, NumberType) \
        or isinstance(expr_type, IntType) \
        or isinstance(expr_type, FloatType): 
@@ -1423,6 +1438,9 @@ def type_compare_NumberType(expected_type, ctx, expr, expr_type, raise_error=Tru
 NumberType.type_compare = type_compare_NumberType
 
 def type_compare_IntType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_IntType, expected_type, ctx, expr, expr_type, raise_error)
+
     if isinstance(expr_type, IntType):
         return True
 
@@ -1440,6 +1458,9 @@ def type_compare_IntType(expected_type, ctx, expr, expr_type, raise_error=True):
 IntType.type_compare = type_compare_IntType
 
 def type_compare_FloatType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_FloatType, expected_type, ctx, expr, expr_type, raise_error)
+
     if isinstance(expr_type, (FloatType, IntType, NumberType)):
         return True
 
@@ -1451,6 +1472,9 @@ def type_compare_FloatType(expected_type, ctx, expr, expr_type, raise_error=True
 FloatType.type_compare = type_compare_FloatType
 
 def type_compare_BoolType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_BoolType, expected_type, ctx, expr, expr_type, raise_error)
+
     if isinstance(expr_type, BoolType):
         return True
 
@@ -1473,6 +1497,9 @@ def type_compare_FileType(expected_type, ctx, expr, expr_type, raise_error=True)
 FileType.type_compare = type_compare_FileType
 
 def type_compare_ImageType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_ImageType, expected_type, ctx, expr, expr_type, raise_error)
+
     if isinstance(expr_type, ImageType):
         return True
 
@@ -1484,6 +1511,9 @@ def type_compare_ImageType(expected_type, ctx, expr, expr_type, raise_error=True
 ImageType.type_compare = type_compare_ImageType
 
 def type_compare_StrType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_StrType, expected_type, ctx, expr, expr_type, raise_error)
+
     if isinstance(expr_type, StrType):
         return True
 
@@ -1495,8 +1525,8 @@ def type_compare_StrType(expected_type, ctx, expr, expr_type, raise_error=True):
 StrType.type_compare = type_compare_StrType
 
 def type_compare_ListType(expected_type, ctx, expr, expr_type, raise_error=True):
-    #print("expected_type={}".format(expected_type))
-    #print("expr_type={}".format(expr_type))
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_ListType, expected_type, ctx, expr, expr_type, raise_error)
 
     if not isinstance(expr_type, ListType):
         if raise_error:
@@ -1514,9 +1544,8 @@ def type_compare_ListType(expected_type, ctx, expr, expr_type, raise_error=True)
 ListType.type_compare = type_compare_ListType
 
 def type_compare_IterableType(expected_type, ctx, expr, expr_type, raise_error=True):
-    #print("expected_type={}".format(expected_type))
-    #print("expr_type={}".format(expr_type))
-    #print("expr={}".format(expr))
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_IterableType, expected_type, ctx, expr, expr_type, raise_error)
 
     if isinstance(expr_type, ListType) and expr_type.is_emptylist():
         return True
@@ -1540,9 +1569,8 @@ def type_compare_IterableType(expected_type, ctx, expr, expr_type, raise_error=T
 IterableType.type_compare = type_compare_IterableType
 
 def type_compare_SequenceType(expected_type, ctx, expr, expr_type, raise_error=True):
-    #print("expected_type={}".format(expected_type))
-    #print("expr_type={}".format(expr_type))
-    #print("expr={}".format(expr))
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_SequenceType, expected_type, ctx, expr, expr_type, raise_error)
 
     if isinstance(expr_type, SequenceType) \
        or isinstance(expr_type, ListType) \
@@ -1561,6 +1589,9 @@ SequenceType.type_compare = type_compare_SequenceType
 
 
 def type_compare_TypeVariable(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_TypeVariable, expected_type, ctx, expr, expr_type, raise_error)
+
     if expected_type.is_call_variable():
         if expected_type.var_name in ctx.call_type_env[-1]:
             real_expected_type = ctx.call_type_env[-1][expected_type.var_name]
@@ -1584,6 +1615,9 @@ def type_compare_TypeVariable(expected_type, ctx, expr, expr_type, raise_error=T
 TypeVariable.type_compare = type_compare_TypeVariable
 
 def type_compare_NoneTypeType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_NoneTypeType, expected_type, ctx, expr, expr_type, raise_error)
+
     if not isinstance(expr_type, NoneTypeType):
         if raise_error:
             ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting value None")))
@@ -1594,9 +1628,21 @@ def type_compare_NoneTypeType(expected_type, ctx, expr, expr_type, raise_error=T
 NoneTypeType.type_compare = type_compare_NoneTypeType
 
 def type_compare_OptionType(expected_type, ctx, expr, expr_type, raise_error=True):
+
+    # expression type is an option
+    if isinstance(expr_type, OptionType):
+        val_type = expected_type.elem_type.type_compare(ctx, expr, expr_type.elem_type, raise_error=False)
+        if not val_type:
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type.elem_type, expr, expr_type.elem_type, tr("Expecting value of type: {}").format(expected_type)))
+            return False
+        else:
+            return True
+        
+    # expression type is not an option type
+
     if isinstance(expr_type, NoneTypeType):
         return True
-
+        
     val_type = expected_type.elem_type.type_compare(ctx, expr, expr_type, raise_error=False)
     if not val_type:
         ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting value None or of type: {}").format(expected_type.elem_type)))
@@ -1607,6 +1653,9 @@ def type_compare_OptionType(expected_type, ctx, expr, expr_type, raise_error=Tru
 OptionType.type_compare = type_compare_OptionType
 
 def type_compare_TupleType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_TupleType, expected_type, ctx, expr, expr_type, raise_error)
+
     if not isinstance(expr_type, TupleType):
         ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a tuple")))
         return False
@@ -1896,7 +1945,24 @@ class TypeImprecisionWarning(TypeError):
         report.add_convention_error('warning', tr("Imprecise typing"), self.expr.ast.lineno, self.expr.ast.col_offset
                                     , tr("Expecting type '{}' but found '{}': there is a risk of imprecision (but it's maybe not a bug)").format(self.expected_type, self.expr_type))
 
-        
+    
+class OptionCoercionWarning(TypeError):
+    def __init__(self, expr, expr_option_type, expected_precise_type):
+        self.expr = expr
+        self.expected_precise_type = expected_precise_type
+        self.expr_option_type = expr_option_type
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "OptionCoercionWarning[{}/{}]@{}:{}".format(self.expected_precise_type, self.expr_option_type, self.expr.ast.lineno, self.expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Imprecise typing"), self.expr.ast.lineno, self.expr.ast.col_offset
+                                    , tr("Expecting precise type '{}' but found less precise type: {}").format(self.expected_precise_type, self.expr_option_type))
+
+    
 class UnsupportedNumericTypeError(TypeError):
     def __init__(self, in_function, num):
         self.in_function = in_function
