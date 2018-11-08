@@ -1702,6 +1702,8 @@ BUILTINS_IMPORTS = {
     'len' : function_type_parser("Iterable[α] -> int").content
     ,'abs' : function_type_parser("Number -> Number").content
     ,'print' : function_type_parser("Ω -> NoneType").content
+    ,'min' : function_type_parser("Number * Number -> Number").content
+    ,'max' : function_type_parser("Number * Number -> Number").content
     # ,'range' : function_type_parser("int * int -> Iterable[int]").content  # range is an expression now
     , 'int' : function_type_parser("Ω -> int").content
     , 'float' : function_type_parser("Ω -> float").content
