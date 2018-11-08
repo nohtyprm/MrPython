@@ -2256,6 +2256,23 @@ def typecheck_from_file(filename):
     ctx = prog.type_check()
     return ctx
 
+class IteratorTypeError(TypeError):
+    def __init__(self, for_node, iter_type):
+        self.for_node = for_node
+        self.iter_type = iter_type
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "IteratorTypeError[{}]@{}:{}".format(self.iter_type, self.for_node.iter.ast.lineno, self.for_node.iter.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad iterator"), self.for_node.iter.ast.lineno, self.for_node.iter.ast.col_offset
+                                    , tr("Not an iterable type: {}").format(self.iter_type))
+
+    
+
 class IterVariableInEnvError(TypeError):
     def __init__(self, var_name, node):
         self.var_name = var_name

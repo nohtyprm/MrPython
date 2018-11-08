@@ -81,6 +81,8 @@ TRANSLATOR_DICT = {
     , "Forbidden use of variable '{}' that is not in scope (Python101 scoping rule)" : { 'fr' : "La variable '{}' ne peut-être utilisée ici (règle de portée de Python101)." }
     , "Type name error" : { 'fr' : "Erreur de type nommé" }
     , "I don't find any definition for the type: {}" : { 'fr' : "Je ne trouve pas de définition pour le type: {}" }
+    , "Bad iterator" : { 'fr' : "Problème d'itération" }
+    , "Not an iterable type: {}" : { 'fr' : "Type non itérable: {}" }
 }
 
 def tr(msg):
