@@ -418,7 +418,7 @@ class ListType(TypeAST):
             return "emptylist"
 
     def __repr__(self):
-        return "ListType({})".format(repr(self.elem_type))
+        return "ListType({})".format(repr(self.elem_type)) if self.elem_type else "ListType()"
 
 class SetType(TypeAST):
     def __init__(self, elem_type=None, annotation=None):

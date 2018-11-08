@@ -176,7 +176,6 @@ def type_check_Program(prog):
             elif type_name in ctx.type_defs:
                 ctx.add_type_error(DuplicateTypeDefError(i+1, type_name))
             else:
-                #import pdb ; pdb.set_trace()
                 type_def, unknown_alias = parse_result.content.unalias(ctx.type_defs)
                 if type_def is None:
                     ctx.add_type_error(UnknownTypeAliasError(parse_result.content, unknown_alias, i+1, parse_result.start_pos.char_pos))
@@ -763,8 +762,6 @@ def type_check_With(ewith, ctx):
         return False
 
     ctx.local_env[ewith.var_name] = (wtype, ctx.fetch_scope_mode())
-
-    # import pdb ; pdb.set_trace()
 
     # 2. check type of body
     for instr in ewith.body:
@@ -1589,18 +1586,33 @@ SequenceType.type_compare = type_compare_SequenceType
 
 
 def type_compare_TypeVariable(expected_type, ctx, expr, expr_type, raise_error=True):
+
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_TypeVariable, expected_type, ctx, expr, expr_type, raise_error)
+    
+    # some corner case handled here ...
+    if expected_type == expr_type:
+        return True
 
-    if expected_type.is_call_variable():
+    if expected_type.is_call_variable() and len(ctx.call_type_env) > 0: # XXX: the right test is a little bit "fishy"...
         if expected_type.var_name in ctx.call_type_env[-1]:
             real_expected_type = ctx.call_type_env[-1][expected_type.var_name]
+            
+            if not isinstance(real_expected_type, TypeVariable):
+                if not real_expected_type.type_compare(ctx, expr, expr_type, raise_error=False):
+                    ctx.add_type_error(TypeComparisonError(ctx.function_def, real_expected_type, expr, expr_type, tr("Type mismatch for parameter #{} in call, expecting {} found: {}").format(expected_type.var_name[1:],real_expected_type, expr_type)))
+                    return False
+                else:
+                    return True
+
+            # XXX: strange corner case (to check ...)
             if real_expected_type == expr_type:
                 return True
             # not equal
             if raise_error:
                 ctx.add_type_error(TypeComparisonError(ctx.function_def, real_expected_type, expr, expr_type, tr("Type mismatch for parameter #{} in call, expecting {} found: {}").format(expected_type.var_name[1:],real_expected_type, expr_type)))
             return False
+
         else: # register type as type parameter:
             ctx.call_type_env[-1][expected_type.var_name] = expr_type
             return True
