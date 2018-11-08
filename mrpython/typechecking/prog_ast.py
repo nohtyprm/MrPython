@@ -220,6 +220,12 @@ class Return:
         self.ast = node
         self.expr = parse_expression(self.ast.value)
 
+def parse_return(node):
+    if node.value:
+        return Return(node)
+    else:
+        return UnsupportedNode(node)
+
 class If:
     def __init__(self, node):
         self.ast = node
@@ -283,7 +289,7 @@ def parse_expression_as_instruction(node):
     return parse_expression(node.value)
 
 INSTRUCTION_CLASSES = {"Assign" : parse_assign
-                       , "Return" : Return
+                       , "Return" : parse_return
                        , "If" : If
                        , "While" : While
                        , "Expr" : parse_expression_as_instruction
