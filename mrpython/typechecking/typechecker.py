@@ -897,7 +897,6 @@ EUSub.type_infer = type_infer_EUSub
 
 
 def type_infer_EMult(expr, ctx):
-
     left_type = expr.left.type_infer(ctx)
     if not left_type:
         return None
@@ -911,7 +910,17 @@ def type_infer_EMult(expr, ctx):
         else:
             return StrType()
 
-    # second case : the normal multiplication for numbers
+    # second case if the left operand is an int, and the right operand is a str, sequence or list
+    if isinstance(left_type, IntType):
+        right_type = expr.right.type_infer(ctx)
+        if not right_type:
+            return None
+        if isinstance(right_type, (StrType, ListType, SequenceType)):
+            # in python : return right_type
+            ctx.add_type_error(UnsupportedNodeError(expr))
+            return None
+
+    # default case : the normal multiplication for numbers
 
     left_type = type_expect(ctx, expr.left, NumberType())
     if not left_type:
