@@ -1395,6 +1395,37 @@ def type_infer_EListComp(list_comp, ctx):
 
 EListComp.type_infer = type_infer_EListComp
 
+def type_infer_ESet(st, ctx):
+    st_type = None
+    if not st.elements:
+        return SetType()
+
+    for element in st.elements:
+        element_type = element.type_infer(ctx)
+        if element_type is None:
+            return None
+        #print("----\nelement type={}".format(element_type))
+        #print("st type={}\n----".format(st_type))
+
+        if not element_type.is_hashable():
+            ctx.add_type_error(UnhashableElementError(st, element))
+            return None
+        
+        if st_type is None:
+            st_type = element_type
+        else:
+            if (isinstance(st_type, (IntType, FloatType, NumberType)) 
+                and isinstance(element_type, (IntType, FloatType, NumberType))):
+                st_type = infer_number_type(ctx, st_type, element_type)
+            else: 
+                if not st_type.type_compare(ctx, element, element_type, raise_error=False):
+                    ctx.add_type_error(HeterogeneousElementError('set', st, st_type, element_type, element))
+                    return None
+
+    return SetType(st_type)
+
+ESet.type_infer = type_infer_ESet
+
 ######################################
 # Type comparisons                   #
 ######################################
@@ -1549,9 +1580,26 @@ def type_compare_ListType(expected_type, ctx, expr, expr_type, raise_error=True)
 
 ListType.type_compare = type_compare_ListType
 
+def type_compare_SetType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_SetType, expected_type, ctx, expr, expr_type, raise_error)
+
+    if not isinstance(expr_type, SetType):
+        if raise_error:
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a set")))
+        return False
+
+    if expr_type.is_emptyset():
+        return True
+
+    if expected_type.is_emptyset():
+        return True
+
+    return expected_type.elem_type.type_compare(ctx, expr, expr_type.elem_type, raise_error)
+
+SetType.type_compare = type_compare_SetType
+
 def type_compare_IterableType(expected_type, ctx, expr, expr_type, raise_error=True):
-    import pdb ; pdb.set_trace()
-    
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_IterableType, expected_type, ctx, expr, expr_type, raise_error)
 
@@ -2401,6 +2449,22 @@ class WithVariableInEnvError(TypeError):
 
 
 
+class UnhashableElementError(TypeError):
+    def __init__(self, st, element):
+        self.set = st
+        self.element = element
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "UnhashableElementError@{}:{}".format(self.element.ast.lineno, self.element.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad set"), self.element.ast.lineno, self.element.ast.col_offset
+                                    , tr("Unhashable (mutable) element in set"))
+    
+        
 if __name__ == '__main__':
 
     ctx = typecheck_from_file("../../test/progs/01_aire_KO_14.py")

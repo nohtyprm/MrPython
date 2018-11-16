@@ -678,6 +678,16 @@ class EListComp(Expr):
         self.generators = []
         for gen in node.generators:
             self.generators.append(Generator(gen))
+
+class ESet(Expr):
+    def __init__(self, node):
+        self.ast = node
+        #print(astpp.dump(node))
+        self.elements = []
+        for elt in node.elts:
+            elt_expr = parse_expression(elt)
+            self.elements.append(elt_expr)
+
             
 EXPRESSION_CLASSES = { "Num" : ENum
                        , "Str" : EStr
@@ -691,6 +701,7 @@ EXPRESSION_CLASSES = { "Num" : ENum
                        , "Call" : parse_call
                        , "Compare" : parse_compare
                        , "List" : EList
+                       , "Set" : ESet
                        , "Subscript" : parse_subscript
                        , "ListComp" : EListComp
 }
