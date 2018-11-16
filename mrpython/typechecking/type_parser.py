@@ -56,6 +56,7 @@ def type_tokenizer():
     tokenizer.add_rule(tokens.Literal('Sequence_type', 'Sequence'))
     tokenizer.add_rule(tokens.LiteralSet('list_type', 'list', 'List'))
     tokenizer.add_rule(tokens.LiteralSet('set_type', 'set', 'Set'))
+    tokenizer.add_rule(tokens.LiteralSet('emptyset_type', 'emptyset', 'EmptySet'))
     tokenizer.add_rule(tokens.LiteralSet('dict_type', 'dict', 'Dict'))
     tokenizer.add_rule(tokens.LiteralSet('tuple_type', 'tuple', 'Tuple'))
 
@@ -221,6 +222,28 @@ def build_typeexpr_grammar(grammar=None):
     list_parser.xform_result = list_xform_result
     grammar.register('list_type', list_parser)
 
+    set_parser = parsers.Tuple() \
+                      .skip(parsers.Token('set_type')) \
+                      .forget(grammar.ref('spaces')) \
+                      .skip(parsers.Token('open_bracket')) \
+                      .forget(grammar.ref('spaces')) \
+                      .element(grammar.ref('typeexpr')) \
+                      .forget(grammar.ref('spaces')) \
+                      .skip(parsers.Token('close_bracket'))
+
+    def set_xform_result(result):
+        result.content = SetType(result.content.content, annotation=result)
+        return result
+    set_parser.xform_result = set_xform_result
+    grammar.register('set_type', set_parser)
+
+    emptyset_parser = parsers.Token("emptyset_type")
+    def emptyset_xform_result(result):
+        result.content = SetType()
+        return result
+    emptyset_parser.xform_result = emptyset_xform_result
+    grammar.register('emptyset_type', emptyset_parser)
+
     tuple_parser = parsers.Tuple() \
                         .skip(parsers.Token('tuple_type')) \
                         .forget(grammar.ref('spaces')) \
@@ -257,6 +280,8 @@ def build_typeexpr_grammar(grammar=None):
                        .orelse(grammar.ref('Iterable_type')) \
                        .orelse(grammar.ref('Sequence_type')) \
                        .orelse(grammar.ref('list_type')) \
+                       .orelse(grammar.ref('set_type')) \
+                       .orelse(grammar.ref('emptyset_type')) \
                        .orelse(grammar.ref('tuple_type')) \
                        .orelse(grammar.ref('type_var')) \
                        .orelse(grammar.ref('type_alias'))

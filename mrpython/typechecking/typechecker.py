@@ -1550,10 +1550,15 @@ def type_compare_ListType(expected_type, ctx, expr, expr_type, raise_error=True)
 ListType.type_compare = type_compare_ListType
 
 def type_compare_IterableType(expected_type, ctx, expr, expr_type, raise_error=True):
+    import pdb ; pdb.set_trace()
+    
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_IterableType, expected_type, ctx, expr, expr_type, raise_error)
 
     if isinstance(expr_type, ListType) and expr_type.is_emptylist():
+        return True
+
+    if isinstance(expr_type, SetType) and expr_type.is_emptyset():
         return True
 
     if isinstance(expr_type, IterableType) \
@@ -1725,6 +1730,8 @@ BUILTINS_IMPORTS = {
     , 'open' : function_type_parser("str * str -> FILE").content
     , '.readlines' : function_type_parser("FILE -> list[str]").content
     , '.write' : function_type_parser("FILE * str -> NoneType").content
+    # ensembles
+    , 'set' : function_type_parser(" -> emptyset").content
 }
 
 MATH_IMPORTS = {

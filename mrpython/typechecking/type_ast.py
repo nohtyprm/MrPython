@@ -389,6 +389,9 @@ class ListType(TypeAST):
         self.elem_type = elem_type
 
     def rename_type_variables(self, rmap):
+        if self.elem_type is None:
+            return self
+
         nelem_type = self.elem_type.rename_type_variables(rmap)
         return ListType(nelem_type, self.annotation)
 
@@ -431,6 +434,9 @@ class SetType(TypeAST):
         return isinstance(other, SetType) and other.elem_type == self.elem_type
 
     def rename_type_variables(self, rmap):
+        if self.elem_type is None:
+            return self
+
         nelem_type = self.elem_type.rename_type_variables(rmap)
         return SetType(nelem_type, self.annotation)
 
