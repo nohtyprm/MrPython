@@ -250,17 +250,24 @@ def type_check_FunctionDef(func_def, ctx):
     signature = ctx.global_env[func_def.name]
     #print("signature = ", repr(signature))
 
+    # Step 0: check unhashables
+    result = signature.fetch_unhashable()
+    if result is not None:
+        ctx.add_type_error(FunctionUnhashableError(func_def, result))
+        return
+    
     # Step 1: check function arity
     if len(func_def.parameters) != len(signature.param_types):
         ctx.add_type_error(FunctionArityError(func_def, signature))
         # this is of course a fatal error
         return
-
+    
     # Step 2 : fill the parameter environment, and expected return type
     ctx.register_parameters(func_def.parameters, signature.param_types)
     #print(ctx.param_env)
     ctx.register_return_type(signature.ret_type)
     ctx.register_function_def(func_def, signature.partial)
+
 
     # Step 3 : type-check body
     ctx.nb_returns = 0  # counting the number of returns encountered
@@ -870,6 +877,36 @@ def type_infer_EAdd(expr, ctx):
 EAdd.type_infer = type_infer_EAdd
 
 def type_infer_ESub(expr, ctx):
+    left_type = expr.left.type_infer(ctx)
+    if left_type is None:
+        return None
+
+    if isinstance(left_type, SetType):
+        # for sets
+        
+        right_type = expr.right.type_infer(ctx)
+        if not right_type:
+            return None
+
+        if not isinstance(right_type, SetType):
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, SetType(), expr.right, right_type, tr("Expecting a set")))
+            return None
+
+        if left_type.is_emptyset():
+            return right_type
+
+        if right_type.is_emptyset():
+            return left_type
+    
+        right_type = type_expect(ctx, expr.right, left_type)
+        if not right_type:
+            return None
+    
+        return left_type
+        
+
+    # for numbers
+    
     left_type = type_expect(ctx, expr.left, NumberType())
     if not left_type:
         return None
@@ -1000,6 +1037,67 @@ def type_infer_EPow(expr, ctx):
 
 EPow.type_infer = type_infer_EPow
 
+def type_infer_EBitOr(expr, ctx):
+    left_type = expr.left.type_infer(ctx)
+    if not left_type:
+        return None
+
+    if not isinstance(left_type, SetType):
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, SetType(), expr.left, left_type, tr("Expecting a set")))
+        return None
+
+    right_type = expr.right.type_infer(ctx)
+    if not right_type:
+        return None
+
+    if not isinstance(right_type, SetType):
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, SetType(), expr.right, right_type, tr("Expecting a set")))
+        return None
+
+    if left_type.is_emptyset():
+        return right_type
+
+    if right_type.is_emptyset():
+        return left_type
+    
+    right_type = type_expect(ctx, expr.right, left_type)
+    if not right_type:
+        return None
+    
+    return left_type
+
+EBitOr.type_infer = type_infer_EBitOr
+
+def type_infer_EBitAnd(expr, ctx):
+    left_type = expr.left.type_infer(ctx)
+    if not left_type:
+        return None
+
+    if not isinstance(left_type, SetType):
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, SetType(), expr.left, left_type, tr("Expecting a set")))
+        return None
+
+    right_type = expr.right.type_infer(ctx)
+    if not right_type:
+        return None
+
+    if not isinstance(right_type, SetType):
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, SetType(), expr.right, right_type, tr("Expecting a set")))
+        return None
+
+    if left_type.is_emptyset():
+        return right_type
+
+    if right_type.is_emptyset():
+        return left_type
+    
+    right_type = type_expect(ctx, expr.right, left_type)
+    if not right_type:
+        return None
+    
+    return left_type
+
+EBitAnd.type_infer = type_infer_EBitAnd
 
 def type_infer_EVar(var, ctx):
     # check if the variable is dead
@@ -1063,7 +1161,7 @@ def type_infer_ENot(node, ctx):
         return None
     return BoolType()
 
-ENot.type_infer = type_infer_ENot
+ENot.type_infer = type_infer_ENot    
 
 def type_infer_ENone(node, ctx):
     return NoneTypeType()
@@ -1076,7 +1174,7 @@ def type_infer_ECall(call, ctx):
         method_call = False
         signature = ctx.global_env[call.full_fun_name]
         arguments = call.arguments
-    elif "." + call.fun_name in { ".append", ".readlines", ".write" } and not call.multi_receivers:
+    elif "." + call.fun_name in { ".append", ".readlines", ".write", ".add", ".remove" } and not call.multi_receivers:
         method_call = True
         signature = ctx.global_env["." + call.fun_name]
         arguments = []
@@ -1807,6 +1905,8 @@ BUILTINS_IMPORTS = {
     , '.write' : function_type_parser("FILE * str -> NoneType").content
     # ensembles
     , 'set' : function_type_parser(" -> emptyset").content
+    , '.add' : function_type_parser("set[α] * α -> NoneType").content
+    , '.remove' : function_type_parser("set[α] * α -> NoneType").content
 }
 
 MATH_IMPORTS = {
@@ -1921,6 +2021,25 @@ class FunctionArityError(TypeError):
                                            , "({})".format(", ".join(self.func_def.parameters))))
 
 
+class FunctionUnhashableError(TypeError):
+    def __init__(self, func_def, unhashable_type):
+        self.func_def = func_def
+        self.unhashable_type = unhashable_type
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "FunctionUnhashableError[{}:{}]@{}:{}".format(self.func_def.name
+                                                             , self.unhashable_type
+                                                             , self.func_def.ast.lineno
+                                                             , self.func_def.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Type declaration error"), self.func_def.ast.lineno, self.func_def.ast.col_offset
+                                    , tr("Wrong use in signature of function '{}' of mutable (not hashable) type: {}").format(self.func_def.name, self.unhashable_type))
+
+        
 class UnsupportedNodeError(TypeError):
     def __init__(self, node):
         self.node = node

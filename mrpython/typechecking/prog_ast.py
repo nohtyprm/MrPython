@@ -415,6 +415,18 @@ class EPow(Expr):
         self.left = left
         self.right = right
 
+class EBitOr(Expr):
+    def __init__(self, node, left, right):
+        self.ast = node
+        self.left = left
+        self.right = right
+
+class EBitAnd(Expr):
+    def __init__(self, node, left, right):
+        self.ast = node
+        self.left = left
+        self.right = right
+
 BINOP_CLASSES = { "Add" : EAdd
                   , "Sub" : ESub
                   , "Mult" : EMult
@@ -422,6 +434,8 @@ BINOP_CLASSES = { "Add" : EAdd
                   , "FloorDiv" : EFloorDiv #  // vs. /
                   , "Mod" : EMod
                   , "Pow" : EPow
+                  , "BitOr" : EBitOr
+                  , "BitAnd" : EBitAnd
 }
 
 def EBinOp(node):
@@ -434,6 +448,7 @@ def EBinOp(node):
         wrap_node = BINOP_CLASSES[binop_type_name](node, left, right)
         return wrap_node
     else:
+        print(astpp.dump(node))
         return UnsupportedNode(node)
 
 class EAnd(Expr):

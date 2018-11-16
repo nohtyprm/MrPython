@@ -22,6 +22,9 @@ class TypeAST:
     def is_hashable(self):
         raise NotImplementedError("Method is_hashable is abstract")
 
+    def fetch_unhashable(self):
+        return None
+
     def unalias(self, type_defs):
         raise NotImplementedError("Method unalias is abstract")
     
@@ -355,11 +358,19 @@ class TupleType(TypeAST):
         return TupleType(nelem_types, self.annotation if self.annotated else None)
 
     def is_hashable(self):
-        for elem_type in elem_types:
+        for elem_type in self.elem_types:
             if not elem_type.is_hashable():
                 return False
         return True
 
+    def fetch_unhashable(self):
+        for elem_type in self.elem_types:
+            result = elem_type.fetch_unhashable()
+            if result is not None:
+                return result
+
+        return None
+    
     def size(self):
         return len(self.elem_types)
 
@@ -396,6 +407,8 @@ class ListType(TypeAST):
         return ListType(nelem_type, self.annotation)
 
     def subst(self, type_env):
+        if self.elem_type is None:
+            return self
         return ListType(self.elem_type.subst(type_env), self.annotation if self.annotated else None)
 
     def unalias(self, type_defs):
@@ -411,6 +424,13 @@ class ListType(TypeAST):
     def is_hashable(self):
         return False
 
+    def fetch_unhashable(self):
+        result = self.elem_type.fetch_unhashable()
+        if result is not None:
+            return result
+
+        return None
+    
     def is_emptylist(self):
         return self.elem_type is None
 
@@ -440,15 +460,24 @@ class SetType(TypeAST):
         nelem_type = self.elem_type.rename_type_variables(rmap)
         return SetType(nelem_type, self.annotation)
 
-    def susbt(self, type_env):
-        return SetType(self.elem_type.subst(type_env), self.annotation)
-
-    def is_hashable(self):
-        return False
+    def subst(self, type_env):
+        if self.elem_type is None:
+            return self
+        return SetType(self.elem_type.subst(type_env), self.annotation if self.annotated else None)
 
     def is_emptyset(self):
         return self.elem_type is None
 
+    def is_hashable(self):
+        return False
+
+    def fetch_unhashable(self):
+        result = self.elem_type.fetch_unhashable()
+        if result is not None:
+            return result
+
+        return None
+    
     def unalias(self, type_defs):
         uelem_type, unknown_alias = self.elem_type.unalias(type_defs)
         if uelem_type is None:
@@ -465,6 +494,48 @@ class SetType(TypeAST):
     def __repr__(self):
         return "SetType({})".format(repr(self.elem_type))
 
+class UnhashableSetType(TypeAST):
+    def __init__(self, elem_type, annotation=None):
+        self.elem_type = elem_type
+        super().__init__(annotation)
+
+    def __eq__(self, other):
+        return isinstance(other, UnhashableSetType) and other.elem_type == self.elem_type
+
+    def rename_type_variables(self, rmap):
+        if self.elem_type is None:
+            return self
+
+        nelem_type = self.elem_type.rename_type_variables(rmap)
+        return UnhashableSetType(nelem_type, self.annotation)
+
+    def subst(self, type_env):
+        if self.elem_type is None:
+            return self
+        return UnhashableSetType(self.elem_type.subst(type_env), self.annotation if self.annotated else None)
+
+    def is_hashable(self):
+        return False
+
+    def fetch_unhashable(self):
+        return self # found !
+
+    def is_emptyset(self):
+        return False
+
+    def unalias(self, type_defs):
+        uelem_type, unknown_alias = self.elem_type.unalias(type_defs)
+        if uelem_type is None:
+                return (None, unknown_alias)
+        return (UnhashableSetType(uelem_type, self.annotation if self.annotated else None)
+                , None)
+
+    def __str__(self):
+        return "Set[{}]".format(str(self.elem_type))
+
+    def __repr__(self):
+        return "UnhashableSetType({})".format(repr(self.elem_type))
+    
 class DictType(TypeAST):
     def __init__(self, key_type=None, value_type=None, annotation=None):
         super().__init__(annotation)
@@ -489,6 +560,17 @@ class DictType(TypeAST):
 
     def is_hashable(self):
         return False
+
+    def fetch_unhashable(self):
+        result = self.key_type.fetch_unhashable()
+        if result is not None:
+            return result
+
+        result = self.value_type.fetch_unhashable()
+        if result is not None:
+            return result
+
+        return None        
 
     def unalias(self, type_defs):
         ukey_type, unknown_alias = self.key_type.unalias(type_defs)
@@ -543,6 +625,13 @@ class IterableType(TypeAST):
     def is_hashable(self):
         return False
 
+    def fetch_unhashable(self):
+        result = self.elem_type.fetch_unhashable()
+        if result is not None:
+            return result
+
+        return None
+
     def __eq__(self, other):
         return isinstance(other, IterableType) and other.elem_type == self.elem_type
 
@@ -568,6 +657,13 @@ class SequenceType(TypeAST):
 
     def is_hashable(self):
         return False
+
+    def fetch_unhashable(self):
+        result = self.elem_type.fetch_unhashable()
+        if result is not None:
+            return result
+
+        return None
 
     def unalias(self, type_defs):
         uelem_type, unknown_alias = self.elem_type.unalias(type_defs)
@@ -610,8 +706,15 @@ class OptionType(TypeAST):
                 , None)
     
     def is_hashable(self):
-        return False
+        return self.elem_type.is_hashable()
 
+    def fetch_unhashable(self):
+        result = self.elem_type.fetch_unhashable()
+        if result is not None:
+            return result
+
+        return None
+    
     def __eq__(self, other):
         return isinstance(other, OptionType) and other.elem_type == self.elem_type
 
@@ -655,6 +758,18 @@ class FunctionType:
 
     def subst(self, type_env):
         raise ValueError("No substitution for function types (please report)")
+
+    def fetch_unhashable(self):
+        for param_type in self.param_types:
+            result = param_type.fetch_unhashable()
+            if result is not None:
+                return result
+
+        result = self.ret_type.fetch_unhashable()
+        if result is not None:
+            return result
+
+        return None
 
     def unalias(self, type_defs):
         nparam_types = []

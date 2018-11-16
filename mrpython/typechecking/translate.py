@@ -86,6 +86,9 @@ TRANSLATOR_DICT = {
     , "Expecting precise type '{}' but found less precise type: {}" : { 'fr' : "J'attends le type précis '{}' mais le type de cette expression est moins précis: {}" }
     , "Unhashable (mutable) element in set" : { 'fr' : "Cet élément de l'ensemble n'est pas immutable (hashable)"}
     , "Bad set" : { 'fr' : "Problème d'ensemble" }
+    , "Type declaration error" : { 'fr' : "Problème de déclaration de type" }
+    , "Wrong use in signature of function '{}' of mutable (not hashable) type: {}" : { 'fr' : "Dans la signature de la fonction '{}' un type mutable (non-hashable) est utilisé de façon erronée dans la construction du type: {}" }
+    , "Expecting a set" : { 'fr' : "J'attends un ensemble" }
 }
 
 def tr(msg):
