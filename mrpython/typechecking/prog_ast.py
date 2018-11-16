@@ -541,6 +541,13 @@ class CLt(Condition):
     def __init__(self, op, left, right):
         super().__init__(op, left, right)
 
+class CIn(Condition):
+    def __init__(self, op, left, right):
+        super().__init__(op, left, right)
+
+class CNotIn(Condition):
+    def __init__(self, op, left, right):
+        super().__init__(op, left, right)
 
 COMPARE_CLASSES = { "Eq" : CEq
                     , "NotEq" : CNotEq
@@ -548,6 +555,8 @@ COMPARE_CLASSES = { "Eq" : CEq
                     , "Gt" : CGt
                     , "LtE" : CLtE
                     , "Lt" : CLt
+                    , "In" : CIn
+                    , "NotIn" : CNotIn
 }
 
 def parse_cond(op, left, right):

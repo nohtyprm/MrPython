@@ -1175,27 +1175,54 @@ def type_infer_ECompare(ecomp, ctx):
 ECompare.type_infer = type_infer_ECompare
 
 def type_check_Condition(cond, ctx, compare):
-    left_right_ok = False
-    left_type = cond.left.type_infer(ctx)
-    if left_type is None:
-        return False
-    # HACK : will see if a warning is raised
-    nb_errors = len(ctx.type_errors)
-
-    if type_expect(ctx, cond.right, left_type, raise_error=False) is not None:
-        left_right_ok = True
-        
-    right_type = cond.right.type_infer(ctx)
-    if right_type is None:
-        return False
-
-    if left_right_ok:
-        return True
-    elif type_expect(ctx, cond.left, right_type, raise_error=False) is None:
-        ctx.add_type_error(CompareConditionError(compare, cond))
-        return False
     
-    return True
+    if isinstance(cond, (CEq, CNotEq, CLt, CLtE, CGt, CGtE)):
+        left_right_ok = False
+        left_type = cond.left.type_infer(ctx)
+
+        if left_type is None:
+            return False
+
+        # HACK : will see if a warning is raised
+        nb_errors = len(ctx.type_errors)
+
+        if type_expect(ctx, cond.right, left_type, raise_error=False) is not None:
+            left_right_ok = True
+        
+        right_type = cond.right.type_infer(ctx)
+        if right_type is None:
+            return False
+
+        if left_right_ok:
+            return True
+        elif type_expect(ctx, cond.left, right_type, raise_error=False) is None:
+            ctx.add_type_error(CompareConditionError(compare, cond))
+            return False
+
+        return True
+        
+    elif isinstance(cond, (CIn, CNotIn)):
+
+        set_type = cond.right.type_infer(ctx)
+        if set_type is None:
+            return False
+
+        if not isinstance(set_type, SetType):
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, SetType(), cond.right, set_type,
+                                                           tr("Expecting a set")))
+            return False
+
+        if set_type.elem_type is None:
+            return True # XXX: the emptyset is compatible with everything
+
+        if type_expect(ctx, cond.left, set_type.elem_type) is None:
+            return False
+
+        return True
+            
+    else:
+        raise ValueError("Condition not supported (please report): {}".format(cond))
+
 
 Condition.type_check = type_check_Condition
 
