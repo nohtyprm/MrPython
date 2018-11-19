@@ -531,7 +531,12 @@ def type_check_For(for_node, ctx):
        or isinstance(iter_type, SequenceType) \
        or isinstance(iter_type, ListType) \
        or isinstance(iter_type, SetType) \
-       or isinstance(iter_type, StrType):
+       or isinstance(iter_type, StrType) \
+       or isinstance(iter_type, DictType):
+
+        if isinstance(iter_type, DictType):
+            # XXX: it's a hack but it is worth it ...
+            iter_type.elem_type = iter_type.key_type
 
         ctx.push_parent(for_node)
 
@@ -594,9 +599,6 @@ def type_check_For(for_node, ctx):
         ctx.pop_parent()
         return True
     
-    # dictionary
-    elif isinstance(iter_type, DictType):
-        raise NotImplementedError("Dictionary type not yet supported")
     else: # unsupported iterator type
         ctx.add_type_error(IteratorTypeError(for_node, iter_type))
         return False
