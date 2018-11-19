@@ -195,6 +195,7 @@ def type_check_Program(prog):
             # HACK : import the math.pi constant  (the only constant)
             if import_name == "math":
                 ctx.local_env['math.pi'] = (type_expression_parser('float').content, "global")
+                ctx.local_env['math.e'] = (type_expression_parser('float').content, "global")
         else:
             ctx.add_type_error(UnsupportedImportError(import_name, prog.imports[import_name]))
 
