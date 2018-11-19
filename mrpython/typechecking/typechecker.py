@@ -783,6 +783,28 @@ def type_check_With(ewith, ctx):
 
 With.type_check = type_check_With
     
+def ContainerAssign_type_check(cassign, ctx):
+    container_type = cassign.container_expr.type_infer(ctx)
+    if container_type is None:
+        return False
+
+    if not isinstance(container_type, DictType):
+        ctx.add_type_error(ContainerAssignTypeError(cassign, container_type))
+        return False
+
+    if container_type.key_type is None:
+        ctx.add_type_error(ContainerAssignEmptyError(cassign))
+        return False
+
+    if not type_expect(ctx, cassign.container_index, container_type.key_type, raise_error=True):
+        return False
+
+    if not type_expect(ctx, cassign.assign_expr, container_type.val_type, raise_error=True):
+        return False
+
+    return True
+
+ContainerAssign.type_check = ContainerAssign_type_check
 
 ######################################
 # Type inference                     #
@@ -1942,9 +1964,15 @@ def type_compare_DictType(expected_type, ctx, expr, expr_type, raise_error=True)
         ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a dictionary")))
         return False
 
-    if expected_type.is_emptydict() and not expr_type.is_emptydict():
-        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an empty dictionary")))
-        return False
+    if expr_type.is_emptydict():
+        return True # the empty dictionary is compatible with all dictionaries
+    
+    if expected_type.is_emptydict():
+        if not expr_type.is_emptydict():
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an empty dictionary")))
+            return False
+        else: # both empty
+            return True
 
     if not expected_type.key_type.type_compare(ctx, expr, expr_type.key_type, raise_error):
         return False
@@ -2772,6 +2800,36 @@ class UnhashableKeyError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Bad dictionary"), self.element.ast.lineno, self.element.ast.col_offset
                                     , tr("Unhashable (mutable) key in dictionary"))
+
+
+class ContainerAssignTypeError(TypeError):
+    def __init__(self, cassign, container_type):
+        self.cassign = cassign
+        self.container_type = container_type
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "ContainerAssignTypeError[{}]@{}:{}".format(self.container_type, self.cassign.container_expr.ast.lineno, self.cassign.container_expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad assignment"), self.cassign.container_expr.ast.lineno, self.cassign.container_expr.ast.col_offset
+                                    , tr("In Python101 this kind of assignment is only available for dictionaries, not for objects of type: {}").format(self.container_type))
+
+class ContainerAssignEmptyError(TypeError):
+    def __init__(self, cassign):
+        self.cassign = cassign
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "ContainerAssignEmptyError@{}:{}".format(self.cassign.container_expr.ast.lineno, self.cassign.container_expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad assignment"), self.cassign.container_expr.ast.lineno, self.cassign.container_expr.ast.col_offset
+                                    , tr("Assignment in an empty dictionary"))
 
         
 if __name__ == '__main__':

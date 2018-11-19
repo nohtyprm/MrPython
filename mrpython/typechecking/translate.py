@@ -98,6 +98,9 @@ TRANSLATOR_DICT = {
     , "Dictionnary key must be of type: {}" : { 'fr' : "La clé de dictionnaire doit être de type: {}" }
     , "Bad membership" : { 'fr':  "Problème d'appartenance" }
     , "Membership only supported for sets and dicts, not for type: {}" : { 'fr' : "Le test d'appartenance est uniquement disponible (en Python101) pour les ensembles et les dictionnaires, et non pour le type: {}" }
+    , "Bad assignment" : { 'fr' : "Problème d'affectation" }
+    , "In Python101 this kind of assignment is only available for dictionaries, not for objects of type: {}" : { 'fr' : "En Python101 ce type d'affectation n'est disponible que pour les dictionnaires, le type suivant n'est pas supporté : {}" }
+    , "Assignment in an empty dictionary" : { 'fr' : "Affectation dans un dictionnaire vide" }
 }
 
 def tr(msg):

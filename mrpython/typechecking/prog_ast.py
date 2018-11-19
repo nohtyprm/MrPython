@@ -195,7 +195,19 @@ class Assign:
 
         self.expr = parse_expression(self.ast.value)
 
+class ContainerAssign:
+    def __init__(self, target, expr):
+        self.container_expr = parse_expression(target.value)
+        self.container_index = parse_expression(target.slice.value)
+        self.assign_expr = parse_expression(expr)
+        
 def parse_assign(node):
+
+    # dictionary (container) assignment
+    if node.targets and isinstance(node.targets[0], ast.Subscript):
+        return ContainerAssign(node.targets[0], node.value)
+
+    # other form of assigment
     assign = Assign(node)
     if isinstance(assign.target, UnsupportedNode):
         return assign.target
@@ -280,7 +292,6 @@ def parse_with(node):
         with_body.append(iinstr)
         
     return With(node, with_call, with_var, with_body)
-    
             
 def parse_expression_as_instruction(node):
     # XXX: do something here or way until typing for
