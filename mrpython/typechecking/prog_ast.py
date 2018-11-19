@@ -712,6 +712,20 @@ class ESet(Expr):
             elt_expr = parse_expression(elt)
             self.elements.append(elt_expr)
 
+
+class EDict(Expr):
+    def __init__(self, node):
+        self.ast = node
+        self.keys = []
+        for key in node.keys:
+            key_expr = parse_expression(key)
+            self.keys.append(key_expr)
+
+        self.values = []
+        for val in node.values:
+            val_expr = parse_expression(val)
+            self.values.append(val_expr)
+
             
 EXPRESSION_CLASSES = { "Num" : ENum
                        , "Str" : EStr
@@ -726,6 +740,7 @@ EXPRESSION_CLASSES = { "Num" : ENum
                        , "Compare" : parse_compare
                        , "List" : EList
                        , "Set" : ESet
+                       , "Dict" : EDict
                        , "Subscript" : parse_subscript
                        , "ListComp" : EListComp
 }

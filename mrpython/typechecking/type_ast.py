@@ -537,69 +537,81 @@ class UnhashableSetType(TypeAST):
         return "UnhashableSetType({})".format(repr(self.elem_type))
     
 class DictType(TypeAST):
-    def __init__(self, key_type=None, value_type=None, annotation=None):
+    def __init__(self, key_type=None, val_type=None, annotation=None):
         super().__init__(annotation)
         if key_type is not None and not isinstance(key_type, TypeAST):
             raise ValueError("Key type is not a TypeAST: {}".format(key_type))
         self.key_type = key_type
-        if key_type is None and value_type is not None:
-            raise ValueError("Value type must be None because Key Type is: {}".format(value_type))
-        if value_type is not None and not isinstance(value_type, TypeAST):
-            raise ValueError("Value type is not a TypeAST: {}".format(value_type))
-        self.value_type = value_type
+        if key_type is None and val_type is not None:
+            raise ValueError("Value type must be None because Key Type is: {}".format(val_type))
+        if val_type is not None and not isinstance(val_type, TypeAST):
+            raise ValueError("Value type is not a TypeAST: {}".format(val_type))
+        self.val_type = val_type
 
     def rename_type_variables(self, rmap):
+        if self.key_type is None:
+            return self
+        
         nkey_type = self.key_type.rename_type_variables(rmap)
-        nvalue_type = self.value_type.rename_type_variables(rmap)
-        return DictType(nkey_type, nvalue_type, self.annotation)
+        nval_type = self.val_type.rename_type_variables(rmap)
+        return DictType(nkey_type, nval_type, self.annotation)
 
-    def susbt(self, type_env):
+    def subst(self, type_env):
+        if self.key_type:
+            return self
+        
         return DictType(self.key_type.subst(type_env)
-                        , self.value_type.subst(type_env)
+                        , self.val_type.subst(type_env)
                         , self.annotation)
 
     def is_hashable(self):
         return False
 
     def fetch_unhashable(self):
+        if self.key_type is None:
+            return None
+        
         result = self.key_type.fetch_unhashable()
         if result is not None:
             return result
 
-        result = self.value_type.fetch_unhashable()
+        result = self.val_type.fetch_unhashable()
         if result is not None:
             return result
 
         return None        
 
     def unalias(self, type_defs):
+        if self.key_type is None:
+            return (self, None)
+        
         ukey_type, unknown_alias = self.key_type.unalias(type_defs)
         if ukey_type is None:
             return (None, unknown_alias)
-        uvalue_type, unknown_alias = self.value_type.unalias(type_defs)
-        if uvalue_type is None:
+        uval_type, unknown_alias = self.val_type.unalias(type_defs)
+        if uval_type is None:
             return (None, unknown_alias)
 
-        return (DictType(ukey_type, uvalue_type
+        return (DictType(ukey_type, uval_type
                          , self.annotation if self.annotated else None)
                 , None)
 
     
     def __eq__(self, other):
         return isinstance(other, DictType) and other.key_type == self.key_type \
-            and other.value_type == self.value_type
+            and other.val_type == self.val_type
 
     def is_emptydict(self):
-        return self.key_type is None and self.value_type is None
+        return self.key_type is None and self.val_type is None
 
     def __str__(self):
         if self.key_type:
-            return "dict[{}:{}]".format(str(self.key_type), str(self.value_type))
+            return "dict[{}:{}]".format(str(self.key_type), str(self.val_type))
         else:
             return "emptydict"
 
     def __repr__(self):
-        return "DictType({},{})".format(repr(self.key_type), repr(self.value_type))
+        return "DictType({},{})".format(repr(self.key_type), repr(self.val_type))
 
 class IterableType(TypeAST):
     def __init__(self, elem_type, annotation=None):
@@ -612,7 +624,7 @@ class IterableType(TypeAST):
         nelem_type = self.elem_type.rename_type_variables(rmap)
         return IterableType(nelem_type, self.annotation)
 
-    def susbt(self, type_env):
+    def subst(self, type_env):
         return IterableType(self.elem_type.subst(type_env), self.annotation)
 
     def unalias(self, type_defs):
@@ -652,7 +664,7 @@ class SequenceType(TypeAST):
         nelem_type = self.elem_type.rename_type_variables(rmap)
         return SequenceType(nelem_type, self.annotation)
 
-    def susbt(self, type_env):
+    def subst(self, type_env):
         return SequenceType(self.elem_type.subst(type_env), self.annotation if self.annotated else None)
 
     def is_hashable(self):

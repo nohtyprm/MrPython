@@ -380,7 +380,7 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
         lineno -= 1
 
     if strict and req_vars: # need all declarations in strict mode
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'unknown-vars', assign_target.ast.lineno, tr("Variables not declared: {}").format((v.var_name for f in req_vars))))
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'unknown-vars', assign_target.ast.lineno, tr("Variable(s) not declared: {}").format(", ".join((v for v in req_vars)))))
         return None
 
     return declared_types
@@ -1301,22 +1301,35 @@ def type_check_Condition(cond, ctx, compare):
         
     elif isinstance(cond, (CIn, CNotIn)):
 
-        set_type = cond.right.type_infer(ctx)
-        if set_type is None:
+        container_type = cond.right.type_infer(ctx)
+        if container_type is None:
             return False
+        
+        if isinstance(container_type, SetType):
+            set_type = container_type
 
-        if not isinstance(set_type, SetType):
-            ctx.add_type_error(TypeComparisonError(ctx.function_def, SetType(), cond.right, set_type,
-                                                           tr("Expecting a set")))
+            if set_type.elem_type is None:
+                return True # XXX: the emptyset is compatible with everything
+
+            if type_expect(ctx, cond.left, set_type.elem_type) is None:
+                return False
+
+            return True
+
+        elif isinstance(container_type, DictType):
+            dict_type = container_type
+
+            if dict_type.key_type is None:
+                return True # XXX : the emptydict is compatible with everything
+
+            if type_expect(ctx, cond.left, dict_type.key_type) is None:
+                return False
+
+            return True
+
+        else:
+            ctx.add_type_error(MembershipTypeError(cond.right, container_type))
             return False
-
-        if set_type.elem_type is None:
-            return True # XXX: the emptyset is compatible with everything
-
-        if type_expect(ctx, cond.left, set_type.elem_type) is None:
-            return False
-
-        return True
             
     else:
         raise ValueError("Condition not supported (please report): {}".format(cond))
@@ -1383,8 +1396,7 @@ def type_infer_Indexing(indexing, ctx):
     elif isinstance(subject_type, DictType):
         # TODO : dict typing
         sequential = False
-        raise NotImplementedError("Dictionary typing not (yet) supported")
-
+        result_type = subject_type.val_type
     else:
         ctx.add_type_error(IndexingError(indexing, subject_type))
         return None
@@ -1394,8 +1406,9 @@ def type_infer_Indexing(indexing, ctx):
             ctx.add_type_error(IndexingSequenceNotNumeric(indexing.index))
             return None
     else: # dictionary
-        if type_expect(ctx, indexing.index, key_type, raise_error=False) is None:
-            ctx.add_type_error(IndexingDictKeyTypeError(indexing.index))
+    
+        if type_expect(ctx, indexing.index, subject_type.key_type, raise_error=False) is None:
+            ctx.add_type_error(IndexingDictKeyTypeError(indexing.index, subject_type.key_type))
             return None
 
     return result_type
@@ -1550,6 +1563,55 @@ def type_infer_ESet(st, ctx):
     return SetType(st_type)
 
 ESet.type_infer = type_infer_ESet
+
+def type_infer_EDict(edict, ctx):
+    if not edict.keys:
+        return DictType()
+
+    # key type
+    edict_key_type = None
+    for key in edict.keys:
+        key_type = key.type_infer(ctx)
+        if key_type is None:
+            return None
+
+        if not key_type.is_hashable():
+            ctx.add_type_error(UnhashableKeyError(edict, key))
+            return None
+        
+        if edict_key_type is None:
+            edict_key_type = key_type
+        else:
+            if (isinstance(edict_key_type, (IntType, FloatType, NumberType)) 
+                and isinstance(key_type, (IntType, FloatType, NumberType))):
+                edict_key_type = infer_number_type(ctx, edict_key_type, key_type)
+            else: 
+                if not edict_key_type.type_compare(ctx, key, key_type, raise_error=False):
+                    ctx.add_type_error(HeterogeneousElementError('set', edict, edict_key_type, key_type, key))
+                    return None
+
+    # value type
+    edict_val_type = None
+
+    for val in edict.values:
+        val_type = val.type_infer(ctx)
+        if val_type is None:
+            return None
+
+        if edict_val_type is None:
+            edict_val_type = val_type
+        else:
+            if (isinstance(edict_val_type, (IntType, FloatType, NumberType)) 
+                and isinstance(val_type, (IntType, FloatType, NumberType))):
+                edict_val_type = infer_number_type(ctx, edict_val_type, val_type)
+            else: 
+                if not edict_val_type.type_compare(ctx, val, val_type, raise_error=False):
+                    ctx.add_type_error(HeterogeneousElementError('dictionary', edict, edict_val_type, val_type, key))
+                    return None
+                
+    return DictType(edict_key_type, edict_val_type)
+
+EDict.type_infer = type_infer_EDict
 
 ######################################
 # Type comparisons                   #
@@ -1744,7 +1806,7 @@ def type_compare_IterableType(expected_type, ctx, expr, expr_type, raise_error=T
         return expected_type.elem_type.type_compare(ctx, expr, StrType(), raise_error)
 
     elif isinstance(expr_type, DictType):
-        raise NotImplementedError("type_compare_IterableType (dict type)")
+        return expected_type.elem_type.type_compare(ctx, expr, expr_type.key_type, raise_error)
     else:
         if raise_error:
             ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an Iterable (Sequence, list, string, set or dictionnary)")))
@@ -1872,6 +1934,28 @@ def type_compare_TupleType(expected_type, ctx, expr, expr_type, raise_error=True
 
 TupleType.type_compare = type_compare_TupleType
 
+def type_compare_DictType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if isinstance(expr_type, OptionType):
+        return check_option_type(type_compare_DictType, expected_type, ctx, expr, expr_type, raise_error)
+
+    if not isinstance(expr_type, DictType):
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a dictionary")))
+        return False
+
+    if expected_type.is_emptydict() and not expr_type.is_emptydict():
+        ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an empty dictionary")))
+        return False
+
+    if not expected_type.key_type.type_compare(ctx, expr, expr_type.key_type, raise_error):
+        return False
+
+    if not expected_type.val_type.type_compare(ctx, expr, expr_type.val_type, raise_error):
+        return False
+
+    return True
+
+DictType.type_compare = type_compare_DictType
+
 ######################################
 # Standard imports                   #
 ######################################
@@ -1907,6 +1991,8 @@ BUILTINS_IMPORTS = {
     , 'set' : function_type_parser(" -> emptyset").content
     , '.add' : function_type_parser("set[α] * α -> NoneType").content
     , '.remove' : function_type_parser("set[α] * α -> NoneType").content
+    # dictionnaires
+    , 'dict' : function_type_parser(" -> emptydict").content
 }
 
 MATH_IMPORTS = {
@@ -2451,7 +2537,38 @@ class IndexingSequenceNotNumeric(TypeError):
         report.add_convention_error('error', tr("Bad index"), self.index.ast.lineno, self.index.ast.col_offset
                                     , tr("Sequence index must be an integer"))
 
+        
+class IndexingDictKeyTypeError(TypeError):
+    def __init__(self, index, dict_key_type):
+        self.index = index
+        self.dict_key_type = dict_key_type
 
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "IndexingDictKeyTypeError[{}]@{}:{}".format(self.dict_key_type, self.index.ast.lineno, self.index.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad index"), self.index.ast.lineno, self.index.ast.col_offset
+                                    , tr("Dictionnary key must be of type: {}").format(self.dict_key_type))
+
+
+class MembershipTypeError(TypeError):
+    def __init__(self, container_expr, container_type):
+        self.container_expr = container_expr
+        self.container_type = container_type
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "MembershipTypeError[{}]@{}:{}".format(self.container_type, self.container_expr.ast.lineno, self.container_expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad membership"), self.index.ast.lineno, self.index.ast.col_offset
+                                    , tr("Membership only supported for sets and dicts, not for type: {}").format(self.container_type))
+        
 class HeterogeneousElementError(TypeError):
     def __init__(self, container_kind, container, container_type, element_type, element):
         self.container_kind = container_kind
@@ -2639,7 +2756,23 @@ class UnhashableElementError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Bad set"), self.element.ast.lineno, self.element.ast.col_offset
                                     , tr("Unhashable (mutable) element in set"))
-    
+
+
+class UnhashableKeyError(TypeError):
+    def __init__(self, edict, key):
+        self.dict = edict
+        self.key = key
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "UnhashableKeyError@{}:{}".format(self.key.ast.lineno, self.key.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad dictionary"), self.element.ast.lineno, self.element.ast.col_offset
+                                    , tr("Unhashable (mutable) key in dictionary"))
+
         
 if __name__ == '__main__':
 

@@ -92,6 +92,12 @@ TRANSLATOR_DICT = {
     , "Type definition problem" : { 'fr' : "Problème de définition de type" }
     , "I don't understand the definition of type '{}'" : { 'fr' : "Je ne comprends pas la définition du type '{}'"}
     , "There is already a definition for type '{}'" : { 'fr' : "Il y a déjà une définition pour le type '{}'" }
+    , "Variable(s) not declared: {}" : { 'fr' : "Variable(s) non-déclarée(s) : {}" }
+    , "Expecting a dictionary" : { 'fr' : "J'attends un dictionnaire" }
+    , "Expecting an empty dictionary" : { 'fr' : "J'attends un dictionnaire vide" }
+    , "Dictionnary key must be of type: {}" : { 'fr' : "La clé de dictionnaire doit être de type: {}" }
+    , "Bad membership" : { 'fr':  "Problème d'appartenance" }
+    , "Membership only supported for sets and dicts, not for type: {}" : { 'fr' : "Le test d'appartenance est uniquement disponible (en Python101) pour les ensembles et les dictionnaires, et non pour le type: {}" }
 }
 
 def tr(msg):

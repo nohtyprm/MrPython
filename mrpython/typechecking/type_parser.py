@@ -26,6 +26,7 @@ def type_tokenizer():
     tokenizer.add_rule(tokens.Char('comma', ','))
     tokenizer.add_rule(tokens.Char('open_bracket', '['))
     tokenizer.add_rule(tokens.Char('close_bracket', ']'))
+    tokenizer.add_rule(tokens.Char('colon', ':'))
 
 
     # spaces
@@ -56,7 +57,9 @@ def type_tokenizer():
     tokenizer.add_rule(tokens.Literal('Sequence_type', 'Sequence'))
     tokenizer.add_rule(tokens.LiteralSet('list_type', 'list', 'List'))
     tokenizer.add_rule(tokens.LiteralSet('set_type', 'set', 'Set'))
+    tokenizer.add_rule(tokens.LiteralSet('dict_type', 'dict', 'Dict'))
     tokenizer.add_rule(tokens.LiteralSet('emptyset_type', 'emptyset', 'EmptySet'))
+    tokenizer.add_rule(tokens.LiteralSet('emptydict_type', 'emptydict', 'EmptyDict'))
     tokenizer.add_rule(tokens.LiteralSet('dict_type', 'dict', 'Dict'))
     tokenizer.add_rule(tokens.LiteralSet('tuple_type', 'tuple', 'Tuple'))
 
@@ -248,6 +251,32 @@ def build_typeexpr_grammar(grammar=None):
     emptyset_parser.xform_result = emptyset_xform_result
     grammar.register('emptyset_type', emptyset_parser)
 
+    dict_parser = parsers.Tuple() \
+                      .skip(parsers.Token('dict_type')) \
+                      .forget(grammar.ref('spaces')) \
+                      .skip(parsers.Token('open_bracket')) \
+                      .forget(grammar.ref('spaces')) \
+                      .element(grammar.ref('typeexpr')) \
+                      .forget(grammar.ref('spaces')) \
+                      .skip(parsers.Token('colon')) \
+                      .forget(grammar.ref('spaces')) \
+                      .element(grammar.ref('typeexpr')) \
+                      .forget(grammar.ref('spaces')) \
+                      .skip(parsers.Token('close_bracket'))
+
+    def dict_xform_result(result):
+        result.content = DictType(result.content[0].content, result.content[1].content, annotation=result)
+        return result
+    dict_parser.xform_result = dict_xform_result
+    grammar.register('dict_type', dict_parser)
+    
+    emptydict_parser = parsers.Token("emptydict_type")
+    def emptydict_xform_result(result):
+        result.content = DictType()
+        return result
+    emptydict_parser.xform_result = emptydict_xform_result
+    grammar.register('emptydict_type', emptydict_parser)
+
     tuple_parser = parsers.Tuple() \
                         .skip(parsers.Token('tuple_type')) \
                         .forget(grammar.ref('spaces')) \
@@ -285,7 +314,9 @@ def build_typeexpr_grammar(grammar=None):
                        .orelse(grammar.ref('Sequence_type')) \
                        .orelse(grammar.ref('list_type')) \
                        .orelse(grammar.ref('set_type')) \
+                       .orelse(grammar.ref('dict_type')) \
                        .orelse(grammar.ref('emptyset_type')) \
+                       .orelse(grammar.ref('emptydict_type')) \
                        .orelse(grammar.ref('tuple_type')) \
                        .orelse(grammar.ref('type_var')) \
                        .orelse(grammar.ref('type_alias'))
