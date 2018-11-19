@@ -2598,7 +2598,7 @@ class MembershipTypeError(TypeError):
         return "MembershipTypeError[{}]@{}:{}".format(self.container_type, self.container_expr.ast.lineno, self.container_expr.ast.col_offset)
 
     def report(self, report):
-        report.add_convention_error('error', tr("Bad membership"), self.index.ast.lineno, self.index.ast.col_offset
+        report.add_convention_error('error', tr("Bad membership"), self.container_expr.ast.lineno, self.container_expr.ast.col_offset
                                     , tr("Membership only supported for sets and dicts, not for type: {}").format(self.container_type))
         
 class HeterogeneousElementError(TypeError):
