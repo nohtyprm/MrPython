@@ -1980,8 +1980,38 @@ class SignatureTrailingError(TypeError):
 
     def is_fatal(self):
         return False
-    
 
+class TypeDefParseError(TypeError): 
+    def __init__(self, lineno, type_name):
+        self.lineno = lineno
+        self.type_name = type_name
+
+    def fail_string(self):
+        return "TypeDefParseError[{}]@{}:{}".format(self.type_name, self.lineno, 0)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Type definition problem"), self.lineno, 0
+                                    , details=tr("I don't understand the definition of type '{}'").format(self.type_name))
+
+    def is_fatal(self):
+        return False
+
+class DuplicateTypeDefError(TypeError): 
+    def __init__(self, lineno, type_name):
+        self.lineno = lineno
+        self.type_name = type_name
+
+    def fail_string(self):
+        return "DuplicateTypeDefError[{}]@{}:{}".format(self.type_name, self.lineno, 0)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Type definition problem"), self.lineno, 0
+                                    , details=tr("There is already a definition for type '{}'").format(self.type_name))
+
+    def is_fatal(self):
+        return False
+
+    
 class AssertionInFunctionWarning(TypeError):
     def __init__(self, fun_name, assertion):
         self.fun_name = fun_name

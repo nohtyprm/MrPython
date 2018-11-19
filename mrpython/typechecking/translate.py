@@ -89,6 +89,9 @@ TRANSLATOR_DICT = {
     , "Type declaration error" : { 'fr' : "Problème de déclaration de type" }
     , "Wrong use in signature of function '{}' of mutable (not hashable) type: {}" : { 'fr' : "Dans la signature de la fonction '{}' un type mutable (non-hashable) est utilisé de façon erronée dans la construction du type: {}" }
     , "Expecting a set" : { 'fr' : "J'attends un ensemble" }
+    , "Type definition problem" : { 'fr' : "Problème de définition de type" }
+    , "I don't understand the definition of type '{}'" : { 'fr' : "Je ne comprends pas la définition du type '{}'"}
+    , "There is already a definition for type '{}'" : { 'fr' : "Il y a déjà une définition pour le type '{}'" }
 }
 
 def tr(msg):

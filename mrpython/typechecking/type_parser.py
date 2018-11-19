@@ -460,7 +460,7 @@ def var_type_parser(string):
     parser = TypeParser()
     return parser.parse_vartype_from_string(string)
 
-TYPE_DEF_REGEXP = re.compile(r"\A#[ \t]+type[ \t]+([a-zA-Z][a-zA-Z_0-9]*)[ \t]*=[ \t]*(.*)$")
+TYPE_DEF_REGEXP = re.compile(r"\A#[ \t]*type[ \t]+([a-zA-Z][a-zA-Z_0-9]*)[ \t]*=[ \t]*(.*)$")
 
 def type_def_parser(string):
     m = re.match(TYPE_DEF_REGEXP, string)
