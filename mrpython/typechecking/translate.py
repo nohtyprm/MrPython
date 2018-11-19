@@ -39,7 +39,7 @@ TRANSLATOR_DICT = {
     , "Incompatible types" : { 'fr' : "Types incompatibles"}
     , "Expecting type '{}' but instead found: {}" : { 'fr' : "j'attendais le type '{}' mais cette expression est plutôt de type: {}"}
     , "Comparison error" : { 'fr' : "Erreur de comparaison"}
-    , "The two operands of the comparision should have the same type" : { 'fr' : "Les deux opérandes de la comparaison devraient être du même type"}
+    , "The two operands of the comparision should have the same type: '{}' vs. '{}'" : { 'fr' : "Les deux opérandes de la comparaison devraient être du même type: '{}' vs. '{}'"}
     , "Bad variable" : { 'fr' : "Problème de variable"}
     , "Bad indexing" : { 'fr' : "Problème d'indexation" }
     , "One can only index a sequence or a dictionnary, not a '{}'" : { 'fr' : "On ne peut indexer qu'une séquence ou un dictionnaire, pas un '{}'" }

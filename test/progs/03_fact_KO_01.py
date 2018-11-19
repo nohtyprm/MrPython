@@ -1,4 +1,4 @@
-##!FAIL: CompareConditionError@14:10
+##!FAIL: CompareConditionError[int/bool]@14:10
 
 def fact(n):
     """ int -> int

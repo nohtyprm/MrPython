@@ -557,7 +557,7 @@ class DictType(TypeAST):
         return DictType(nkey_type, nval_type, self.annotation)
 
     def subst(self, type_env):
-        if self.key_type:
+        if self.key_type is None:
             return self
         
         return DictType(self.key_type.subst(type_env)

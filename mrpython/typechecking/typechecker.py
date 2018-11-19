@@ -1186,7 +1186,7 @@ def type_infer_ENot(node, ctx):
         return None
     return BoolType()
 
-ENot.type_infer = type_infer_ENot    
+ENot.type_infer = type_infer_ENot
 
 def type_infer_ENone(node, ctx):
     return NoneTypeType()
@@ -1199,7 +1199,7 @@ def type_infer_ECall(call, ctx):
         method_call = False
         signature = ctx.global_env[call.full_fun_name]
         arguments = call.arguments
-    elif "." + call.fun_name in { ".append", ".readlines", ".write", ".add", ".remove", ".items" } and not call.multi_receivers:
+    elif "." + call.fun_name in { ".append", ".readlines", ".read", ".write", ".add", ".remove", ".items" } and not call.multi_receivers:
         method_call = True
         signature = ctx.global_env["." + call.fun_name]
         arguments = []
@@ -1318,8 +1318,10 @@ def type_check_Condition(cond, ctx, compare):
 
         if left_right_ok:
             return True
-        elif type_expect(ctx, cond.left, right_type, raise_error=False) is None:
-            ctx.add_type_error(CompareConditionError(compare, cond))
+        elif ((type_expect(ctx, cond.left, right_type, raise_error=False) is None)
+              #and (type_expect(ctx, cond.right, left_type, raise_error=False) is None)
+        ):
+            ctx.add_type_error(CompareConditionError(compare, cond, left_type, right_type))
             return False
 
         return True
@@ -2017,6 +2019,7 @@ BUILTINS_IMPORTS = {
     # fichiers
     , 'open' : function_type_parser("str * str -> FILE").content
     , '.readlines' : function_type_parser("FILE -> list[str]").content
+    , '.read' : function_type_parser("FILE -> str").content
     , '.write' : function_type_parser("FILE * str -> NoneType").content
     # ensembles
     , 'set' : function_type_parser(" -> emptyset").content
@@ -2434,19 +2437,21 @@ class TestCaseError(TypeError):
         return "TestCaseError[{}]@{}:{}".format(self.expr_type.__class__.__name__, self.test_case.ast.lineno, self.test_case.ast.col_offset)
 
 class CompareConditionError(TypeError):
-    def __init__(self, compare, cond):
+    def __init__(self, compare, cond, left_type, right_type):
         self.compare = compare
         self.cond = cond
+        self.left_type = left_type
+        self.right_type = right_type
 
     def is_fatal(self):
         return True
 
     def fail_string(self):
-        return "CompareConditionError@{}:{}".format(self.compare.ast.lineno, self.compare.ast.col_offset)
+        return "CompareConditionError[{}/{}]@{}:{}".format(self.left_type, self.right_type, self.compare.ast.lineno, self.compare.ast.col_offset)
 
     def report(self, report):
         report.add_convention_error('error', tr("Comparison error"), self.compare.ast.lineno, self.compare.ast.col_offset
-                                    , tr("The two operands of the comparision should have the same type"))
+                                    , tr("The two operands of the comparision should have the same type: '{}' vs. '{}'").format(self.left_type, self.right_type))
 
 class DeadVariableUseError(TypeError):
     def __init__(self, var_name, node):

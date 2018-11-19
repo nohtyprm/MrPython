@@ -1,4 +1,4 @@
-##!FAIL: CompareConditionError@20:7
+##!FAIL: CompareConditionError[float/bool]@20:7
 
 import math
 
