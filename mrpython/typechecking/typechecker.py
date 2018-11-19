@@ -1198,7 +1198,7 @@ def type_infer_ECall(call, ctx):
         method_call = False
         signature = ctx.global_env[call.full_fun_name]
         arguments = call.arguments
-    elif "." + call.fun_name in { ".append", ".readlines", ".write", ".add", ".remove" } and not call.multi_receivers:
+    elif "." + call.fun_name in { ".append", ".readlines", ".write", ".add", ".remove", ".items" } and not call.multi_receivers:
         method_call = True
         signature = ctx.global_env["." + call.fun_name]
         arguments = []
@@ -2023,6 +2023,7 @@ BUILTINS_IMPORTS = {
     , '.remove' : function_type_parser("set[α] * α -> NoneType").content
     # dictionnaires
     , 'dict' : function_type_parser(" -> emptydict").content
+    , '.items' : function_type_parser(" dict[α:β] -> Iterable[tuple[α,β]]").content
 }
 
 MATH_IMPORTS = {

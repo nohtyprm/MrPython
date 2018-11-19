@@ -1,4 +1,4 @@
-##!FAIL: UnsupportedNodeError[Subscript]@7:4
+##!FAIL: ContainerAssignTypeError[str]@7:4
 
 def f():
     """ -> NoneType """
