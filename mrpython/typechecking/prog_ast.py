@@ -723,6 +723,14 @@ class ESet(Expr):
             elt_expr = parse_expression(elt)
             self.elements.append(elt_expr)
 
+class ESetComp(Expr):
+    def __init__(self, node):
+        self.ast = node
+        #print(astpp.dump(node))
+        self.compr_expr = parse_expression(node.elt)
+        self.generators = []
+        for gen in node.generators:
+            self.generators.append(Generator(gen))
 
 class EDict(Expr):
     def __init__(self, node):
@@ -736,6 +744,16 @@ class EDict(Expr):
         for val in node.values:
             val_expr = parse_expression(val)
             self.values.append(val_expr)
+
+class EDictComp(Expr):
+    def __init__(self, node):
+        self.ast = node
+        #print(astpp.dump(node))
+        self.key_expr = parse_expression(node.key)
+        self.val_expr = parse_expression(node.value)
+        self.generators = []
+        for gen in node.generators:
+            self.generators.append(Generator(gen))
 
             
 EXPRESSION_CLASSES = { "Num" : ENum
@@ -754,6 +772,8 @@ EXPRESSION_CLASSES = { "Num" : ENum
                        , "Dict" : EDict
                        , "Subscript" : parse_subscript
                        , "ListComp" : EListComp
+                       , "SetComp" : ESetComp
+                       , "DictComp" : EDictComp
 }
 
 def parse_expression(node):

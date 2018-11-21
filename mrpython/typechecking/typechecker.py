@@ -467,8 +467,8 @@ def type_check_Assign(assign, ctx, global_scope = False):
 
     
     if not isinstance(expr_type, TupleType):
-        ctx.add_type_error(TypeComparisonError(ctx.function_def, TupleType(), expr, expr_type,
-                                               tr("Expecting a tuple")))
+        ctx.add_type_error(TypeExpectationError(ctx.function_def, expr, expr_type,
+                                                tr("Expecting a tuple")))
         return False
 
     expr_var_types = linearize_tuple_type(expr_type)
@@ -1473,12 +1473,12 @@ def type_infer_Slicing(slicing, ctx):
 
 Slicing.type_infer = type_infer_Slicing
 
-def type_infer_EComp(list_comp, ctx):
+def type_infer_EComp(ecomp, ctx):
     
     # we will modify the lexical environment
-    ctx.push_parent(list_comp)
+    ctx.push_parent(ecomp)
     
-    for generator in list_comp.generators:
+    for generator in ecomp.generators:
         # fetch the type of the iterator expr
         iter_type = generator.iter.type_infer(ctx)
         if iter_type is None:
@@ -1512,8 +1512,8 @@ def type_infer_EComp(list_comp, ctx):
                     ctx.local_env[var.var_name] = (iter_elem_type, ctx.fetch_scope_mode())
             else: # tuple destruct
                 if not isinstance(iter_elem_type, TupleType):
-                    ctx.add_type_error(TypeComparisonError(ctx.function_def, TupleType(), generator.iter, iter_elem_type,
-                                                           tr("Expecting an iterator of tuples")))
+                    ctx.add_type_error(TypeExpectationError(ctx.function_def, generator.iter, iter_elem_type,
+                                                            tr("Expecting an iterator of tuples")))
                     ctx.pop_parent()
                     return None
 
@@ -1554,15 +1554,44 @@ def type_infer_EComp(list_comp, ctx):
                 
     # once all generators have been type checked
 
-    expr_type = list_comp.compr_expr.type_infer(ctx)
-    if expr_type is None:
-        ctx.pop_parent()
-        return None
+    if isinstance(ecomp, EDictComp):
+        key_type = ecomp.key_expr.type_infer(ctx)
+        if key_type is None:
+            ctx.pop_parent()
+            return None
+
+        val_type = ecomp.val_expr.type_infer(ctx)
+        if val_type is None:
+            ctx.pop_parent()
+            return None
+
+    else: # list or set
+        expr_type = ecomp.compr_expr.type_infer(ctx)
+        if expr_type is None:
+            ctx.pop_parent()
+            return None
 
     ctx.pop_parent()
-    return ListType(expr_type)
+
+    if isinstance(ecomp, EListComp):
+        return ListType(expr_type)
+    elif isinstance(ecomp, ESetComp):
+        if not expr_type.is_hashable():
+            ctx.add_type_error(UnhashableElementError(ecomp, ecomp.compr_expr))
+            return None
+            
+        return SetType(expr_type)
+    elif isinstance(ecomp, EDictComp):
+        if not key_type.is_hashable():
+            ctx.add_type_error(UnhashableKeyError(ecomp, ecomp.key_expr))
+            return None
+        return DictType(key_type, val_type)     
+    else:
+        raise ValueError("Comprehension not supported: {} (please report)".format(ecomp))   
 
 EListComp.type_infer = type_infer_EComp
+ESetComp.type_infer = type_infer_EComp
+EDictComp.type_infer = type_infer_EComp
 
 def type_infer_ESet(st, ctx):
     st_type = None
@@ -2307,6 +2336,24 @@ class TypeComparisonError(TypeError):
         report.add_convention_error('error', tr("Incompatible types"), self.expr.ast.lineno, self.expr.ast.col_offset
                                     , tr( "Expecting type '{}' but instead found: {}").format(self.expected_type, self.expr_type))
 
+class TypeExpectationError(TypeError):
+    def __init__(self, in_function, expr, expr_type, explain):
+        self.in_function = in_function
+        self.expr = expr
+        self.expr_type = expr_type
+        self.explain = explain
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "TypeExpectationError[{}/{}]@{}:{}".format(self.expr_type, self.explain, self.expr.ast.lineno, self.expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Incorrect type"), self.expr.ast.lineno, self.expr.ast.col_offset
+                                    , tr("Found type '{}' which is incorrect: {}").format(self.expr_type, self.explain))
+
+        
 class TypeImprecisionWarning(TypeError):
     def __init__(self, in_function, expected_type, expr, expr_type, explain):
         self.in_function = in_function
@@ -2796,7 +2843,7 @@ class UnhashableElementError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad set"), self.element.ast.lineno, self.element.ast.col_offset
-                                    , tr("Unhashable (mutable) element in set"))
+                                    , tr("Unhashable (mutable) element forbidden in set"))
 
 
 class UnhashableKeyError(TypeError):
@@ -2811,7 +2858,7 @@ class UnhashableKeyError(TypeError):
         return "UnhashableKeyError@{}:{}".format(self.key.ast.lineno, self.key.ast.col_offset)
 
     def report(self, report):
-        report.add_convention_error('error', tr("Bad dictionary"), self.element.ast.lineno, self.element.ast.col_offset
+        report.add_convention_error('error', tr("Bad dictionary"), self.key.ast.lineno, self.key.ast.col_offset
                                     , tr("Unhashable (mutable) key in dictionary"))
 
 

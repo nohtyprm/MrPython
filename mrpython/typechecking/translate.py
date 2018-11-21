@@ -38,6 +38,8 @@ TRANSLATOR_DICT = {
     , "I don't know any function named '{}'" : { 'fr' : "je ne connais pas de fonction dont le nom est '{}'"}
     , "Incompatible types" : { 'fr' : "Types incompatibles"}
     , "Expecting type '{}' but instead found: {}" : { 'fr' : "j'attendais le type '{}' mais cette expression est plutôt de type: {}"}
+    , "Incorrect type" : { 'fr' : "Type incorrect" }
+    , "Found type '{}' which is incorrect: {}" : { 'fr' : "Je trouve le type '{}' qui n'est pas correcte : {}" }
     , "Comparison error" : { 'fr' : "Erreur de comparaison"}
     , "The two operands of the comparision should have the same type: '{}' vs. '{}'" : { 'fr' : "Les deux opérandes de la comparaison devraient être du même type: '{}' vs. '{}'"}
     , "Bad variable" : { 'fr' : "Problème de variable"}
@@ -82,10 +84,13 @@ TRANSLATOR_DICT = {
     , "Type name error" : { 'fr' : "Erreur de type nommé" }
     , "I don't find any definition for the type: {}" : { 'fr' : "Je ne trouve pas de définition pour le type: {}" }
     , "Bad iterator" : { 'fr' : "Problème d'itération" }
+    , "Expecting an iterator of tuples" : { 'fr' : "J'attends un itérable de n-uplets" }
     , "Not an iterable type: {}" : { 'fr' : "Type non itérable: {}" }
     , "Expecting precise type '{}' but found less precise type: {}" : { 'fr' : "J'attends le type précis '{}' mais le type de cette expression est moins précis: {}" }
-    , "Unhashable (mutable) element in set" : { 'fr' : "Cet élément de l'ensemble n'est pas immutable (hashable)"}
+    , "Unhashable (mutable) element forbidden in set" : { 'fr' : "Un ensemble ne peut contenir de valeur mutable (non-hashable)" }
+    , "Unhashable (mutable) key in dictionary" : { 'fr' : "Une clé de dictionnaire ne peut être mutable (non-hashable)" }
     , "Bad set" : { 'fr' : "Problème d'ensemble" }
+    , "Bad dictionary" : { 'fr' : "Problème de dictionnaire" }
     , "Type declaration error" : { 'fr' : "Problème de déclaration de type" }
     , "Wrong use in signature of function '{}' of mutable (not hashable) type: {}" : { 'fr' : "Dans la signature de la fonction '{}' un type mutable (non-hashable) est utilisé de façon erronée dans la construction du type: {}" }
     , "Expecting a set" : { 'fr' : "J'attends un ensemble" }
