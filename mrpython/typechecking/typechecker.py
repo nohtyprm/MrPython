@@ -1473,7 +1473,7 @@ def type_infer_Slicing(slicing, ctx):
 
 Slicing.type_infer = type_infer_Slicing
 
-def type_infer_EListComp(list_comp, ctx):
+def type_infer_EComp(list_comp, ctx):
     
     # we will modify the lexical environment
     ctx.push_parent(list_comp)
@@ -1485,8 +1485,15 @@ def type_infer_EListComp(list_comp, ctx):
             ctx.pop_parent()
             return None
 
-        if isinstance(iter_type, (IterableType, SequenceType, ListType, SetType, StrType)):
-            iter_elem_type = StrType() if isinstance(iter_type, StrType) else iter_type.elem_type
+        if isinstance(iter_type, (IterableType, SequenceType, ListType, SetType, StrType, DictType)):
+            iter_elem_type = None
+            if isinstance(iter_type, StrType):
+                iter_elem_type = StrType() # XXX: ugly language trait
+            elif isinstance(iter_type, DictType):
+                iter_elem_type = iter_type.key_type
+            else:
+                iter_elem_type = iter_type.elem_type
+            
             if generator.target.arity() == 1:
                 var = generator.target.variables()[0]
                 if var.var_name in ctx.dead_variables:
@@ -1540,9 +1547,6 @@ def type_infer_EListComp(list_comp, ctx):
                     ctx.pop_parent()
                     return None
 
-        elif isinstance(iter_type, DictType):
-            raise NotImplementedError("list comprehensions over dictionnaries not yet implemented (please report)")
-
         else:
             ctx.add_type_error(IteratorTypeError(for_node, iter_type))
             ctx.pop_parent()
@@ -1558,7 +1562,7 @@ def type_infer_EListComp(list_comp, ctx):
     ctx.pop_parent()
     return ListType(expr_type)
 
-EListComp.type_infer = type_infer_EListComp
+EListComp.type_infer = type_infer_EComp
 
 def type_infer_ESet(st, ctx):
     st_type = None
