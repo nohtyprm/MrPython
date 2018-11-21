@@ -564,8 +564,8 @@ def type_check_For(for_node, ctx):
             expr_type = iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()
             
             if not isinstance(expr_type, TupleType):
-                ctx.add_type_error(TypeComparisonError(ctx.function_def, TupleType(), for_node.iter, expr_type,
-                                                       tr("Expecting an iterator of tuples")))
+                ctx.add_type_error(TypeExpectationError(ctx.function_def, for_node.iter, expr_type,
+                                                        tr("Expecting an iterator of tuples")))
                 ctx.pop_parent()
                 return False
 
@@ -914,7 +914,7 @@ def type_infer_ESub(expr, ctx):
             return None
 
         if not isinstance(right_type, SetType):
-            ctx.add_type_error(TypeComparisonError(ctx.function_def, SetType(), expr.right, right_type, tr("Expecting a set")))
+            ctx.add_type_error(TypeExpectationError(ctx.function_def, expr.right, right_type, tr("Expecting a set")))
             return None
 
         if left_type.is_emptyset():
@@ -1068,7 +1068,7 @@ def type_infer_EBitOr(expr, ctx):
         return None
 
     if not isinstance(left_type, SetType):
-        ctx.add_type_error(TypeComparisonError(ctx.function_def, SetType(), expr.left, left_type, tr("Expecting a set")))
+        ctx.add_type_error(TypeExpectationError(ctx.function_def, expr.left, left_type, tr("Expecting a set")))
         return None
 
     right_type = expr.right.type_infer(ctx)
@@ -1076,7 +1076,7 @@ def type_infer_EBitOr(expr, ctx):
         return None
 
     if not isinstance(right_type, SetType):
-        ctx.add_type_error(TypeComparisonError(ctx.function_def, SetType(), expr.right, right_type, tr("Expecting a set")))
+        ctx.add_type_error(TypeExpectationError(ctx.function_def, expr.right, right_type, tr("Expecting a set")))
         return None
 
     if left_type.is_emptyset():
@@ -1099,7 +1099,7 @@ def type_infer_EBitAnd(expr, ctx):
         return None
 
     if not isinstance(left_type, SetType):
-        ctx.add_type_error(TypeComparisonError(ctx.function_def, SetType(), expr.left, left_type, tr("Expecting a set")))
+        ctx.add_type_error(TypeExpectationError(ctx.function_def, expr.left, left_type, tr("Expecting a set")))
         return None
 
     right_type = expr.right.type_infer(ctx)
@@ -1107,7 +1107,7 @@ def type_infer_EBitAnd(expr, ctx):
         return None
 
     if not isinstance(right_type, SetType):
-        ctx.add_type_error(TypeComparisonError(ctx.function_def, SetType(), expr.right, right_type, tr("Expecting a set")))
+        ctx.add_type_error(TypeExpectationError(ctx.function_def, expr.right, right_type, tr("Expecting a set")))
         return None
 
     if left_type.is_emptyset():
@@ -1199,7 +1199,7 @@ def type_infer_ECall(call, ctx):
         method_call = False
         signature = ctx.global_env[call.full_fun_name]
         arguments = call.arguments
-    elif "." + call.fun_name in { ".append", ".readlines", ".read", ".write", ".add", ".remove", ".items" } and not call.multi_receivers:
+    elif "." + call.fun_name in { ".append", ".readlines", ".read", ".write", ".add", ".remove", ".items", ".keys" }: #XXX: needed ? and not call.multi_receivers:
         method_call = True
         signature = ctx.global_env["." + call.fun_name]
         arguments = []
@@ -2061,6 +2061,9 @@ BUILTINS_IMPORTS = {
     # dictionnaires
     , 'dict' : function_type_parser(" -> emptydict").content
     , '.items' : function_type_parser(" dict[α:β] -> Iterable[tuple[α,β]]").content
+    , '.keys' : function_type_parser(" dict[α:β] -> Set[α]]").content
+    # iterables
+    , 'zip' : function_type_parser(" Iterable[α] * Iterable[β] -> Iterable[tuple[α,β]]").content
 }
 
 MATH_IMPORTS = {
