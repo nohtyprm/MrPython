@@ -1262,14 +1262,14 @@ def type_infer_ECall(call, ctx):
         
     ctx.call_type_env.pop()
 
-    # check if instantiated type is a correct Set or Dictionary
-    if isinstance(nret_type, SetType) and nret_type.elem_type is not None:
-        if not nret_type.elem_type.is_hashable():
-            ctx.add_type_error(UnhashableElementError(call, call, nret_type.elem_type))
+    # check if there is an unhashable set or dict
+    unhashable = nret_type.fetch_unhashable()
+    if unhashable is not None:
+        if isinstance(unhashable, SetType):
+            ctx.add_type_error(UnhashableElementError(call, call, unhashable.elem_type))
             return None
-    elif isinstance(nret_type, DictType) and nret_type.key_type is not None:
-        if not nret_type.key_type.is_hashable():
-            ctx.add_type_error(UnhashableKeyError(call, call, nret_type.key_type))
+        elif isinstance(unhashable, DictType):
+            ctx.add_type_error(UnhashableKeyError(call, call, unhashable.key_type))
             return None
 
     return nret_type

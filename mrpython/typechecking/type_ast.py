@@ -425,6 +425,8 @@ class ListType(TypeAST):
         return False
 
     def fetch_unhashable(self):
+        if self.elem_type is None:
+            return None
         result = self.elem_type.fetch_unhashable()
         if result is not None:
             return result
@@ -472,9 +474,15 @@ class SetType(TypeAST):
         return False
 
     def fetch_unhashable(self):
+        if self.elem_type is None:
+            return None  # has no unhashable
+        
         result = self.elem_type.fetch_unhashable()
         if result is not None:
             return result
+
+        if not self.elem_type.is_hashable():
+            return self # found a non-hashable set
 
         return None
     
@@ -493,48 +501,6 @@ class SetType(TypeAST):
 
     def __repr__(self):
         return "SetType({})".format(repr(self.elem_type))
-
-class UnhashableSetType(TypeAST):
-    def __init__(self, elem_type, annotation=None):
-        self.elem_type = elem_type
-        super().__init__(annotation)
-
-    def __eq__(self, other):
-        return isinstance(other, UnhashableSetType) and other.elem_type == self.elem_type
-
-    def rename_type_variables(self, rmap):
-        if self.elem_type is None:
-            return self
-
-        nelem_type = self.elem_type.rename_type_variables(rmap)
-        return UnhashableSetType(nelem_type, self.annotation)
-
-    def subst(self, type_env):
-        if self.elem_type is None:
-            return self
-        return UnhashableSetType(self.elem_type.subst(type_env), self.annotation if self.annotated else None)
-
-    def is_hashable(self):
-        return False
-
-    def fetch_unhashable(self):
-        return self # found !
-
-    def is_emptyset(self):
-        return False
-
-    def unalias(self, type_defs):
-        uelem_type, unknown_alias = self.elem_type.unalias(type_defs)
-        if uelem_type is None:
-                return (None, unknown_alias)
-        return (UnhashableSetType(uelem_type, self.annotation if self.annotated else None)
-                , None)
-
-    def __str__(self):
-        return "Set[{}]".format(str(self.elem_type))
-
-    def __repr__(self):
-        return "UnhashableSetType({})".format(repr(self.elem_type))
     
 class DictType(TypeAST):
     def __init__(self, key_type=None, val_type=None, annotation=None):
@@ -566,10 +532,10 @@ class DictType(TypeAST):
 
     def is_hashable(self):
         return False
-
+    
     def fetch_unhashable(self):
         if self.key_type is None:
-            return None
+            return None # no unhashable in an empty dictionary
         
         result = self.key_type.fetch_unhashable()
         if result is not None:
@@ -579,6 +545,9 @@ class DictType(TypeAST):
         if result is not None:
             return result
 
+        if not self.key_type.is_hashable():
+            return self # dictionary has unhashable keys
+        
         return None        
 
     def unalias(self, type_defs):

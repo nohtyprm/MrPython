@@ -236,10 +236,7 @@ def build_typeexpr_grammar(grammar=None):
 
     def set_xform_result(result):
         elem_type = result.content.content
-        if elem_type.is_hashable():
-            result.content = SetType(result.content.content, annotation=result)
-        else:
-            result.content = UnhashableSetType(result.content.content, annotation=result)
+        result.content = SetType(result.content.content, annotation=result)
         return result
     set_parser.xform_result = set_xform_result
     grammar.register('set_type', set_parser)
