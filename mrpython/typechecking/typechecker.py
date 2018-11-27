@@ -1257,12 +1257,23 @@ def type_infer_ECall(call, ctx):
     # step 4 : return the return type
     if ctx.call_type_env[-1]:
         nret_type = signature.ret_type.subst(ctx.call_type_env[-1])
-        ctx.call_type_env.pop()
-        return nret_type
     else:
-        ctx.call_type_env.pop()
-        return signature.ret_type
+        nret_type = signature.ret_type
+        
+    ctx.call_type_env.pop()
 
+    # check if instantiated type is a correct Set or Dictionary
+    if isinstance(nret_type, SetType) and nret_type.elem_type is not None:
+        if not nret_type.elem_type.is_hashable():
+            ctx.add_type_error(UnhashableElementError(call, call, nret_type.elem_type))
+            return None
+    elif isinstance(nret_type, DictType) and nret_type.key_type is not None:
+        if not nret_type.key_type.is_hashable():
+            ctx.add_type_error(UnhashableKeyError(call, call, nret_type.key_type))
+            return None
+
+    return nret_type
+        
 ECall.type_infer = type_infer_ECall
 
 
@@ -1577,13 +1588,13 @@ def type_infer_EComp(ecomp, ctx):
         return ListType(expr_type)
     elif isinstance(ecomp, ESetComp):
         if not expr_type.is_hashable():
-            ctx.add_type_error(UnhashableElementError(ecomp, ecomp.compr_expr))
+            ctx.add_type_error(UnhashableElementError(ecomp, ecomp.compr_expr, expr_type))
             return None
             
         return SetType(expr_type)
     elif isinstance(ecomp, EDictComp):
         if not key_type.is_hashable():
-            ctx.add_type_error(UnhashableKeyError(ecomp, ecomp.key_expr))
+            ctx.add_type_error(UnhashableKeyError(ecomp, ecomp.key_expr, key_type))
             return None
         return DictType(key_type, val_type)     
     else:
@@ -1606,7 +1617,7 @@ def type_infer_ESet(st, ctx):
         #print("st type={}\n----".format(st_type))
 
         if not element_type.is_hashable():
-            ctx.add_type_error(UnhashableElementError(st, element))
+            ctx.add_type_error(UnhashableElementError(st, element, element_type))
             return None
         
         if st_type is None:
@@ -1636,7 +1647,7 @@ def type_infer_EDict(edict, ctx):
             return None
 
         if not key_type.is_hashable():
-            ctx.add_type_error(UnhashableKeyError(edict, key))
+            ctx.add_type_error(UnhashableKeyError(edict, key, key_type))
             return None
         
         if edict_key_type is None:
@@ -2852,25 +2863,27 @@ class WithVariableInEnvError(TypeError):
 
 
 class UnhashableElementError(TypeError):
-    def __init__(self, st, element):
+    def __init__(self, st, element, element_type):
         self.set = st
         self.element = element
+        self.element_type = element_type
 
     def is_fatal(self):
         return True
 
     def fail_string(self):
-        return "UnhashableElementError@{}:{}".format(self.element.ast.lineno, self.element.ast.col_offset)
+        return "UnhashableElementError[{}]@{}:{}".format(self.element_type, self.element.ast.lineno, self.element.ast.col_offset)
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad set"), self.element.ast.lineno, self.element.ast.col_offset
-                                    , tr("Unhashable (mutable) element forbidden in set"))
+                                    , tr("Unhashable (mutable) element forbidden in set, element type is: {}").format(self.element_type))
 
 
 class UnhashableKeyError(TypeError):
-    def __init__(self, edict, key):
+    def __init__(self, edict, key, key_type):
         self.dict = edict
         self.key = key
+        self.key_type = key_type
 
     def is_fatal(self):
         return True
@@ -2880,7 +2893,7 @@ class UnhashableKeyError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad dictionary"), self.key.ast.lineno, self.key.ast.col_offset
-                                    , tr("Unhashable (mutable) key in dictionary"))
+                                    , tr("Unhashable (mutable) key in dictionary, key type is: {}").format(self.key_type))
 
 
 class ContainerAssignTypeError(TypeError):
