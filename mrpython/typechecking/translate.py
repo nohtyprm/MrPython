@@ -106,6 +106,8 @@ TRANSLATOR_DICT = {
     , "Bad assignment" : { 'fr' : "Problème d'affectation" }
     , "In Python101 this kind of assignment is only available for dictionaries, not for objects of type: {}" : { 'fr' : "En Python101 ce type d'affectation n'est disponible que pour les dictionnaires, le type suivant n'est pas supporté : {}" }
     , "Assignment in an empty dictionary" : { 'fr' : "Affectation dans un dictionnaire vide" }
+    , "Bad variable type" : { 'fr' : "Problème de typage de variable"}
+    , "Type mismatch for variable '{}', expecting '{}' instead of: {}" : { 'fr' : "La variable '{}' est déclarée avec le type '{}' qui n'est pas compatible avec le type requis: {}"}
 }
 
 def tr(msg):

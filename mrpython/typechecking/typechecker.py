@@ -483,7 +483,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
 
         if var.var_name in declared_types:
             if not declared_types[var.var_name].type_compare(ctx, assign.target, expr_var_types[i], raise_error=False):
-                ctx.add_type_error(VariableTypeError(assign.target, var, declared_types[var_name], expr_var_types[i]))
+                ctx.add_type_error(VariableTypeError(assign.target, var, declared_types[var.var_name], expr_var_types[i]))
                 return False
         
             ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
@@ -2537,6 +2537,24 @@ class DeadVariableDefineError(TypeError):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
                                     , tr("Forbidden use of a \"dead\" variable name '{}' (Python101 rule)").format(self.var_name))
 
+class VariableTypeError(TypeError):
+    def __init__(self, target, var, declared_type, var_type):
+        self.target = target
+        self.var = var
+        self.declared_type = declared_type
+        self.var_type = var_type
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "VariableTypeError[{}:{}/{}]@{}:{}".format(self.var.var_name, self.var_type, self.declared_type, self.var.ast.lineno, self.var.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad variable type"), self.var.ast.lineno, self.var.ast.col_offset
+                                    , tr("Type mismatch for variable '{}', expecting '{}' instead of: {}").format(self.var.var_name, self.declared_type, self.var_type))
+
+        
 class ParameterInAssignmentError(TypeError):
     def __init__(self, var_name, node):
         self.var_name = var_name
