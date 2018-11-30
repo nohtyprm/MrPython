@@ -467,7 +467,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
 
     
     if not isinstance(expr_type, TupleType):
-        ctx.add_type_error(TypeExpectationError(ctx.function_def, expr, expr_type,
+        ctx.add_type_error(TypeExpectationError(ctx.function_def, assign.expr, expr_type,
                                                 tr("Expecting a tuple")))
         return False
 
