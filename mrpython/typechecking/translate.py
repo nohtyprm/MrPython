@@ -39,7 +39,7 @@ TRANSLATOR_DICT = {
     , "Incompatible types" : { 'fr' : "Types incompatibles"}
     , "Expecting type '{}' but instead found: {}" : { 'fr' : "j'attendais le type '{}' mais cette expression est plutôt de type: {}"}
     , "Incorrect type" : { 'fr' : "Type incorrect" }
-    , "Found type '{}' which is incorrect: {}" : { 'fr' : "Je trouve le type '{}' qui n'est pas correcte : {}" }
+    , "Found type '{}' which is incorrect: {}" : { 'fr' : "Je trouve le type '{}' qui n'est pas correct : {}" }
     , "Comparison error" : { 'fr' : "Erreur de comparaison"}
     , "The two operands of the comparision should have the same type: '{}' vs. '{}'" : { 'fr' : "Les deux opérandes de la comparaison devraient être du même type: '{}' vs. '{}'"}
     , "Bad variable" : { 'fr' : "Problème de variable"}
@@ -129,4 +129,3 @@ def tr(msg):
         return msg
 
     return tmsg
-
