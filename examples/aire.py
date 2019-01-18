@@ -18,3 +18,4 @@ assert aire_triangle(3, 4, 5) == 6.0
 assert aire_triangle(13, 14, 15) == 84.0
 assert aire_triangle(1, 1, 1) == math.sqrt(3 / 16)
 assert aire_triangle(2, 3, 5) == 0.0  # c'est un triangle plat...
+
