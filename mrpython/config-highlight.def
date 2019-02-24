@@ -1,0 +1,64 @@
+# MrPython reads several config files to determine user preferences.  This
+# file is the default config file for the highlight theme settings.
+
+[MrPython Classic]
+normal-foreground= #000000
+normal-background= #ffffff
+keyword-foreground= #ff7700
+keyword-background= #ffffff
+builtin-foreground= #900090
+builtin-background= #ffffff
+comment-foreground= #dd0000
+comment-background= #ffffff
+string-foreground= #00aa00
+string-background= #ffffff
+definition-foreground= #0000ff
+definition-background= #ffffff
+hilite-foreground= #000000
+hilite-background= gray
+break-foreground= black
+break-background= #ffff55
+hit-foreground= #ffffff
+hit-background= #000000
+error-foreground= #000000
+error-background= #ff7777
+#cursor (only foreground can be set, restart MrPython)
+cursor-foreground= black
+#shell window
+stdout-foreground= blue
+stdout-background= #ffffff
+stderr-foreground= red
+stderr-background= #ffffff
+console-foreground= #770000
+console-background= #ffffff
+
+[MrPython New]
+normal-foreground= #F8F8F2
+normal-background= #272822
+keyword-foreground= #F92672
+keyword-background= #272822
+builtin-foreground= #AE81FF
+builtin-background= #272822
+comment-foreground= #75715E
+comment-background= #272822
+string-foreground= #E6DB74
+string-background= #272822
+definition-foreground= #AE81FF
+definition-background= #272822
+hilite-foreground= white
+hilite-background= gray
+break-foreground= black
+break-background= #ffff55
+hit-foreground= #ffffff
+hit-background= #000000
+error-foreground= #000000
+error-background= #ff7777
+#cursor (only foreground can be set, restart MrPython)
+cursor-foreground= white
+#shell window
+stdout-foreground= blue
+stdout-background= #ffffff
+stderr-foreground= red
+stderr-background= #ffffff
+console-foreground= #770000
+console-background= #ffffff

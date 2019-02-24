@@ -1,0 +1,760 @@
+\documentclass[a4paper]{article}
+
+\usepackage{geometry}
+\usepackage{fancyhdr}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\renewcommand{\headrulewidth}{0.4pt}
+\lhead{Sorbonne Universit\' e -- Informatique}
+\pagestyle{fancy}
+\rhead{\thepage}
+\fancyfoot{}
+
+\usepackage{proof}
+\usepackage{colonequals}
+
+\newenvironment{program}{
+\begin{sffamily}
+\begin{scriptsize}
+\begin{tabbing}}
+{\end{tabbing}
+\end{scriptsize}
+\end{sffamily}}
+
+\newcommand{\kw}[1]{\textsf{\textbf{#1}}}
+\newcommand{\cmt}[1]{\textsf{\textit{#1}}}
+\newcommand{\code}[1]{\begin{sffamily}#1\end{sffamily}}
+\newcommand{\mcode}[1]{\mathsf{#1}}
+\newcommand{\pindent}{\hspace{2em}\=}
+
+\newcommand{\defs}{\stackrel{{\scriptscriptstyle \mathsf{def}}}{=}}
+\newcommand{\defmin}{\stackrel{{\scriptscriptstyle \mathsf{min}}}{=}}
+\newcommand{\colcol}{\coloncolon}
+
+\newcommand{\yield}{\Rrightarrow}
+
+\newcommand{\fun}[1]{\mathsf{#1}}
+
+\newcommand{\compat}{\cong}
+\newcommand{\ncompat}{\not\cong}
+
+\begin{document}
+
+\setlength{\parskip}{1ex}
+\setlength{\parindent}{0mm}
+
+
+\title{Python101 language specification}
+
+\author{Fr\' ed\' eric Peschanski\\
+Sorbonne Universit\' e}
+
+\date{\today}
+
+\maketitle
+\begin{abstract}
+TODO
+\end{abstract}
+
+\thispagestyle{fancy}
+
+\section{Introduction}
+
+TODO
+
+\section{Syntax}
+
+\subsection{Programs}
+
+\begin{program}
+\cmt{\# imports ...}\\
+\kw{import} $m_i$ \\
+$\cdots$\\
+\kw{def} $f_1$(x$_{1_1}$, $\ldots$, x$_{1_m}$) : $\Theta_1$ = $I_1$\\
+$\cdots$ \\
+\kw{def} $f_n$(x$_{n_1}$, $\ldots$, x$_{n_m}$)  : $\Theta_n$ = $I_n$\\
+$\cdots$\\
+\cmt{\# tests} \\
+\kw{assert} $f_1$($e_{1_1}$,$\ldots$,$e_{1_m}$) = $e_1$ \\
+$\cdots$\\
+\kw{assert} $f_n$($e_{n_1}$,$\ldots$,$e_{n_m}$) = $e_n$ \\
+\end{program}
+
+\subsection{Functions}
+
+\begin{program}
+\kw{def} $f$($x_1$,$\ldots$,$x_n$) : $\Theta$ = $I$
+\end{program}
+
+\textbf{Remark}: $\Theta$ is functional type of $f$ (cf. below), $I$ is instruction body of function $f$.
+
+\subsection{Instructions}
+
+\begin{tabular}{lll}
+$I,I_1,I_2,\ldots$ ::= & $e$ & expression in instruction position (value is lost) \\
+| \code{\{}$I$\code{\}} & block (\emph{not} lexical) \\
+\end{tabular}
+
+(sequence)
+
+\begin{tabular}{ll}
+| $I_1$ ; $I_2$ & sequence (indentation in Python syntax)
+\end{tabular}
+
+(assignments)
+
+\begin{tabular}{ll}
+$v:T$ \code{=} $e$ & first assignment (initialization with mandatory type declaration) \\
+| $v_1:T_1$\code{,}$\ldots$\code{,}$v_n:T_n$ \code{=} $e$ & first tupled assignment (initialization with mandatory type declaration) \\
+| $v$ \code{=} $e$ & assignment \\
+| $v_1$\code{,}$\ldots$\code{,}$v_n$ \code{=} $e$ & tupled assignment \\
+| $e_1$\code{[}$e_2$\code{] =} $e_3$ & dictionnary assignment
+\end{tabular}
+
+(conditionals)
+
+\begin{tabular}{ll}
+\kw{if}\code{(}$e$\code{)} \{ $I$ \} & single branch \\
+\kw{if}\code{(}$e$\code{)} \{ $I_1$ \} \kw{else} \{ $I_2$ \} & alternative \\
+\end{tabular}
+
+
+(functions and primitives)
+
+\begin{tabular}{ll}
+| $f$\code{(}$e_1$\code{,}$\ldots$\code{,}$e_n$\code{)} & function call (return value is lost but printed at top-level, except \kw{None})\\
+| \code{print(}$e_1,\ldots,e_n$\code{)} & printing, the call is not type-checked but the $e_1,\ldots,e_n$'s are\\
+| \kw{assert} $e$ & assertion (generally in test-cases, $e$ is type-checked but not \kw{assert})\\
+| \kw{return}$_f$ $e$ & direct return from function $f$
+\end{tabular}
+
+(methods)
+
+\begin{tabular}{ll}
+$e_1$\code{.append(}$e_2$\code{)} & append element to list \\
+$e_1$\code{.add(}$e_2$\code{)} & add element to set\\
+\end{tabular}
+
+(loops)
+
+\begin{tabular}{ll}
+| \kw{while}($e$) \{ $I$ \} & basic loop \\
+| \kw{for} $v$ \kw{in} $e$ \{ $I$ \} & iteration \\
+| \kw{for} \code{(}$v_1,\ldots,v_n$\code{)} \kw{in} $e$ \{ $I$ \} & tuple iteration
+\end{tabular}
+
+\subsection{Expressions}
+
+$e,e_1,e_2,\ldots$ ::= 
+
+(literals)
+
+\begin{tabular}{ll}
+$v$ & variable occurrence\\
+|\kw{True} & truth \\
+| \kw{False} & falsity\\
+| \kw{None} & no-value\\
+| $n$ & integer constant \\
+| $x$ & floating point constant\\
+| \code{"}$s$\code{"} | \code{'}$s$\code{'} & string literal\\
+| \code{[}$e_1$\code{,}$\ldots$\code{,}$e_n$\code{]} & list literal ($n\geq 0$)\\
+| \code{(}$e_1$\code{,}$\ldots$\code{,}$e_n$\code{)} & tuple literal ($n \geq 1$)\\
+| \code{\{}$e_1$\code{,}$\ldots$\code{,}$e_n$\code{\}} & set literal ($n \geq 1$)\\
+| \code{\{}$k_1$\code{:} $e_1$\code{,}$\ldots$\code{,}$k_n$\code{:} $e_n$\code{\}} & dictionnary literal ($n \geq 0$)\\
+| \kw{set}\code{()} & empty set \\
+| \kw{dict}\code{()} & empty dictionnary \\
+\end{tabular}
+
+
+(calls)
+
+\begin{tabular}{ll}
+| $f$\code{(}$e_1$\code{,}$\ldots$\code{,}$e_n$\code{)} & function call\\
+\end{tabular}
+
+(arithmetic and logic)
+
+\begin{tabular}{ll}
+| \code{(}$e$\code{)} & priority\\
+| $e_1$ \code{+} $e_2$ & addition\\
+| \code{-} $e$ & minus\\
+| $e_1$ \code{-} $e_2$ & subtraction\\
+| $e_1$ \code{*} $e_2$ & multiplication\\
+| $e_1$ \code{/} $e_2$ & division\\
+| $e_1$ \code{//} $e_2$ & integer division\\
+| $e_1$ \code{**} $e_2$ & exponentiation\\
+| $e_1$ \code{\&} $e_2$ & intersection\\
+| $e_1$ \code{|} $e_2$ & union\\
+| $e_1$ \code{==} $e_2$ & equality\\
+| $e_1$ \code{!=} $e_2$ & difference\\
+| $e_1$ \code{<} $e_2$ & lower\\
+| $e_1$ \code{>} $e_2$ & greater\\
+| $e_1$ \code{<=} $e_2$ & lower or equal\\
+| $e_1$ \code{>=} $e_2$ & greater or equal\\
+| \kw{not} $e$ & negation\\
+| $e_1$ \kw{and} $e_2$ & conjunction\\
+| $e_1$ \kw{or} $e_2$ & disjunction\\
+\end{tabular}
+
+(sequences)
+
+\begin{tabular}{ll}
+| $e_1$\code{[}$e_2$\code{]} & sequence index\\
+| $e_1$\code{[}$e_2$\code{:}$e_3$\code{]} & sequence slice\\
+| $e_1$\code{[}$e_2$\code{:}$e_3$\code{:}$e_4$\code{]} & sequence slice with step\\
+\end{tabular}
+
+(iterables)
+
+\begin{tabular}{ll}
+| $e$\code{.items()} & dictionnary items iterable \\
+| \code{zip(}$e_1,\ldots,e_n$\code{)} & tupled iterable
+\end{tabular}
+
+(comprehensions)
+
+\begin{tabular}{ll}
+| \code{[}$e_1$ \kw{for} $v$ \kw{in} $e_2$\code{]} & simple list comprehension \\
+| \code{\{}$e_1$ \kw{for} $v$ \kw{in} $e_2$\code{\}} & simple set comprehension \\
+| \code{\{}$k_1:e_1$ \kw{for} $v$ \kw{in} $e_3$\code{\}} & simple dictionnary comprehension \\
+| \code{[}$e_1$ \kw{for} $v$ \kw{in} $e_2$ \kw{if} $e_3$\code{]} & simple list comprehension with filtering\\
+| \code{\{}$e_1$ \kw{for} $v$ \kw{in} $e_2$ \kw{if} $e_3$ \code{\}} & simple set comprehension with filtering\\
+| \code{\{}$k_1:e_1$ \kw{for} $v$ \kw{in} $e_3$ \kw{if} $e_4$ \code{\}} & simple dictionnary comprehension \\
+| \code{[}$e_1$ \kw{for} \code{(}$v_1$\code{,}$\ldots$\code{,}$v_n$ \code{)} \kw{in} $e_2$\code{]} & tupled list comprehension \\
+| \code{\{}$e_1$ \kw{for} \code{(}$v_1$\code{,}$\ldots$\code{,}$v_n$ \code{)} \kw{in} $e_2$\code{\}} & tupled set comprehension \\
+| \code{[}$e$ \kw{for} $v_1$ \kw{in} $e_1$ \kw{for} $v_2$ \kw{int} $e_2$ $\ldots$ \code{]} & nested comprehensions (+ variants)
+\end{tabular}
+
+
+\section{Type system}
+
+\subsection{Syntax of types}
+
+Atomic type expressions:
+
+\begin{tabular}{llll}
+$T, T_1, T_2,U,\ldots$ & ::= & \kw{bool} \\
+& &  | \kw{int} & arbitrary precision integer\\
+& &  | \kw{float} & floating point number\\
+& &  | \kw{Number} & generic number \\
+& &  | \kw{NoneType} & no-value type \\
+& &  | \kw{str} & character string \\
+& &  | $\alpha,\beta,\ldots$ & type variables \\
+& &  | \kw{tuple}\code{[}$T_1,T_2,\ldots,T_n$\code{]} & $n$-tuple \\
+& &  | \kw{list}\code{[}$T$\code{]} & homogeneous list\\
+& &  | \kw{emptylist} & empty list, synonymous for $\forall \alpha, \kw{list}[\alpha]$ \\
+& &  | \kw{set}\code{[}$T$\code{]} & homogeneous set\\
+& &  | \kw{emptyset} & empty set, synonymous for $\forall \alpha, \kw{set}[\alpha]$ \\
+& &  | \kw{dict}\code{[}$T$\code{:}$U$\code{]} & dictionnary \\
+& &  | \kw{emptydict} & empty dictionnary, synonymous for $\forall \alpha, \forall \beta \kw{dict}[\alpha:\beta]$ \\
+& &  | \kw{iterable}\code{[}$T$\code{]} & iterable\footnote{Cannot be used in annotations} \\
+\end{tabular}
+
+Functional types:
+
+\begin{tabular}{llll}
+$\Theta$ & ::= & $T_1 \times T_2 \times \ldots \times T_n \rightarrow U$ & total function \\
+  & & | $T_1 \times T_2 \times \ldots \times T_n \rightarrow U$ \code{+} \kw{NoneType} & partial function \\
+\end{tabular}
+
+Type aliases:
+
+\begin{tabular}{ll}
+\kw{type} $t$ \code{::=} $T$
+\end{tabular}
+
+\subsection{Hashable types}
+
+
+$$\begin{array}{cc}
+\infer[(H-atom)]{\fun{hashable}(T)}{T \in \{\kw{bool},\kw{int},\kw{float},\kw{Number},\kw{str}\}}
+&
+\infer[(H-tuple)]{\fun{hashable}(\kw{tuple}[T_1,\ldots,T_n])}{\fun{hashable}(T_1) & \cdots & \fun{hashable}(T_n)}
+\end{array}
+$$
+
+\subsection{Type system}
+
+Typing environment:
+
+\begin{itemize}
+  \item $\Gamma = f_1:\Theta_1,\ldots,f_n:\Theta_n$ : global static environment of functions (user-defined or primitives)
+  \item $\Delta = \widehat{x_1}:T_1,\ldots,\widehat{x_n}:T_n,v_1:U_1,\ldots,v_m:U_m$ : local dynamic environment of immutable parameters ($\widehat{x_i}$'s) and mutable local variables ($v_j$'s)
+\end{itemize}
+
+Type judgements of the form:
+
+\begin{itemize}
+\item $\Gamma;\Delta \vdash e \yield T$ \quad inference for expression $e$ (input $e$ output $T$-or-error)
+\item $\Gamma;\Delta \vdash e \colcol T$ \quad type-checking for expression $e$ (inputs $e$ and $T$ output yes-or-error)
+\item $\Gamma;\Delta \vdash I \dashv \Delta'$ \quad type-checking and environment update for instruction
+\item $\Gamma \vdash \kw{def} f(e_1,\ldots,e_n) : \Theta = I \dashv \Gamma'$ \quad type-checking and global environment update for definitions
+\item $T \compat T'$ \quad type compatibility
+\item $T \ncompat T'$ \quad type incompatibility
+\end{itemize}
+
+\subsubsection{Functions}
+
+$$
+\infer[(\fun{Tfun})]{\Gamma \vdash \kw{def} f(x_1,\ldots,x_n) : T_1 \times \ldots \times T_n \rightarrow U = I \dashv \Gamma'}
+{\Gamma'=\Gamma,f:\widehat{T_1}\times \ldots \times \widehat{T_n}\rightarrow \widehat{U} & \Gamma';\widehat{x_1}:\widehat{T_1},\ldots,\widehat{x_n}:\widehat{T_n} \vdash I \dashv \Delta' & \Delta'(\fun{ret}_f) \colcol \widehat{U}}
+$$
+
+$$
+\infer[(\fun{Tpfun})]{\Gamma \vdash \kw{def} f(x_1,\ldots,x_n) : T_1 \times \ldots \times T_n \rightarrow U \mathsf{+} \kw{NoneType} = I \dashv \Gamma'}
+{\Gamma'=\Gamma,f:\widehat{T_1}\times \ldots \times \widehat{T_n}\rightarrow \widehat{U} + \kw{NoneType} & \Gamma';\widehat{x_1}:\widehat{T_1},\ldots,\widehat{x_n}:\widehat{T_n} \vdash I \dashv \Delta' & \begin{array}{l} \Delta'(\fun{ret}_f) \colcol \widehat{U} \\ \lor \Delta'(\fun{ret}_f)=\kw{None} \end{array}}
+$$
+
+\textbf{Remark:} $\widehat{T}$ means ``annotated type $T$'', $\widehat{x}$ means ``immutable parmeter $x$''.
+
+\textbf{Errors}:
+\begin{itemize}
+\item Function $f$ already defined
+\end{itemize}
+
+
+\subsubsection{Instructions}
+
+\paragraph{Expression in instruction position}
+
+$$
+\infer[(\fun{Tnone\_expr})]{\Gamma ; \Delta \vdash e \dashv \Delta}
+{\Gamma;\Delta \vdash e \yield T}
+$$
+
+\paragraph{Block (non-lexical)}
+
+$$
+\infer[(\fun{Tblock})]{\Gamma;\Delta \vdash \mcode{\{}I\mcode{\}} \dashv \Delta'}
+{\Gamma;\Delta \vdash I \dashv \Delta'}
+$$
+
+\paragraph{Sequence}
+
+$$
+\infer[(\fun{Tseq})]{\Gamma;\Delta \vdash I_1;I_2 \dashv \Delta''}
+{\Gamma;\Delta \vdash I_1 \dashv \Delta' & \Gamma;\Delta'\vdash I_2 \dashv \Delta''}
+$$
+
+\paragraph{Initializations (first assigments)}
+
+$$
+\infer[(\fun{Tinit})]{\Gamma;\Delta \vdash v : T = e \dashv \Delta,v:\widehat{T}}
+{\Gamma;\Delta \vdash e \colcol T}
+$$
+
+\textbf{Remark:} type $T$ is an annotation, hence $\widehat{T}$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Initialization is not in header of function or for-each loop
+\item Variable $v$ already existing
+\item Variable $v$ is a parameter
+\end{itemize}
+
+$$
+\infer[(\fun{Tinits})]{\Gamma;\Delta \vdash v_1 : T_1, \ldots, v_n : T_n = e \dashv \Delta,v_1:\widehat{T_1},\ldots,v_n:\widehat{T_n}}
+{\Gamma;\Delta \vdash e \colcol \kw{tuple}[T_1,\ldots,T_n]}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Initialization is not in header of function or for-each loop
+\item Variable $v_i$ already existing
+\item Variable $v_i$ is a parameter
+\item Duplicate variable $v_i$
+\item Arity error for tuple $e$ : expecting $n$ elements
+\end{itemize}
+
+\paragraph{Assignments}
+
+$$
+\infer[(\fun{Tassign})]{\Gamma;\Delta \vdash v = e \dashv \Delta}
+{\Delta(v)=T  \quad \Gamma;\Delta \vdash e \colcol T}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Local variable $v$ does not exist
+\item $v$ is a paramater and cannot be assigned
+\end{itemize}
+
+$$
+\infer[(\fun{Tassigns})]{\Gamma;\Delta \vdash v_1, \ldots, v_n = e \dashv \Delta}
+{\Delta(v_1)=T_1 & \ldots & \Delta(v_n)=T_n & \Gamma;\Delta \vdash e \colcol \kw{tuple}[T_1,\ldots,T_n]}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Variable $v_i$ does not exist
+\item $v$ is a paramater and cannot be assigned
+\item Duplicate variable $v_i$  (except for \code{\_} which can be assigned many times)
+\item Arity error for tuple $e$ : expecting $n$ elements
+\end{itemize}
+
+\paragraph{Dictionnary assignment}
+
+$$
+\infer[(\fun{Tdict\_assign})]{\Gamma;\Delta \vdash e_1[e_2] = e_3 \dashv \Delta}
+{\Gamma;\Delta \vdash e_1 \yield T & T \compat \kw{dict}[T_k:T_v] & \Gamma;\Delta \vdash e_2 \colcol T_k & \Gamma;\Delta \vdash e_3 \colcol T_v}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Expression $e_1$ is not a dictionnary
+\item Wrong dictionnary key type for $e_2$
+\item Wrong dictionnary value type for $e_3$
+\end{itemize}
+
+\paragraph{Conditionals}
+
+$$
+\infer[(\fun{Tif})]{\Gamma;\Delta \vdash \kw{if} (e_1) I_1 \kw{else} I_2 \dashv \Delta_1 \cup \Delta_2}
+{\Gamma;\Delta \vdash e_1 \colcol \kw{bool} & \Gamma;\Delta \vdash I_1 \dashv \Delta_1 &  \Gamma;\Delta \vdash I_2 \dashv \Delta_2}
+$$
+
+$$
+\infer[(\fun{Tif1})]{\Gamma;\Delta \vdash \kw{if} (e_1) I_1 \dashv \Delta_1}
+{\Gamma;\Delta \vdash e_1 \colcol \kw{bool} & \Gamma;\Delta \vdash I_1 \dashv \Delta_1}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Condition $e_1$ of alternative if not a boolean
+\item Incompatible environment updates $\Delta_1$ and $\Delta_2$  (e.g. same variable, distinct type)
+\end{itemize}
+
+\paragraph{Function call (in instruction position)}
+
+$$
+\infer[(\fun{Tcall})]{\Gamma ; \Delta \vdash f(e_1,\ldots,e_n) \dashv \Delta}
+{f:T_1\times \ldots \times T_n \rightarrow U \in \Delta & \Gamma;\Delta \vdash e_1 \colcol T_1 & \ldots &  \Gamma;\Delta \vdash e_n \colcol T_n}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Not enough arguments in call to $f$: expecting $n$ arguments
+\item Too many arguments in call to $f$: expecting $n$ arguments
+\item Type error in argument $e_i$ of call to $f$
+\end{itemize}
+
+$$
+\infer[(\fun{Tprint})]{\Gamma ; \Delta \vdash \mcode{print}(e_1,\ldots,e_n) \dashv \Delta}
+{\Gamma;\Delta \vdash e_1 \yield T_1 & \ldots &  \Gamma;\Delta \vdash e_n \yield T_n}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Type error in argument $e_i$ of call to \code{print}
+\end{itemize}
+
+$$
+\infer[(\fun{Tassert})]{\Gamma ; \Delta \vdash \mcode{assert}~e \dashv \Delta}
+{\Gamma;\Delta \vdash e \yield T & T \compat \kw{bool}}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Type error in expression $e$ of \code{assert}
+\item Assertion error: type $T$ of expression $e$ is not a boolean
+\end{itemize}
+
+$$
+\infer[(\fun{Treturn})]{\Gamma ; \Delta \vdash \mcode{return}_f~e \dashv \Delta,\fun{ret}_f:U}
+{\Gamma(f)=T_1 \times \ldots T_n \rightarrow U & \Gamma;\Delta \vdash e \yield U' & U' \compat U}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Type error in expression $e$ of \code{return} from function $f$
+\item Return type error: expecting $U$ found $U'$ which is incompatible (+ incompatibility error)
+\end{itemize}
+
+\paragraph{Methods}
+
+
+$$
+\infer[(\fun{Tappend})]{\Gamma;\Delta \vdash e_1\mcode{.append}(e_2) \dashv \Delta}
+{\Gamma;\Delta \vdash e_1 \yield T & T \compat \kw{list}\mcode{[}T'\mcode{]} & \Gamma;\Delta \vdash e_2 \colcol T'} 
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Expecting list in method call \code{append}: found $T$
+\item Type error in method call \code{append}: expecting $T'$
+\end{itemize}
+
+$$
+\infer[(\fun{Tadd})]{\Gamma;\Delta \vdash e_1\mcode{.add}(e_2) \dashv \Delta}
+{\Gamma;\Delta \vdash e_1 \yield T & T \compat \kw{set}\mcode{[}T'\mcode{]} & \Gamma;\Delta \vdash e_2 \colcol T'} 
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Expecting set in method call \code{add}: found $T$
+\item Type error in argument of method call \code{add}: expecting $T'$
+\end{itemize}
+
+\paragraph{Loops}
+
+$$
+\infer[(\fun{Twhile})]{\Gamma;\Delta \vdash \kw{while} (e) \{ I \} \dashv \Delta'}
+{\Gamma;\Delta \vdash e \colcol \kw{bool} & \Gamma;\Delta \vdash I \dashv \Delta'}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Condition $e_1$ of while loop is not a boolean
+\end{itemize}
+
+$$
+\infer[(\fun{Tfor})]{\Gamma;\Delta \vdash \kw{for}~v~\kw{in}~e~\{ I \}\dashv \Delta'}
+{\Gamma;\Delta \vdash e \colcol \kw{iterable}[T] & \Gamma;\Delta,v:T \vdash I \dashv \Delta'}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Expression $e$ in for-each loop is not an iterable
+\end{itemize}
+
+$$
+\infer[(\fun{Tfors})]{\Gamma;\Delta \vdash \kw{for}~(v_1,\ldots,v_n)~\kw{in}~e~\{ I \}\dashv \Delta'}
+{\Gamma;\Delta \vdash e \colcol \kw{iterable}[\kw{tuple}[T_1,\ldots,T_n]] & \Gamma;\Delta,v_1:T_1,\ldots,v_n:T_n \vdash I \dashv \Delta'}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Expression $e$ in for-each loop is not an iterable
+\item The iterable elements is not a tuple of size $n$
+\item Variable $v_i$ already exists
+\end{itemize}
+
+
+\subsection{Expressions}
+
+\paragraph{Type assertion}
+
+$$
+\infer[(\fun{TEinfer})]{\Gamma;\Delta \vdash e \colcol T}
+{\Gamma;\Delta \vdash e \yield T' & T \compat T'}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Expecting type $T$ but found type $T'$ which is not compatible (+ incompatibility explanation)
+\end{itemize}
+
+\paragraph{Variable occurrence}
+
+$$
+\infer[(\fun{TEvar})]{\Gamma;\Delta \vdash v \yield T}{\Delta(v)=T}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Variable $v$ is not in scope
+\end{itemize}
+
+\paragraph{Literals}
+
+$$
+\infer[(\fun{TEtrue})]{\Gamma;\Delta \vdash \kw{True} \yield \kw{bool}}{}
+\quad \infer[(\fun{TEfalse})]{\Gamma;\Delta \vdash \kw{False} \yield \kw{bool}}{}
+$$
+
+$$
+\infer[(\fun{TEint})]{\Gamma;\Delta \vdash n \yield \kw{int}}{}
+\quad \infer[(\fun{TEfloat})]{\Gamma;\Delta \vdash x \yield \kw{float}}{}
+$$
+
+$$
+\infer[(\fun{TEstr1})]{\Gamma;\Delta \vdash \mcode{'}s\mcode{'} \yield \kw{str}}{}
+\quad \infer[(\fun{TEstr2})]{\Gamma;\Delta \vdash \mcode{"}s\mcode{"} \yield \kw{str}}{}
+$$
+
+$$
+\infer[(\fun{TEemptylist})]{\Gamma;\Delta \vdash \mcode{[]} \yield \kw{emptylist}}
+  {}
+$$
+
+$$
+\infer[(\fun{TElist})]{\Gamma;\Delta \vdash \mcode{[}e_1,\ldots,e_n\mcode{]} \yield \kw{list}[T]}
+  {\Gamma;\Delta \vdash e_1 \yield T & \Gamma;\Delta \vdash e_2 \colcol T & \ldots &  \Gamma;\Delta \vdash e_n \colcol T}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item List is not homogeneous, expression $e_i$ should be of type $T$
+\end{itemize}
+
+$$
+\infer[(\fun{TEtuple})]{\Gamma;\Delta \vdash \mcode{(}e_1,\ldots,e_n\mcode{)} \yield \kw{tuple}[T_1,\ldots,T_n]}
+  {\Gamma;\Delta \vdash e_1 \yield T_1 & \Gamma;\Delta \vdash e_2 \yield T_2 & \ldots &  \Gamma;\Delta \vdash e_n \yield T_n}
+$$
+
+$$
+\infer[(\fun{TEemptyset})]{\Gamma;\Delta \vdash \kw{set}() \yield \kw{emptyset}}
+  {}
+$$
+
+$$
+\infer[(\fun{TEset})]{\Gamma;\Delta \vdash \mcode{\{}e_1,\ldots,e_n\mcode{\}} \yield \kw{set}[T]}
+  {\Gamma;\Delta \vdash e_1 \yield T & \fun{hashable}(T) & \Gamma;\Delta \vdash e_2 \colcol T & \ldots &  \Gamma;\Delta \vdash e_n \colcol T}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Element type $T$ is not hashable, cannot be used in a set   
+\item Set is not homogeneous, expression $e_i$ should be of type $T$
+\end{itemize}
+
+$$
+\infer[(\fun{TEemptydict})]{\Gamma;\Delta \vdash \kw{dict}() \yield \kw{emptydict}}
+  {}
+$$
+
+$$
+\infer[(\fun{TEdict})]{\Gamma;\Delta \vdash \mcode{\{}k_1:e_1,\ldots,k_n:e_n\mcode{\}} \yield \kw{dict}[K:T]}
+      {\begin{array}{l}
+          \Gamma;\Delta \vdash k_1 \yield K\\
+          \Gamma;\Delta \vdash k_2 \colcol K\\
+          \ldots\\
+          \Gamma;\Delta \vdash k_n \colcol K
+        \end{array} & \fun{hashable}(K) & \begin{array}{l}
+          \Gamma;\Delta \vdash e_1 \yield T \\
+          \Gamma;\Delta \vdash e_2 \colcol T\\
+          \ldots \\
+          \Gamma;\Delta \vdash e_n \colcol T\end{array}}
+$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Key type $K$ is not hashable, cannot be used as key in a dictionnary   
+\item Dictionnary key set is not homogeneous, expression $k_i$ should be of type $K$
+\item Dictionnary value types are not homogeneous, expression $e_i$ should be of type $T$
+\end{itemize}
+
+\paragraph{Operators}
+
+$$\left [
+  \begin{array}{l}
+    \fun{promote}(T,T) = T\\
+    \fun{promote}(\kw{int},\kw{float})=\kw{float}\\
+    \fun{promote}(\kw{float},\kw{int})=\kw{float}\\
+    \fun{promote}(\kw{int},\kw{Number})=\kw{Number}\\
+    \fun{promote}(\kw{Number},\kw{int})=\kw{Number}\\
+    \fun{promote}(\kw{float},\kw{Number})=\kw{Number}\\
+    \fun{promote}(\kw{Number},\kw{float})=\kw{Number}\\
+    \fun{promote}(T_1,T_2) = \bot \text{ otherwise}
+\end{array}
+  \right.
+  $$
+
+$$\infer[(\fun{TEadd})]{\Gamma;\Delta \vdash e_1 + e_2 \yield T}
+  {\Gamma;\Delta \vdash e_1 \yield T_1 & \Gamma;\Delta \vdash e_2 \yield T_2 & \fun{promote}(T_1,T_2)=T \neq \bot}
+  $$
+
+  Idem $\fun{TEsub},\fun{TEtimes}$
+
+$$\infer[(\fun{TEdiv})]{\Gamma;\Delta \vdash e_1 / e_2 \yield \kw{float}}
+  {\Gamma;\Delta \vdash e_1 \colcol \kw{Number} & \Gamma;\Delta \vdash e_2 \colcol \kw{Number}}
+  $$
+
+  $$\infer[(\fun{TEidiv})]{\Gamma;\Delta \vdash e_1 // e_2 \yield \kw{int}}
+  {\Gamma;\Delta \vdash e_1 \colcol \kw{Number} & \Gamma;\Delta \vdash e_2 \colcol \kw{Number}}
+  $$
+
+\paragraph{Iterables}
+
+$$
+\infer[(\fun{TEitems})]{\Gamma;\Delta e\mcode{.items}() \yield \kw{iterable}[\kw{tuple}[K,T]]}
+{\Gamma;\Delta e \colcol \kw{dict}[K:T]}
+$$
+
+$$
+\infer[(\fun{TEzip})]{\Gamma;\Delta \mcode{zip}(e_1,\ldots,e_n) \yield \kw{iterable}[\kw{tuple}[T_1,\ldots,T_n]]}
+{\Gamma;\Delta e_1 \yield T_1 & \ldots & \Gamma;\Delta e_n \yield T_n}
+$$
+
+\paragraph{Comprehensions}
+
+$$
+\infer[(\fun{TElcomprs})]{\Gamma;\Delta \vdash [e~\kw{for}~\begin{array}[t]{l}
+                                                          v_1~\kw{in}~s_1~\kw{if}~c_1\\
+                                                          \kw{for}~\begin{array}[t]{l}
+                                                            v_2~\kw{in}~s_2~\kw{if}~c_2\\
+                                                            \ldots \kw{for}~v_n~\kw{in}~s_n~\kw{if}~c_n]
+                                                          \end{array}\end{array} \yield \kw{iterable}[T]}
+{\begin{array}{l}
+  \Gamma;\Delta \vdash s_1 \colcol \kw{iterable}[T_1]\\
+  \Gamma;\Delta,v_1:T_1 \vdash s_2 \colcol \kw{iterable}[T_2]\\
+  \cdots\\
+  \Gamma;\Delta,v_1:T_1,\ldots,v_n:T_n \vdash s_n \colcol \kw{iterable}[T_n]\\
+  \end{array}
+& \begin{array}{l}
+      \Gamma;\Delta,v_1:T_1\vdash c_1 \colcol \kw{bool} \\
+      \Gamma;\Delta,v_1:T_1,v_2:T_2\vdash c_2 \colcol \kw{bool}\\
+      \cdots\\
+      \Gamma;\Delta,v_1:T_1,\ldots,v_n:T_n \vdash c_n \colcol \kw{bool}\\[8pt]
+  \Gamma;\Delta,v_1:T_1,\ldots,v_n:T_n \vdash e \yield T
+\end{array}}$$
+
+\textbf{Errors}:
+\begin{itemize}
+\item Expression $s_i$ in comprehension is not an iterable
+\item Comprehension condition $c_i$ is not a boolean
+\end{itemize}
+
+Idem $\fun{TEscomprs}$ (sets), $\fun{TEdcomprs}$ (dicts)
+
+\subsection{Type unification}
+
+TODO : should be unification, which requires type variable instantiation
+(type annotations include variables)
+
+\paragraph{Basic laws}
+
+$$
+\infer[(\fun{TCsym})]{\Xi \vdash T_1 \compat T_2 \dashv \Xi'}{\Xi \vdash T_2 \compat T_1 \dashv \Xi'}
+\quad \infer[(\fun{TCrefl})]{\Xi \vdash T \compat T \dashv \Xi}{}
+$$
+
+\paragraph{type variables}
+
+$$
+\infer[(\fun{TCvar\_inst})]{\Xi \vdash \alpha \compat T \dashv \Xi,\alpha=T}
+{\alpha\notin \Xi}
+\quad \infer[(\fun{TCvar\_eq})]{\Xi \vdash \alpha \compat T \dashv \Xi'}
+{\Xi(\alpha)=T' & \Xi \vdash T \compat T' \dashv \Xi'}
+$$
+
+\textbf{Remark}: in $\fun{TCvar\_inst}$ the variable $\alpha$ must not be an explicit annotation $\widehat{\alpha}$.
+
+\paragraph{Numeric compatibility}
+
+$$\infer[(\fun{TCnum\_int})]{\Xi \vdash \widehat{\kw{Number}}\compat \kw{int} \dashv \Xi}{}
+\quad \infer[(\fun{TCnum\_float})]{\Xi \vdash \widehat{\kw{Number}}\compat \kw{float}  \dashv \Xi}{}$$
+
+\textbf{Remark}: type \kw{Number} is declared (in explicit annotation)
+
+\paragraph{Iterables}
+
+$$\infer[(\fun{TClist})]{\Xi \vdash \kw{list}[T] \compat \kw{iterable}[T'] \dashv \Xi'}{\Xi \vdash T \compat T' \dashv \Xi'}
+\quad \infer[(\fun{TCset})]{\kw{set}[T] \compat \kw{iterable}[T']}{T \compat T'}$$
+
+$$\infer[(\fun{TCdict})]{\kw{dict}[K:T] \compat \kw{iterable}[K']}{K \compat K'}
+$$
+
+\subsection{Type incompatililby}
+
+\paragraph{Basic laws}
+
+\paragraph{Numeric errors}
+
+\section{Effect checker}
+
+TODO
+
+\end{document}
