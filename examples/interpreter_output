@@ -1,22 +1,14 @@
 flagging type
-flagging type
-flagging type
-eeeee
-hello
-False
-end
-hello
-False
-end
-flag lvl vaut inf
-hello
-False
-end
-hello
-False
-end
+COME ON ! 
+je suis là
+tuple[int,int]
+flag lvl vaut 0
 expr_type is False
-False
-{'M': (ListType(IntType()), 'function')}
-list[_]
-_
+eehho False
+{'e': (TupleType([TupleType([IntType(),IntType()]),IntType()]), 'function')}
+COME ON ! 
+expr_type is False
+None
+flag lvl vaut inf
+None
+flag lvl vaut inf

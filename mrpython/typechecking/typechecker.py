@@ -406,7 +406,7 @@ def linearize_tuple_type(tuple_type):
     return elem_types
     
 def type_check_Assign(assign, ctx, global_scope = False):
-
+    print("COME ON ! ")
     # first let's see if the variables are dead
     mono_assign = False # is this an actual assignment (and not an initialization ?)
     for var in assign.target.variables():
@@ -468,7 +468,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
         # register declared type in environment
         ctx.local_env[var.var_name] = (expr_type, ctx.fetch_scope_mode())
 
-        print (ctx.local_env[var.var_name][0].get_flag())
+        print ( str(var.var_name) + "ehho " + str(ctx.local_env[var.var_name][0].get_flag()))
         print (ctx.local_env)
         return True
         
@@ -796,10 +796,12 @@ def type_check_With(ewith, ctx):
 With.type_check = type_check_With
     
 def ContainerAssign_type_check(cassign, ctx):
+    print("EH O!")
     container_type = cassign.container_expr.type_infer(ctx)
     if container_type is None:
         return False
-
+    if container_type.get_flag():
+        print("TOUCHE PAS CETTE VARIABLE MERDE !")
     if not isinstance(container_type, DictType):
         ctx.add_type_error(ContainerAssignTypeError(cassign, container_type))
         return False
@@ -1393,6 +1395,11 @@ def type_check_Condition(cond, ctx, compare):
 Condition.type_check = type_check_Condition
 
 def type_infer_ETuple(tup, ctx):
+    flag_lvl = math.inf
+    flagged_type = None
+    
+    lst_type = None
+
     if not tup.elements:
         ctx.add_type_error(EmptyTupleError(tup))
         return None
@@ -1402,9 +1409,26 @@ def type_infer_ETuple(tup, ctx):
         element_type = element.type_infer(ctx)
         if not element_type:
             return None
-        element_types.append(element_type)
+        if element_type.get_flag():
+            print("je suis là")
+            flagged_type = element_type
 
-    return TupleType(element_types)
+        if element_type.get_flag():
+            flagged_type = element_type
+            flag_lvl = 0
+        elif element_type.get_flag_lvl() < flag_lvl:
+            flagged_type = element_type
+            flag_lvl = element_type.get_flag_lvl()
+                
+        element_types.append(element_type)
+    print(flagged_type)
+    if flagged_type != None:
+        lst_type = flagged_type
+    
+    res =  TupleType(element_types)
+    print("flag lvl vaut " + str(flag_lvl))
+    res.set_flag_lvl(flag_lvl+1)
+    return res
 
 ETuple.type_infer = type_infer_ETuple
 
@@ -1468,9 +1492,15 @@ def type_infer_EList(lst, ctx):
 EList.type_infer = type_infer_EList
 
 def type_infer_Indexing(indexing, ctx):
+    print("ALLLOOO")
+
+
     subject_type = indexing.subject.type_infer(ctx)
     if subject_type is None:
         return None
+
+    #if subject_type.get_flag:
+     #   print("Touche pas cette variable !!")
 
     if isinstance(subject_type, SequenceType) \
          or isinstance(subject_type, ListType):
@@ -1689,6 +1719,9 @@ ESet.type_infer = type_infer_ESet
 def type_infer_EDict(edict, ctx):
     if not edict.keys:
         return DictType()
+    
+    flag_lvl = math.inf
+    flagged_type = None
 
     # key type
     edict_key_type = None
@@ -1720,6 +1753,9 @@ def type_infer_EDict(edict, ctx):
         if val_type is None:
             return None
 
+        if val_type.get_flag():
+            flagged_type = val_type
+
         if edict_val_type is None:
             edict_val_type = val_type
         else:
@@ -1730,8 +1766,20 @@ def type_infer_EDict(edict, ctx):
                 if not edict_val_type.type_compare(ctx, val, val_type, raise_error=False):
                     ctx.add_type_error(HeterogeneousElementError('dictionary', edict, edict_val_type, val_type, key))
                     return None
+        if val_type.get_flag():
+            flagged_type = val_type
+            flag_lvl = 0
+        elif val_type.get_flag_lvl() < flag_lvl:
+            flagged_type = val_type
+            flag_lvl = val_type.get_flag_lvl()
+    
+    if flagged_type != None:
+        lst_type = flagged_type
                 
-    return DictType(edict_key_type, edict_val_type)
+    d = DictType(edict_key_type, edict_val_type)
+    d.set_flag_lvl(flag_lvl+1)
+
+    return d
 
 EDict.type_infer = type_infer_EDict
 

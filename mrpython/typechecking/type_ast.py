@@ -20,6 +20,8 @@ class TypeAST:
         raise NotImplementedError("Substitution not implemented for this node type (please report)\n  ==> {}".format(self))
 
     def __eq__(self, other):
+        if (other == None):
+            return False
         raise NotImplementedError("Equality not implemented for this node type (please report)\n  ==> {}".format(self))
 
     def is_hashable(self):
@@ -35,9 +37,9 @@ class TypeAST:
         """do nothing ..."""
     
     def get_flag_lvl(self):
-        print("hello")
-        print(math.inf<math.inf)
-        print("end")
+        #print("hello")
+        #print(math.inf<math.inf)
+        #print("end")
         return math.inf +1
     
     def get_flag(self):
@@ -360,6 +362,22 @@ class TupleType(TypeAST):
                 raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_types = elem_types
 
+    def raise_flag(self):
+        print("flagging type")
+        self.flag = True
+        for elem_type in self.elem_types:
+            elem_type.raise_flag()
+    
+    def get_flag(self):
+        return self.flag
+    
+    def set_flag_lvl(self, val):
+        self.flag_lvl = val
+    
+    def get_flag_lvl(self):
+        return self.flag_lvl
+    
+
     def rename_type_variables(self, rmap):
         nelem_types = []
         for elem_type in self.elem_types:
@@ -402,7 +420,7 @@ class TupleType(TypeAST):
                 , None)
 
     def __str__(self):
-        return "tuple[{}]".format(",".join((str(et) for et in self.elem_tymath.pes)))
+        return "tuple[{}]".format(",".join((str(et) for et in self.elem_types)))
 
     def __repr__(self):
         return "TupleType([{}])".format(",".join((repr(et) for et in self.elem_types)))
@@ -545,6 +563,22 @@ class DictType(TypeAST):
         if val_type is not None and not isinstance(val_type, TypeAST):
             raise ValueError("Value type is not a TypeAST: {}".format(val_type))
         self.val_type = val_type
+
+    def raise_flag(self):
+        print("flagging type")
+        self.flag = True
+        self.key_type.raise_flag()
+        self.val_type.raise_flag()
+    
+    def get_flag(self):
+        return self.flag
+    
+    def set_flag_lvl(self, val):
+        self.flag_lvl = val
+    
+    def get_flag_lvl(self):
+        return self.flag_lvl
+    
 
     def rename_type_variables(self, rmap):
         if self.key_type is None:
