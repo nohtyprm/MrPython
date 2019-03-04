@@ -391,19 +391,22 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
 
     return declared_types
 
+
 def linearize_tuple_type(tuple_type):
     if not isinstance(tuple_type, TupleType):
         raise NotSupportedError("Can only linearize tuple types (please report)")
 
     elem_types = []
+    elem_types_2 = []
 
     for elem_type in tuple_type.elem_types:
+        elem_types_2.append(elem_type)
         if isinstance(elem_type, TupleType):
-            elem_types.extend(linearize_tuple_type(elem_type))
+            elem_types.extend(linearize_tuple_type(elem_type)[0])
         else:
             elem_types.append(elem_type)
 
-    return elem_types
+    return elem_types,elem_types_2
     
 def type_check_Assign(assign, ctx, global_scope = False):
     print("COME ON ! ")
@@ -480,25 +483,42 @@ def type_check_Assign(assign, ctx, global_scope = False):
                                                 tr("Expecting a tuple")))
         return False
 
-    expr_var_types = linearize_tuple_type(expr_type)
-
-    if len(expr_var_types) != len(assign.target.variables()):
-        ctx.add_type_error(TupleDestructArityError(assign, expr_type, len(expr_var_types), len(assign.target.variables())))
+    expr_var_types,expr_var_types2 = linearize_tuple_type(expr_type)
+    print("types" + str(expr_var_types))
+    print("types2" + str(expr_var_types2))
+    print(expr_type)
+    if len(expr_var_types)!= len(assign.target.variables()) and len(expr_var_types2)!= len(assign.target.variables())  :
+    #    ctx.add_type_error(TupleDestructArityError(assign, expr_type, len(expr_var_types), len(assign.target.variables())))
         return False
 
-    for (i, var) in zip(range(0, len(assign.target.variables())), assign.target.variables()):
-        if var.var_name == '_': # just skip this check
-            continue
 
-        if var.var_name in declared_types:
-            if not declared_types[var.var_name].type_compare(ctx, assign.target, expr_var_types[i], raise_error=False):
-                ctx.add_type_error(VariableTypeError(assign.target, var, declared_types[var.var_name], expr_var_types[i]))
-                return False
-        
-            ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())
-        else:
-            ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())    
+    if(len(assign.target.variables())==len(expr_var_types)):
+        for (i, var) in zip(range(0, len(assign.target.variables())), assign.target.variables()):
+            if var.var_name == '_': # just skip this check
+                continue
 
+            if var.var_name in declared_types:
+                if not declared_types[var.var_name].type_compare(ctx, assign.target, expr_var_types[i], raise_error=False):
+                    ctx.add_type_error(VariableTypeError(assign.target, var, declared_types[var.var_name], expr_var_types[i]))
+                    return False
+            
+                ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())
+            else:
+                ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())    
+    
+    else:
+        for (i, var) in zip(range(0, len(assign.target.variables())), assign.target.variables()):
+            if var.var_name == '_': # just skip this check
+                continue
+
+            if var.var_name in declared_types:
+                if not declared_types[var.var_name].type_compare(ctx, assign.target, expr_var_types2[i], raise_error=False):
+                    ctx.add_type_error(VariableTypeError(assign.target, var, declared_types[var.var_name], expr_var_types2[i]))
+                    return False
+            
+                ctx.local_env[var.var_name] = (expr_var_types2[i], ctx.fetch_scope_mode())
+            else:
+                ctx.local_env[var.var_name] = (expr_var_types2[i], ctx.fetch_scope_mode())    
     return True
 
 Assign.type_check = type_check_Assign

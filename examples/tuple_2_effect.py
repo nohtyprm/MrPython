@@ -1,12 +1,13 @@
 def bad_function(T):
     '''tuple[int,int] -> int'''
 
-    #e : tuple[tuple[int,int],int]
-    e = (T,1)
-    #a : int
-    #b : int
+    #a : tuple[tuple[int,int],int]
+    a = ((1,2),4)
+    #d : tuple[int,int]
+    #e : int
     #c : int
-    a,b,c = e
+    #g: int
+    (d,g) = a
     return 0
 
 assert bad_function((1,2)) == 0
