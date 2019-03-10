@@ -391,25 +391,40 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
 
     return declared_types
 
-
-def linearize_tuple_type(tuple_type):
-    if not isinstance(tuple_type, TupleType):
-        raise NotSupportedError("Can only linearize tuple types (please report)")
-
-    elem_types = []
-    elem_types_2 = []
-
-    for elem_type in tuple_type.elem_types:
-        elem_types_2.append(elem_type)
-        if isinstance(elem_type, TupleType):
-            elem_types.extend(linearize_tuple_type(elem_type)[0])
+def linearize_tuple_type(working_var, working_expr, declared_types, ctx, expr):
+    print("hello its me" + str(type(working_var)) + " " + str(type(working_expr)))
+    if not isinstance(working_var, LHSTuple):
+        #check if working_var is an instance of LHSVar
+        if isinstance(working_var, LHSVar):
+            if working_var.var_name == '_': # just skip this check
+                return True
+            if working_var.var_name in declared_types:
+                if not declared_types[working_var.var_name].type_compare(ctx, expr, working_expr, raise_error=False):
+                    ctx.add_type_error(VariableTypeError(expr, working_var, declared_types[working_var.var_name], working_expr))
+                ctx.local_env[working_var.var_name] = (working_expr, ctx.fetch_scope_mode())
+                return True
+            else:
+                print("Erreur, la variable n'est pas declaree")
+                return False
         else:
-            elem_types.append(elem_type)
+            print("not a variable, cannot assign on that")
+            return False
+            
+        #raise NotSupportedError("Can only linearize tuple types (please report)")
 
-    return elem_types,elem_types_2
+    if working_var.arity() != working_expr.size():
+        print("working_var + " + str(working_var) + " working_expr " + str(working_expr))
+        print("Error in destructured initialization, tuples are not the same size")
+        return False
+    for i in range(working_var.arity()):
+        if not linearize_tuple_type(working_var.elements[i], working_expr.elem_types[i],  declared_types, ctx, expr):
+            return False
+
+    
+    return True
+
     
 def type_check_Assign(assign, ctx, global_scope = False):
-    print("COME ON ! ")
     # first let's see if the variables are dead
     mono_assign = False # is this an actual assignment (and not an initialization ?)
     for var in assign.target.variables():
@@ -456,69 +471,15 @@ def type_check_Assign(assign, ctx, global_scope = False):
 
     if expr_type is None:
         return False
-    print("expr_type is " + str(expr_type.get_flag()))
-    # treat the simpler "mono-var" case first
-    if assign.target.arity() == 1:
-        var = assign.target.variables()[0]
-        if var.var_name not in declared_types:
-            # XXX: this is strict, need a dedicated error message ?
-            return False
-        
-        # compare inferred type wrt. declared type
-        if not declared_types[var.var_name].type_compare(ctx, assign.expr, expr_type):
-            return False
-
-        # register declared type in environment
-        ctx.local_env[var.var_name] = (expr_type, ctx.fetch_scope_mode())
-
-        print ( str(var.var_name) + "ehho " + str(ctx.local_env[var.var_name][0].get_flag()))
-        print (ctx.local_env)
-        return True
-        
-    # here we have a destructured initialization
-
-    
-    if not isinstance(expr_type, TupleType):
-        ctx.add_type_error(TypeExpectationError(ctx.function_def, assign.expr, expr_type,
-                                                tr("Expecting a tuple")))
+ 
+    #lets try to work with tuple
+    print(ctx.local_env)
+    if not linearize_tuple_type(assign.target, expr_type, declared_types, ctx, assign.target):
+        print("bad")
         return False
-
-    expr_var_types,expr_var_types2 = linearize_tuple_type(expr_type)
-    print("types" + str(expr_var_types))
-    print("types2" + str(expr_var_types2))
-    print(expr_type)
-    if len(expr_var_types)!= len(assign.target.variables()) and len(expr_var_types2)!= len(assign.target.variables())  :
-    #    ctx.add_type_error(TupleDestructArityError(assign, expr_type, len(expr_var_types), len(assign.target.variables())))
-        return False
-
-
-    if(len(assign.target.variables())==len(expr_var_types)):
-        for (i, var) in zip(range(0, len(assign.target.variables())), assign.target.variables()):
-            if var.var_name == '_': # just skip this check
-                continue
-
-            if var.var_name in declared_types:
-                if not declared_types[var.var_name].type_compare(ctx, assign.target, expr_var_types[i], raise_error=False):
-                    ctx.add_type_error(VariableTypeError(assign.target, var, declared_types[var.var_name], expr_var_types[i]))
-                    return False
+    print("fater " + str(ctx.local_env))
             
-                ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())
-            else:
-                ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())    
-    
-    else:
-        for (i, var) in zip(range(0, len(assign.target.variables())), assign.target.variables()):
-            if var.var_name == '_': # just skip this check
-                continue
-
-            if var.var_name in declared_types:
-                if not declared_types[var.var_name].type_compare(ctx, assign.target, expr_var_types2[i], raise_error=False):
-                    ctx.add_type_error(VariableTypeError(assign.target, var, declared_types[var.var_name], expr_var_types2[i]))
-                    return False
             
-                ctx.local_env[var.var_name] = (expr_var_types2[i], ctx.fetch_scope_mode())
-            else:
-                ctx.local_env[var.var_name] = (expr_var_types2[i], ctx.fetch_scope_mode())    
     return True
 
 Assign.type_check = type_check_Assign
@@ -1238,6 +1199,9 @@ def type_infer_ECall(call, ctx):
         arguments = []
         arguments.append(call.receiver)
         arguments.extend(call.arguments)
+    elif "." + call.fun_name in {"__type_check"}:
+        print("hello")
+        print(call.arguments[0].type_infer())
     else:
         ctx.add_type_error(UnknownFunctionError(ctx.function_def, call))
         return None
@@ -1430,10 +1394,6 @@ def type_infer_ETuple(tup, ctx):
         if not element_type:
             return None
         if element_type.get_flag():
-            print("je suis là")
-            flagged_type = element_type
-
-        if element_type.get_flag():
             flagged_type = element_type
             flag_lvl = 0
         elif element_type.get_flag_lvl() < flag_lvl:
@@ -1441,19 +1401,16 @@ def type_infer_ETuple(tup, ctx):
             flag_lvl = element_type.get_flag_lvl()
                 
         element_types.append(element_type)
-    print(flagged_type)
     if flagged_type != None:
         lst_type = flagged_type
     
     res =  TupleType(element_types)
-    print("flag lvl vaut " + str(flag_lvl))
     res.set_flag_lvl(flag_lvl+1)
     return res
 
 ETuple.type_infer = type_infer_ETuple
 
 def type_infer_EList(lst, ctx):
-    print("eeeee")
     lst_type = None
     
     if not lst.elements:
@@ -1505,7 +1462,6 @@ def type_infer_EList(lst, ctx):
         lst_type = flagged_type
     
     res = ListType(lst_type)
-    print("flag lvl vaut " + str(flag_lvl))
     res.set_flag_lvl(flag_lvl+1)
     return res
 
@@ -2194,6 +2150,7 @@ BUILTINS_IMPORTS = {
     , '.keys' : function_type_parser(" dict[α:β] -> Set[α]]").content
     # iterables
     , 'zip' : function_type_parser(" Iterable[α] * Iterable[β] -> Iterable[tuple[α,β]]").content
+    , '__type_check' : function_type_parser ("Any->NoneType").content
 }
 
 MATH_IMPORTS = {

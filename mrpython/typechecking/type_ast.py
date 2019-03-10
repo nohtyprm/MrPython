@@ -37,9 +37,6 @@ class TypeAST:
         """do nothing ..."""
     
     def get_flag_lvl(self):
-        #print("hello")
-        #print(math.inf<math.inf)
-        #print("end")
         return math.inf +1
     
     def get_flag(self):
@@ -363,7 +360,6 @@ class TupleType(TypeAST):
         self.elem_types = elem_types
 
     def raise_flag(self):
-        print("flagging type")
         self.flag = True
         for elem_type in self.elem_types:
             elem_type.raise_flag()
@@ -434,7 +430,6 @@ class ListType(TypeAST):
     
     #flag all suboccurences
     def raise_flag(self):
-        print("flagging type")
         self.flag = True
         self.elem_type.raise_flag()
     
@@ -565,7 +560,6 @@ class DictType(TypeAST):
         self.val_type = val_type
 
     def raise_flag(self):
-        print("flagging type")
         self.flag = True
         self.key_type.raise_flag()
         self.val_type.raise_flag()
