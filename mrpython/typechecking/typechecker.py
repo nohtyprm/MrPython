@@ -398,20 +398,27 @@ def linearize_tuple_type(working_var, working_expr, declared_types, ctx, expr):
         if isinstance(working_var, LHSVar):
             if working_var.var_name == '_': # just skip this check
                 return True
-            if working_var.var_name in declared_types:
-                if not declared_types[working_var.var_name].type_compare(ctx, expr, working_expr, raise_error=False):
-                    ctx.add_type_error(VariableTypeError(expr, working_var, declared_types[working_var.var_name], working_expr))
+            if not declared_types is None:
+                if working_var.var_name in declared_types:
+                    if not declared_types[working_var.var_name].type_compare(ctx, expr, working_expr, raise_error=False):
+                        ctx.add_type_error(VariableTypeError(expr, working_var, declared_types[working_var.var_name], working_expr))
+                    ctx.local_env[working_var.var_name] = (working_expr, ctx.fetch_scope_mode())
+                    return True
+                else:
+                    print("Erreur, la variable n'est pas declaree")
+                    return False
+            #for EComp, maybe declared_types being None is not enough
+            else:
                 ctx.local_env[working_var.var_name] = (working_expr, ctx.fetch_scope_mode())
                 return True
-            else:
-                print("Erreur, la variable n'est pas declaree")
-                return False
         else:
             print("not a variable, cannot assign on that")
             return False
-            
+    elif not isinstance(working_expr, TupleType):
+        print ("Can only linearize tuple types")
+        return False
         #raise NotSupportedError("Can only linearize tuple types (please report)")
-
+    
     if working_var.arity() != working_expr.size():
         print("working_var + " + str(working_var) + " working_expr " + str(working_expr))
         print("Error in destructured initialization, tuples are not the same size")
@@ -473,9 +480,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
         return False
  
     #lets try to work with tuple
-    print(ctx.local_env)
     if not linearize_tuple_type(assign.target, expr_type, declared_types, ctx, assign.target):
-        print("bad")
         return False
     print("fater " + str(ctx.local_env))
             
@@ -530,9 +535,15 @@ def type_check_For(for_node, ctx):
             iter_type.elem_type = iter_type.key_type
 
         ctx.push_parent(for_node)
+        
+        #basically does the same as assign
+        expr_type = iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()
+        if not linearize_tuple_type(for_node.target, expr_type, declared_types, ctx, for_node.target):
+            return False
 
         # === do like in Assign ===
 
+        """
         # treat the simpler "mono-var" case first
         if for_node.target.arity() == 1:
             var = for_node.target.variables()[0]
@@ -551,7 +562,6 @@ def type_check_For(for_node, ctx):
 
         else:
             # here we have a destructured initialization
-            expr_type = iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()
             
             if not isinstance(expr_type, TupleType):
                 ctx.add_type_error(TypeExpectationError(ctx.function_def, for_node.iter, expr_type,
@@ -578,10 +588,11 @@ def type_check_For(for_node, ctx):
         
                     ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
                 else:
-                    ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())    
+                    ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())
+        """
 
         # and now type check the body in the constructed local env
-
+        print(ctx.local_env)
         for instr in for_node.body:
             if not instr.type_check(ctx):
                 ctx.pop_parent()
@@ -1549,9 +1560,23 @@ def type_infer_EComp(ecomp, ctx):
     for generator in ecomp.generators:
         # fetch the type of the iterator expr
         iter_type = generator.iter.type_infer(ctx)
-        if iter_type is None:
-            ctx.pop_parent()
-            return None
+        
+        for var in generator.target.variables():
+            if var.var_name in ctx.dead_variables:
+                ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
+                return None
+    
+            # check that the variable is not a parameter
+            if ctx.param_env and var.var_name in ctx.param_env:
+                ctx.add_type_error(ParameterInForError(var.var_name, var))
+                return None        
+            if var.var_name in ctx.local_env:
+                ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
+                return None
+            
+            if iter_type is None:
+                ctx.pop_parent()
+                return None
 
         if isinstance(iter_type, (IterableType, SequenceType, ListType, SetType, StrType, DictType)):
             iter_elem_type = None
@@ -1562,54 +1587,10 @@ def type_infer_EComp(ecomp, ctx):
             else:
                 iter_elem_type = iter_type.elem_type
             
-            if generator.target.arity() == 1:
-                var = generator.target.variables()[0]
-                if var.var_name in ctx.dead_variables:
-                    ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
+            if not linearize_tuple_type(generator.target, iter_elem_type, None, ctx, generator.target):
                     ctx.pop_parent()
                     return None
-                elif var.var_name in ctx.local_env:
-                    ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
-                    ctx.pop_parent()
-                    return None
-                # check that the variable is not a parameter
-                elif ctx.param_env and var.var_name in ctx.param_env:
-                    ctx.add_type_error(ParameterInCompError(var.var_name, var))
-                    return None
-                elif var.var_name != "_":
-                    ctx.local_env[var.var_name] = (iter_elem_type, ctx.fetch_scope_mode())
-            else: # tuple destruct
-                if not isinstance(iter_elem_type, TupleType):
-                    ctx.add_type_error(TypeExpectationError(ctx.function_def, generator.iter, iter_elem_type,
-                                                            tr("Expecting an iterator of tuples")))
-                    ctx.pop_parent()
-                    return None
-
-                expr_var_types = linearize_tuple_type(iter_elem_type)
-
-                if len(expr_var_types) != len(generator.target.variables()):
-                    ctx.add_type_error(TupleDestructArityError(generator.target, iter_elem_type, len(expr_var_types), len(generator.target.variables())))
-                    ctx.pop_parent()
-                    return None
-
-                for (i, var) in zip(range(0, len(generator.target.variables())), generator.target.variables()):
-                    if var.var_name in ctx.dead_variables:
-                        ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
-                        ctx.pop_parent()
-                        return None
-                    # check that the variable is not a parameter
-                    elif ctx.param_env and var.var_name in ctx.param_env:
-                        ctx.add_type_error(ParameterInCompError(var.var_name, var))
-                        return None 
-                    elif var.var_name in ctx.local_env:
-                        ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
-                        ctx.pop_parent()
-                        return None
-                    elif var.var_name != "_":
-                        ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())
-
             # now the lexical env is built for this generator conditions
-
             for condition in generator.conditions:
                 if not type_expect(ctx, condition, BoolType()):
                     ctx.pop_parent()
