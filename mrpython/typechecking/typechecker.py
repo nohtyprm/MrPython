@@ -391,8 +391,11 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
 
     return declared_types
 
+#fonction requires expression in which it was called, to generate proper error message, which is expr
+#it requires also the target variable, working_var, and the assigned expression, working_expr
+#declared_types needed to typecheck if variables must be declared (in assign and for but not in comprehension)
+#ctx to affect the variable to its type in the local_env
 def linearize_tuple_type(working_var, working_expr, declared_types, ctx, expr):
-    print("hello its me" + str(type(working_var)) + " " + str(type(working_expr)))
     if not isinstance(working_var, LHSTuple):
         #check if working_var is an instance of LHSVar
         if isinstance(working_var, LHSVar):
@@ -406,22 +409,21 @@ def linearize_tuple_type(working_var, working_expr, declared_types, ctx, expr):
                     return True
                 else:
                     print("Erreur, la variable n'est pas declaree")
+                    ctx.add_type_error(UndeclaredVariableError(expr, working_var))
                     return False
             #for EComp, maybe declared_types being None is not enough
             else:
                 ctx.local_env[working_var.var_name] = (working_expr, ctx.fetch_scope_mode())
                 return True
         else:
-            print("not a variable, cannot assign on that")
+            raise NotSupportedError("Assignation qui ne se fait pas sur une variable, ne doit pas se produire")
             return False
     elif not isinstance(working_expr, TupleType):
-        print ("Can only linearize tuple types")
+        raise NotSupportedError("Can only linearize tuple types (please report)")
         return False
-        #raise NotSupportedError("Can only linearize tuple types (please report)")
     
     if working_var.arity() != working_expr.size():
-        print("working_var + " + str(working_var) + " working_expr " + str(working_expr))
-        print("Error in destructured initialization, tuples are not the same size")
+        ctx.add_type_error(TupleDestructArityError(expr, working_expr, working_expr.size(), working_var.arity()))
         return False
     for i in range(working_var.arity()):
         if not linearize_tuple_type(working_var.elements[i], working_expr.elem_types[i],  declared_types, ctx, expr):
@@ -541,55 +543,6 @@ def type_check_For(for_node, ctx):
         if not linearize_tuple_type(for_node.target, expr_type, declared_types, ctx, for_node.target):
             return False
 
-        # === do like in Assign ===
-
-        """
-        # treat the simpler "mono-var" case first
-        if for_node.target.arity() == 1:
-            var = for_node.target.variables()[0]
-            if var.var_name not in declared_types:
-                # XXX: this is strict, need a dedicated error message ?
-                ctx.pop_parent()
-                return False
-        
-            # compare inferred type wrt. declared type
-            if not declared_types[var.var_name].type_compare(ctx, for_node.iter, iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()):
-                ctx.pop_parent()
-                return False
-
-            # register declared type in environment
-            ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
-
-        else:
-            # here we have a destructured initialization
-            
-            if not isinstance(expr_type, TupleType):
-                ctx.add_type_error(TypeExpectationError(ctx.function_def, for_node.iter, expr_type,
-                                                        tr("Expecting an iterator of tuples")))
-                ctx.pop_parent()
-                return False
-
-            expr_var_types = linearize_tuple_type(expr_type)
-
-            if len(expr_var_types) != len(for_node.target.variables()):
-                ctx.add_type_error(TupleDestructArityError(for_node.target, expr_type, len(expr_var_types), len(for_node.target.variables())))
-                ctx.pop_parent()
-                return False
-
-            for (i, var) in zip(range(0, len(for_node.target.variables())), for_node.target.variables()):
-                if var.var_name == '_': # just skip this check
-                    continue
-
-                if var.var_name in declared_types:
-                    if not declared_types[var.var_name].type_compare(ctx, var, expr_var_types[i], raise_error=False):
-                        ctx.add_type_error(VariableTypeError(for_node.target, var, declared_types[var_name], expr_var_types[i]))
-                        ctx.pop_parent()
-                        return False
-        
-                    ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
-                else:
-                    ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())
-        """
 
         # and now type check the body in the constructed local env
         print(ctx.local_env)
@@ -1198,6 +1151,9 @@ def type_infer_ENone(node, ctx):
 
 ENone.type_infer = type_infer_ENone
 
+
+
+
 def type_infer_ECall(call, ctx):
     # step 1 : fetch the signature of the called function
     if call.full_fun_name in ctx.global_env:
@@ -1210,11 +1166,11 @@ def type_infer_ECall(call, ctx):
         arguments = []
         arguments.append(call.receiver)
         arguments.extend(call.arguments)
-    elif "." + call.fun_name in {"__type_check"}:
-        print("hello")
-        print(call.arguments[0].type_infer())
     else:
         ctx.add_type_error(UnknownFunctionError(ctx.function_def, call))
+        return None
+    if call.fun_name == "__type_check":
+        print(call.arguments[0].type_infer(ctx))
         return None
 
     # step 1bis : we rename the type parameters to avoid any nameclash
@@ -2131,7 +2087,7 @@ BUILTINS_IMPORTS = {
     , '.keys' : function_type_parser(" dict[α:β] -> Set[α]]").content
     # iterables
     , 'zip' : function_type_parser(" Iterable[α] * Iterable[β] -> Iterable[tuple[α,β]]").content
-    , '__type_check' : function_type_parser ("Any->NoneType").content
+    , '__type_check' : function_type_parser ("Anything->NoneType").content
 }
 
 MATH_IMPORTS = {
@@ -2389,6 +2345,23 @@ class UnknownVariableError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Variable problem"), self.var.ast.lineno, self.var.ast.col_offset
                                     , tr("there is such variable of name '{}'").format(self.var.name))
+        
+class UndeclaredVariableError(TypeError):
+    def __init__(self, in_function, var):
+        self.in_function = in_function
+        self.var = var
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "UndeclaredVariableError[{}]@{}:{}".format(self.var.name
+                                                       , self.var.ast.lineno
+                                                       , self.var.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Variable problem"), self.var.ast.lineno, self.var.ast.col_offset
+                                    , tr("variable '{}' was not declared").format(self.var.var_name))
 
 class TypeComparisonError(TypeError):
     def __init__(self, in_function, expected_type, expr, expr_type, explain):
