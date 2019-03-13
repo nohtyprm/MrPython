@@ -169,11 +169,18 @@ class LHSTuple:
 
     def arity(self):
         return len(self.elements)
+<<<<<<< HEAD
     
     
     def __str__(self):
         return "(" + ", ".join( ( str(elt) for elt in self.elements) ) + ")"
     
+=======
+        
+    def __str__(self):
+        return ", ".join( ( str(elt) for elt in self.elements) )
+
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
     def __repr__(self):
         return "LHSTuple({})".format(", ".join ( ( repr(elt) for elt in self.elements ) ))
 
@@ -193,7 +200,11 @@ class Assign:
         self.ast = node
 
         self.target = build_lhs_destruct(self.ast.targets[0])
+<<<<<<< HEAD
         print(self.target)
+=======
+
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
         self.expr = parse_expression(self.ast.value)
 
 class ContainerAssign:

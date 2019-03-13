@@ -1,6 +1,9 @@
 import os.path, sys
 import ast
+<<<<<<< HEAD
 import math
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 
 if __name__ == "__main__":
     main_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir)
@@ -63,7 +66,10 @@ class TypingContext:
     def register_parameters(self, parameters, param_types):
         self.param_env = {}
         for (param, param_type) in zip(parameters, param_types):
+<<<<<<< HEAD
             param_type.raise_flag()
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
             self.param_env[param] = param_type
 
     def register_return_type(self, return_type):
@@ -135,9 +141,12 @@ def type_check_UnsupportedNode(node, ctx):
 
     return False
 
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 UnsupportedNode.type_check = type_check_UnsupportedNode
 
 # Takes a program, and returns a
@@ -391,6 +400,7 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
 
     return declared_types
 
+<<<<<<< HEAD
 #fonction requires expression in which it was called, to generate proper error message, which is expr
 #it requires also the target variable, working_var, and the assigned expression, working_expr
 #declared_types needed to typecheck if variables must be declared (in assign and for but not in comprehension)
@@ -434,6 +444,24 @@ def linearize_tuple_type(working_var, working_expr, declared_types, ctx, expr):
 
     
 def type_check_Assign(assign, ctx, global_scope = False):
+=======
+def linearize_tuple_type(tuple_type):
+    if not isinstance(tuple_type, TupleType):
+        raise NotSupportedError("Can only linearize tuple types (please report)")
+
+    elem_types = []
+
+    for elem_type in tuple_type.elem_types:
+        if isinstance(elem_type, TupleType):
+            elem_types.extend(linearize_tuple_type(elem_type))
+        else:
+            elem_types.append(elem_type)
+
+    return elem_types
+    
+def type_check_Assign(assign, ctx, global_scope = False):
+
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
     # first let's see if the variables are dead
     mono_assign = False # is this an actual assignment (and not an initialization ?)
     for var in assign.target.variables():
@@ -476,6 +504,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
 
     # next infer type of initialization expression
     expr_type = assign.expr.type_infer(ctx)
+<<<<<<< HEAD
     
 
     if expr_type is None:
@@ -487,6 +516,54 @@ def type_check_Assign(assign, ctx, global_scope = False):
     print("fater " + str(ctx.local_env))
             
             
+=======
+    if expr_type is None:
+        return False
+    
+    # treat the simpler "mono-var" case first
+    if assign.target.arity() == 1:
+        var = assign.target.variables()[0]
+        if var.var_name not in declared_types:
+            # XXX: this is strict, need a dedicated error message ?
+            return False
+        
+        # compare inferred type wrt. declared type
+        if not declared_types[var.var_name].type_compare(ctx, assign.expr, expr_type):
+            return False
+
+        # register declared type in environment
+        ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
+
+        return True
+        
+    # here we have a destructured initialization
+
+    
+    if not isinstance(expr_type, TupleType):
+        ctx.add_type_error(TypeExpectationError(ctx.function_def, assign.expr, expr_type,
+                                                tr("Expecting a tuple")))
+        return False
+
+    expr_var_types = linearize_tuple_type(expr_type)
+
+    if len(expr_var_types) != len(assign.target.variables()):
+        ctx.add_type_error(TupleDestructArityError(assign, expr_type, len(expr_var_types), len(assign.target.variables())))
+        return False
+
+    for (i, var) in zip(range(0, len(assign.target.variables())), assign.target.variables()):
+        if var.var_name == '_': # just skip this check
+            continue
+
+        if var.var_name in declared_types:
+            if not declared_types[var.var_name].type_compare(ctx, assign.target, expr_var_types[i], raise_error=False):
+                ctx.add_type_error(VariableTypeError(assign.target, var, declared_types[var.var_name], expr_var_types[i]))
+                return False
+        
+            ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
+        else:
+            ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())    
+
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
     return True
 
 Assign.type_check = type_check_Assign
@@ -537,6 +614,7 @@ def type_check_For(for_node, ctx):
             iter_type.elem_type = iter_type.key_type
 
         ctx.push_parent(for_node)
+<<<<<<< HEAD
         
         #basically does the same as assign
         expr_type = iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()
@@ -546,6 +624,60 @@ def type_check_For(for_node, ctx):
 
         # and now type check the body in the constructed local env
         print(ctx.local_env)
+=======
+
+        # === do like in Assign ===
+
+        # treat the simpler "mono-var" case first
+        if for_node.target.arity() == 1:
+            var = for_node.target.variables()[0]
+            if var.var_name not in declared_types:
+                # XXX: this is strict, need a dedicated error message ?
+                ctx.pop_parent()
+                return False
+        
+            # compare inferred type wrt. declared type
+            if not declared_types[var.var_name].type_compare(ctx, for_node.iter, iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()):
+                ctx.pop_parent()
+                return False
+
+            # register declared type in environment
+            ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
+
+        else:
+            # here we have a destructured initialization
+            expr_type = iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()
+            
+            if not isinstance(expr_type, TupleType):
+                ctx.add_type_error(TypeExpectationError(ctx.function_def, for_node.iter, expr_type,
+                                                        tr("Expecting an iterator of tuples")))
+                ctx.pop_parent()
+                return False
+
+            expr_var_types = linearize_tuple_type(expr_type)
+
+            if len(expr_var_types) != len(for_node.target.variables()):
+                ctx.add_type_error(TupleDestructArityError(for_node.target, expr_type, len(expr_var_types), len(for_node.target.variables())))
+                ctx.pop_parent()
+                return False
+
+            for (i, var) in zip(range(0, len(for_node.target.variables())), for_node.target.variables()):
+                if var.var_name == '_': # just skip this check
+                    continue
+
+                if var.var_name in declared_types:
+                    if not declared_types[var.var_name].type_compare(ctx, var, expr_var_types[i], raise_error=False):
+                        ctx.add_type_error(VariableTypeError(for_node.target, var, declared_types[var_name], expr_var_types[i]))
+                        ctx.pop_parent()
+                        return False
+        
+                    ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
+                else:
+                    ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())    
+
+        # and now type check the body in the constructed local env
+
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
         for instr in for_node.body:
             if not instr.type_check(ctx):
                 ctx.pop_parent()
@@ -741,12 +873,19 @@ def type_check_With(ewith, ctx):
 With.type_check = type_check_With
     
 def ContainerAssign_type_check(cassign, ctx):
+<<<<<<< HEAD
     print("EH O!")
     container_type = cassign.container_expr.type_infer(ctx)
     if container_type is None:
         return False
     if container_type.get_flag():
         print("TOUCHE PAS CETTE VARIABLE MERDE !")
+=======
+    container_type = cassign.container_expr.type_infer(ctx)
+    if container_type is None:
+        return False
+
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
     if not isinstance(container_type, DictType):
         ctx.add_type_error(ContainerAssignTypeError(cassign, container_type))
         return False
@@ -847,10 +986,15 @@ def type_infer_EAdd(expr, ctx):
             ctx.add_type_error(TypeComparisonError(ctx.function_def, left_type.elem_type, expr.right, right_type.elem_type,
                                                    tr("Expecting a list with elements of type: {}").format(left_type.elem_type)))
             return None
+<<<<<<< HEAD
         
         if(left_type.elem_type.get_flag_lvl() > right_type.elem_type.get_flag_lvl()):
             return ListType(right_type.elem_type)
         return ListType(left_type.elem_type)
+=======
+
+        return left_type
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 
     else:
         ctx.add_type_error(TypeComparisonError(ctx.function_def, ListType(), expr.left, left_type,
@@ -1151,9 +1295,12 @@ def type_infer_ENone(node, ctx):
 
 ENone.type_infer = type_infer_ENone
 
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 def type_infer_ECall(call, ctx):
     # step 1 : fetch the signature of the called function
     if call.full_fun_name in ctx.global_env:
@@ -1169,9 +1316,12 @@ def type_infer_ECall(call, ctx):
     else:
         ctx.add_type_error(UnknownFunctionError(ctx.function_def, call))
         return None
+<<<<<<< HEAD
     if call.fun_name == "__type_check":
         print(call.arguments[0].type_infer(ctx))
         return None
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 
     # step 1bis : we rename the type parameters to avoid any nameclash
     rename_map = {}
@@ -1216,12 +1366,15 @@ def type_infer_ECall(call, ctx):
                 #ctx.add_type_error(CallArgumentError(ctx.function_def, method_call, call, num_arg, arg, param_type))
                 ctx.call_type_env.pop()
                 return None
+<<<<<<< HEAD
         
         if method_call:
             print(str(param_type))
             if num_arg == 1:
                 if arg_type.get_flag():
                     print("side effect call")
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
         num_arg += 1
 
     # step 4 : return the return type
@@ -1346,11 +1499,14 @@ def type_check_Condition(cond, ctx, compare):
 Condition.type_check = type_check_Condition
 
 def type_infer_ETuple(tup, ctx):
+<<<<<<< HEAD
     flag_lvl = math.inf
     flagged_type = None
     
     lst_type = None
 
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
     if not tup.elements:
         ctx.add_type_error(EmptyTupleError(tup))
         return None
@@ -1360,6 +1516,7 @@ def type_infer_ETuple(tup, ctx):
         element_type = element.type_infer(ctx)
         if not element_type:
             return None
+<<<<<<< HEAD
         if element_type.get_flag():
             flagged_type = element_type
             flag_lvl = 0
@@ -1374,11 +1531,17 @@ def type_infer_ETuple(tup, ctx):
     res =  TupleType(element_types)
     res.set_flag_lvl(flag_lvl+1)
     return res
+=======
+        element_types.append(element_type)
+
+    return TupleType(element_types)
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 
 ETuple.type_infer = type_infer_ETuple
 
 def type_infer_EList(lst, ctx):
     lst_type = None
+<<<<<<< HEAD
     
     if not lst.elements:
         return ListType()
@@ -1402,12 +1565,24 @@ def type_infer_EList(lst, ctx):
         
         if element_type.get_flag():
             flagged_type = element_type
+=======
+    if not lst.elements:
+        return ListType()
+
+    for element in lst.elements:
+        element_type = element.type_infer(ctx)
+        if element_type is None:
+            return None
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
         #print("----\nelement type={}".format(element_type))
         #print("lst type={}\n----".format(lst_type))
         if lst_type is None:
             lst_type = element_type
+<<<<<<< HEAD
         
         
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
         else:
             if (isinstance(lst_type, (IntType, FloatType, NumberType)) 
                 and isinstance(element_type, (IntType, FloatType, NumberType))):
@@ -1415,6 +1590,7 @@ def type_infer_EList(lst, ctx):
             else: 
                 if not lst_type.type_compare(ctx, element, element_type, raise_error=False):
                     ctx.add_type_error(HeterogeneousElementError('list', lst, lst_type, element_type, element))
+<<<<<<< HEAD
 
                     return None
 
@@ -1431,20 +1607,31 @@ def type_infer_EList(lst, ctx):
     res = ListType(lst_type)
     res.set_flag_lvl(flag_lvl+1)
     return res
+=======
+                    return None
+
+    return ListType(lst_type)
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 
 EList.type_infer = type_infer_EList
 
 def type_infer_Indexing(indexing, ctx):
+<<<<<<< HEAD
     print("ALLLOOO")
 
 
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
     subject_type = indexing.subject.type_infer(ctx)
     if subject_type is None:
         return None
 
+<<<<<<< HEAD
     #if subject_type.get_flag:
      #   print("Touche pas cette variable !!")
 
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
     if isinstance(subject_type, SequenceType) \
          or isinstance(subject_type, ListType):
         sequential = True
@@ -1483,8 +1670,12 @@ def type_infer_Slicing(slicing, ctx):
 
     if isinstance(subject_type, SequenceType) \
        or isinstance(subject_type, ListType):
+<<<<<<< HEAD
         #unraise the flag for top level list
         result_type = ListType(subject_type.elem_type)
+=======
+        result_type = subject_type
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 
     elif isinstance(subject_type, StrType):
         result_type = StrType() # XXX: typical python twist !
@@ -1516,6 +1707,7 @@ def type_infer_EComp(ecomp, ctx):
     for generator in ecomp.generators:
         # fetch the type of the iterator expr
         iter_type = generator.iter.type_infer(ctx)
+<<<<<<< HEAD
         
         for var in generator.target.variables():
             if var.var_name in ctx.dead_variables:
@@ -1533,6 +1725,11 @@ def type_infer_EComp(ecomp, ctx):
             if iter_type is None:
                 ctx.pop_parent()
                 return None
+=======
+        if iter_type is None:
+            ctx.pop_parent()
+            return None
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 
         if isinstance(iter_type, (IterableType, SequenceType, ListType, SetType, StrType, DictType)):
             iter_elem_type = None
@@ -1543,10 +1740,61 @@ def type_infer_EComp(ecomp, ctx):
             else:
                 iter_elem_type = iter_type.elem_type
             
+<<<<<<< HEAD
             if not linearize_tuple_type(generator.target, iter_elem_type, None, ctx, generator.target):
                     ctx.pop_parent()
                     return None
             # now the lexical env is built for this generator conditions
+=======
+            if generator.target.arity() == 1:
+                var = generator.target.variables()[0]
+                if var.var_name in ctx.dead_variables:
+                    ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
+                    ctx.pop_parent()
+                    return None
+                elif var.var_name in ctx.local_env:
+                    ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
+                    ctx.pop_parent()
+                    return None
+                # check that the variable is not a parameter
+                elif ctx.param_env and var.var_name in ctx.param_env:
+                    ctx.add_type_error(ParameterInCompError(var.var_name, var))
+                    return None
+                elif var.var_name != "_":
+                    ctx.local_env[var.var_name] = (iter_elem_type, ctx.fetch_scope_mode())
+            else: # tuple destruct
+                if not isinstance(iter_elem_type, TupleType):
+                    ctx.add_type_error(TypeExpectationError(ctx.function_def, generator.iter, iter_elem_type,
+                                                            tr("Expecting an iterator of tuples")))
+                    ctx.pop_parent()
+                    return None
+
+                expr_var_types = linearize_tuple_type(iter_elem_type)
+
+                if len(expr_var_types) != len(generator.target.variables()):
+                    ctx.add_type_error(TupleDestructArityError(generator.target, iter_elem_type, len(expr_var_types), len(generator.target.variables())))
+                    ctx.pop_parent()
+                    return None
+
+                for (i, var) in zip(range(0, len(generator.target.variables())), generator.target.variables()):
+                    if var.var_name in ctx.dead_variables:
+                        ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
+                        ctx.pop_parent()
+                        return None
+                    # check that the variable is not a parameter
+                    elif ctx.param_env and var.var_name in ctx.param_env:
+                        ctx.add_type_error(ParameterInCompError(var.var_name, var))
+                        return None 
+                    elif var.var_name in ctx.local_env:
+                        ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
+                        ctx.pop_parent()
+                        return None
+                    elif var.var_name != "_":
+                        ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())
+
+            # now the lexical env is built for this generator conditions
+
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
             for condition in generator.conditions:
                 if not type_expect(ctx, condition, BoolType()):
                     ctx.pop_parent()
@@ -1632,9 +1880,12 @@ ESet.type_infer = type_infer_ESet
 def type_infer_EDict(edict, ctx):
     if not edict.keys:
         return DictType()
+<<<<<<< HEAD
     
     flag_lvl = math.inf
     flagged_type = None
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 
     # key type
     edict_key_type = None
@@ -1666,9 +1917,12 @@ def type_infer_EDict(edict, ctx):
         if val_type is None:
             return None
 
+<<<<<<< HEAD
         if val_type.get_flag():
             flagged_type = val_type
 
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
         if edict_val_type is None:
             edict_val_type = val_type
         else:
@@ -1679,6 +1933,7 @@ def type_infer_EDict(edict, ctx):
                 if not edict_val_type.type_compare(ctx, val, val_type, raise_error=False):
                     ctx.add_type_error(HeterogeneousElementError('dictionary', edict, edict_val_type, val_type, key))
                     return None
+<<<<<<< HEAD
         if val_type.get_flag():
             flagged_type = val_type
             flag_lvl = 0
@@ -1693,6 +1948,10 @@ def type_infer_EDict(edict, ctx):
     d.set_flag_lvl(flag_lvl+1)
 
     return d
+=======
+                
+    return DictType(edict_key_type, edict_val_type)
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 
 EDict.type_infer = type_infer_EDict
 
@@ -2087,7 +2346,10 @@ BUILTINS_IMPORTS = {
     , '.keys' : function_type_parser(" dict[α:β] -> Set[α]]").content
     # iterables
     , 'zip' : function_type_parser(" Iterable[α] * Iterable[β] -> Iterable[tuple[α,β]]").content
+<<<<<<< HEAD
     , '__type_check' : function_type_parser ("Anything->NoneType").content
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 }
 
 MATH_IMPORTS = {
@@ -2345,6 +2607,7 @@ class UnknownVariableError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Variable problem"), self.var.ast.lineno, self.var.ast.col_offset
                                     , tr("there is such variable of name '{}'").format(self.var.name))
+<<<<<<< HEAD
         
 class UndeclaredVariableError(TypeError):
     def __init__(self, in_function, var):
@@ -2362,6 +2625,8 @@ class UndeclaredVariableError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Variable problem"), self.var.ast.lineno, self.var.ast.col_offset
                                     , tr("variable '{}' was not declared").format(self.var.var_name))
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 
 class TypeComparisonError(TypeError):
     def __init__(self, in_function, expected_type, expr, expr_type, explain):
@@ -2960,5 +3225,8 @@ if __name__ == '__main__':
 
     ctx = typecheck_from_file("../../test/progs/01_aire_KO_14.py")
     print(repr(ctx))
+<<<<<<< HEAD
 
 #ferror.close()
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6

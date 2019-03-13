@@ -1,5 +1,6 @@
 
 """The abstract syntax tree of type expressions."""
+<<<<<<< HEAD
 import math
 
 class TypeAST:
@@ -7,6 +8,12 @@ class TypeAST:
     def __init__(self, annotation):
         self.flag = False
         self.flag_lvl = 0
+=======
+
+
+class TypeAST:
+    def __init__(self, annotation):
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
         if annotation:
             self.annotated=True
             self.annotation=annotation
@@ -20,8 +27,11 @@ class TypeAST:
         raise NotImplementedError("Substitution not implemented for this node type (please report)\n  ==> {}".format(self))
 
     def __eq__(self, other):
+<<<<<<< HEAD
         if (other == None):
             return False
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
         raise NotImplementedError("Equality not implemented for this node type (please report)\n  ==> {}".format(self))
 
     def is_hashable(self):
@@ -32,6 +42,7 @@ class TypeAST:
 
     def unalias(self, type_defs):
         raise NotImplementedError("Method unalias is abstract")
+<<<<<<< HEAD
         
     def raise_flag(self):
         """do nothing ..."""
@@ -41,6 +52,8 @@ class TypeAST:
     
     def get_flag(self):
         return self.flag
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
     
 class Anything(TypeAST):
     def __init__(self, annotation=None):
@@ -359,6 +372,7 @@ class TupleType(TypeAST):
                 raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_types = elem_types
 
+<<<<<<< HEAD
     def raise_flag(self):
         self.flag = True
         for elem_type in self.elem_types:
@@ -374,6 +388,8 @@ class TupleType(TypeAST):
         return self.flag_lvl
     
 
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
     def rename_type_variables(self, rmap):
         nelem_types = []
         for elem_type in self.elem_types:
@@ -420,6 +436,7 @@ class TupleType(TypeAST):
 
     def __repr__(self):
         return "TupleType([{}])".format(",".join((repr(et) for et in self.elem_types)))
+<<<<<<< HEAD
     
     def __eq__(self, other):
         if other == None:
@@ -433,6 +450,8 @@ class TupleType(TypeAST):
             return ret
         return False
         
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 
 class ListType(TypeAST):
     def __init__(self, elem_type=None, annotation=None):
@@ -440,6 +459,7 @@ class ListType(TypeAST):
         if elem_type is not None and not isinstance(elem_type, TypeAST):
             raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_type = elem_type
+<<<<<<< HEAD
     
     #flag all suboccurences
     def raise_flag(self):
@@ -456,6 +476,8 @@ class ListType(TypeAST):
         return self.flag_lvl
     
     
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
 
     def rename_type_variables(self, rmap):
         if self.elem_type is None:
@@ -572,6 +594,7 @@ class DictType(TypeAST):
             raise ValueError("Value type is not a TypeAST: {}".format(val_type))
         self.val_type = val_type
 
+<<<<<<< HEAD
     def raise_flag(self):
         self.flag = True
         self.key_type.raise_flag()
@@ -587,6 +610,8 @@ class DictType(TypeAST):
         return self.flag_lvl
     
 
+=======
+>>>>>>> 6be3e4b0b61b56f4178e7f6f91cb1d6dc2e499b6
     def rename_type_variables(self, rmap):
         if self.key_type is None:
             return self

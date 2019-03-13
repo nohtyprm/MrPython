@@ -24,4 +24,3 @@ Copyright (C)
           under Python license (cf. `LICENSE.python`).
 
 
-"# MrPythonGettingSomewhere" 
