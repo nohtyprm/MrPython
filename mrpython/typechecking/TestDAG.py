@@ -33,6 +33,7 @@ def dag_from_ast(ast, filename=None, source=None):
     return ctx
 """
 
+"""
 class BB():
     def __init__(self, instrs, last_instr):
         self.instrs = instrs
@@ -46,11 +47,12 @@ class BB():
         for instr in self.instrs:
             s += str(instr) + ","
         return s
+"""
 
-
-class Nod():
-    def __init__(self, ret):
+class Block():
+    def __init__(self, l_instr, ret):
         self.ret = ret
+        self.instr = []
         self.voisins = []
     
     def add_voisin(self, v):
@@ -59,12 +61,17 @@ class Nod():
 class DAG():
     def __init__(self):
         self.l_nod = []
+        self.nb_nods = 0
     
-    def add_nod(self, ret):
-        self.l_nod.append(Nod(ret))
+    def add_nod(self, l_instr, ret = False):
+        self.nb_nods = self.nb_nods + 1
+        self.l_nod.append(Block(l_instr, ret))
+        return self.nb_nods
         
-    def add_vertices(self, n1, n2):
+    def add_vertice(self, n1, n2):
         l_nod[n1].add_voisin(n2)
+    
+
         
 def is_branch(instr):
     print("hi")
@@ -78,36 +85,49 @@ def visit_prog(prog):
 Program.visitDAG = visit_prog
 
 
-
-def visit_function(f):
-    g = DAG()
-    pred = []
+def visit_block(b, G, succ):
     l_instr = []
-    l_BB = []
-    for instr in f.body:
+    head = None
+    res = 0
+    succ = []
+    for instr in b:
         l_instr.append(instr)
         if is_branch(instr):
-            l_BB.append(BB(l_instr, instr))
+            (res,succ) = instr.compute_block(G, l_instr)
             l_instr = []
-    for bb in l_BB:
-        print(bb)
-       
-FunctionDef.visitDAG = visit_function
+            if head is None:
+                head = res
+    #if block doesnt have any branch instr
+    if head is None:
+        head = G.add_nod(l_instr)
+        succ = [head]
+    return (head, succ)
+                
+
+def compute_block_function(f):
+    G = DAG()
+    visit_block(f.body, G)
+            
+FunctionDef.compute_block = compute_block_function
 
 def visit_for(instr, G):
     print("for")
 For.visitDAG = visit_for
 
-def visit_return(instr, G):
+def visit_return(instr, G, l_instr):
     print("return")
 Return.visitDAG = visit_return
 
-def computeBB_if(ifinstr, l_BB):
-    pass
-    #for instr in ifinstr.body:
+def compute_block_if(ifinstr, G, l_instr):
+    if_nod = G.add_nod(l_instr)
+    then_nod = visit_block(ifinstr, ifinstr.body)
+    else_nod = visit_block(ifinstr, ifinstr.orelse)
+    G.add_vertice(if_nod, then_nod)
+    G.add_vertice(if_nod, else_nod)
+    return (if_nod, [then_nod, else_nod])
         
     
-If.computeBB = computeBB_if
+If.compute_block = compute_block_if
 
 def visit_while(instr, G):
     print("while")
