@@ -120,11 +120,11 @@ Return.visitDAG = visit_return
 
 def compute_block_if(ifinstr, G, l_instr):
     if_nod = G.add_nod(l_instr)
-    then_nod = visit_block(ifinstr, ifinstr.body)
-    else_nod = visit_block(ifinstr, ifinstr.orelse)
+    (then_nod, then_end) = visit_block(ifinstr, ifinstr.body)
+    (else_nod, else_end) = visit_block(ifinstr, ifinstr.orelse)
     G.add_vertice(if_nod, then_nod)
     G.add_vertice(if_nod, else_nod)
-    return (if_nod, [then_nod, else_nod])
+    return (if_nod, then_end+else_end)
         
     
 If.compute_block = compute_block_if
