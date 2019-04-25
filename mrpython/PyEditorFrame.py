@@ -15,15 +15,13 @@ class PyEditorFrame(Frame):
     def __init__(self, parent, open=False, filename=None):
         Frame.__init__(self,parent)
         
-        self.linenumbers = TextLineNumbers(self, width=5, height=1)
+        self.linenumbers = TextLineNumbers(self, width=5, height = 1)
         self.editor = PyEditor(self, self.linenumbers,open, filename)
         self.linenumbers.attach(self.editor)
 
-        self.linenumbers.pack(expand=True,side="left", fill="both")
+        self.linenumbers.pack(expand=False,side="left", fill="both")
         
-        
-        
-        self.editor.pack(side="right", fill="both", expand=True)
+        #self.editor.pack(side="left", fill="both", expand=True)
 
         self.sy = Scrollbar(self)
         
@@ -35,6 +33,12 @@ class PyEditorFrame(Frame):
         self.editor['yscrollcommand'] = self.sy.set
         self.pack()
         
+        
+        #self.linenumbers.grid(row = 0, column = 0, sticky = "nsew")
+        #self.editor.grid(row=0, column=1, sticky = "nsew")
+        #self.sy.grid(row=0, column=2, sticky = "nsew")
+        
+        #self.columnconfigure(1, weight=1)
         self.linenumbers.redraw()
         
         

@@ -1,7 +1,12 @@
 from MainView import MainView
 from tkinter import Tk, sys
-from PyEditorFrame import PyEditorFrame
+from PyEditor import PyEditor
 import Bindings
+
+
+
+
+from PyEditorFrame import PyEditorFrame
 
 from translate import tr, set_translator_locale
 
@@ -38,6 +43,7 @@ class Application:
 
         self.root = Tk()
         
+        self.root.geometry('768x612')
         self.root.title("MrPython")
 
         self.mode = "full"
@@ -163,19 +169,23 @@ class Application:
         self.console.change_mode(tr(self.mode))
         self.status_bar.change_mode(tr(self.mode))
 
-
     def new_file(self, event=None):
         """ Creates a new empty editor and put it into the pyEditorList """
+        print("toooezorpezroezproe")
         file_editor = PyEditorFrame(self.editor_list)
         self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
 
     def open(self, event=None):
         """ Open a file in the text editor """
+        print("opening a new file")
         file_editor = PyEditorFrame(self.editor_list, open=True)
         if (self.editor_list.focusOn(file_editor.long_title()) == False):
+            print("it actually is opened")
             if (file_editor.isOpen()):
                 self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
-
+            #not clean, io should be handled here and should not require creation of PyEditor widget
+            else:
+              file_editor.destroy()
 
     def close_all_event(self, event=None):
         """ Quit all the PyEditor : called when exiting application """

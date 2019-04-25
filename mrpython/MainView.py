@@ -43,7 +43,12 @@ class MainView:
         # 2) editor and output
         pw = PanedWindow(self.view, orient=VERTICAL, showhandle=True)
         self.create_editor_widget(pw)
+        
+
+        
+        
         pw.add(self.editor_widget, height=350)
+        #pw.paneconfigure(self.editor_widget,width=300)
 
         # 3) console (with output and input)
         self.create_console(pw, self.view)
