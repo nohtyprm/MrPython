@@ -22,7 +22,7 @@ class PyEditor(Text):
     from Percolator import Percolator
     from ColorDelegator import  ColorDelegator
 
-    def __init__(self, parent, open=False, filename=None):
+    def __init__(self, parent, linewidget, open=False, filename=None):
 
         Text.__init__(self,parent)
 
@@ -30,7 +30,9 @@ class PyEditor(Text):
         scroll['command'] = self.yview
         scroll.pack(side=RIGHT, fill=Y)
         self['yscrollcommand'] = scroll.set
-        self.list=parent
+        self.list=parent.get_notebook()
+        
+        self.linewidget = linewidget
 
         self.recent_files_path = os.path.join(MrPythonConf.GetUserCfgDir(), 'recent-files.lst')
 

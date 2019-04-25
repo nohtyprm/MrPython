@@ -3,7 +3,7 @@ from tkinter import *
 from tkinter.ttk import *
 from tkinter.font import Font, nametofont
 import tkinter.messagebox as tkMessageBox
-from PyEditor import PyEditor
+from PyEditorFrame import PyEditorFrame
 
 MODULE_PATH = os.path.dirname(__file__)
 
@@ -46,7 +46,7 @@ class PyEditorList(Notebook):
             self.tab(editor,text=editor.get_file_name())
 
     def get_current_editor(self):
-        return self.nametowidget(self.select())
+        return self.nametowidget((self.nametowidget(self.select())).get_editor())
 
     def add_recent_file(self,new_file=None):
         "Load and update the recent files list and menus"
@@ -109,7 +109,7 @@ class PyEditorList(Notebook):
         def open_recent_file(fn_closure=file_name):
 
             if(self.focusOn(fn_closure)==False):
-                fileEditor=PyEditor(self,open=True,filename=fn_closure)
+                fileEditor=PyEditorFrame(self,open=True,filename=fn_closure)
                 if(fileEditor.isOpen()):
                     self.add(fileEditor,text=fileEditor.get_file_name())
         return open_recent_file
@@ -126,16 +126,18 @@ class PyEditorList(Notebook):
                 return True
         return False
 
+    def get_current_frame(self):
+        return self.nametowidget(self.select())
     #
     #Action deleger au pyEditor courrant
     #
     def close_current_editor(self,event=None):
-        reply=self.get_current_editor().close(event)
+        print("Closing current editor")
+        reply=self.get_current_frame().get_editor().close(event)
+        print("la reponse est " + str(reply))
         if reply!="cancel":
             self.sizetab-=1
-            if(self.sizetab == 0):
-                self.close_btn.destroy()
-            self.forget(self.get_current_editor())
+            self.forget(self.get_current_frame())
         return reply
 
 

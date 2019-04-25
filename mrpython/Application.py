@@ -1,6 +1,6 @@
 from MainView import MainView
 from tkinter import Tk, sys
-from PyEditor import PyEditor
+from PyEditorFrame import PyEditorFrame
 import Bindings
 
 from translate import tr, set_translator_locale
@@ -166,12 +166,12 @@ class Application:
 
     def new_file(self, event=None):
         """ Creates a new empty editor and put it into the pyEditorList """
-        file_editor = PyEditor(self.editor_list)
+        file_editor = PyEditorFrame(self.editor_list)
         self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
 
     def open(self, event=None):
         """ Open a file in the text editor """
-        file_editor = PyEditor(self.editor_list, open=True)
+        file_editor = PyEditorFrame(self.editor_list, open=True)
         if (self.editor_list.focusOn(file_editor.long_title()) == False):
             if (file_editor.isOpen()):
                 self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
