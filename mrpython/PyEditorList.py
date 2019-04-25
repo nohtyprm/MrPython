@@ -5,18 +5,20 @@ from tkinter.font import Font, nametofont
 import tkinter.messagebox as tkMessageBox
 from PyEditorFrame import PyEditorFrame
 
+from CloseableNotebook import CloseableNotebook
+
 MODULE_PATH = os.path.dirname(__file__)
 
 def expand_filename(fname):
     return MODULE_PATH + "/" + fname
 
-class PyEditorList(Notebook):
+class PyEditorList(CloseableNotebook):
     """
     Manages the PyEditor widgets, in editor interface
     """
     def __init__(self,parent):
         from configHandler import MrPythonConf
-        Notebook.__init__(self, parent)#), height=500)
+        CloseableNotebook.__init__(self, parent)#), height=500)
         self.parent = parent
         self.sizetab = 0
         self.recent_files_menu = None
@@ -32,14 +34,6 @@ class PyEditorList(Notebook):
         child.list = self
         self.select(child)
         self.sizetab += 1
-        #Add the close button
-        if(self.sizetab == 1):
-            picture = PhotoImage(file=expand_filename("icons/close.gif"))
-            self.close_btn=Button(editor_widget.empty_frame_space, command=editor_widget.py_notebook.close_current_editor
-                                  , image=picture)
-            #self.close_btn.config(image=picture)
-            self.close_btn.image = picture
-            self.close_btn.pack(fill=None, expand=0)
 
     def changerFileName(self,editor):
         if editor.isOpen():
@@ -134,7 +128,6 @@ class PyEditorList(Notebook):
     def close_current_editor(self,event=None):
         print("Closing current editor")
         reply=self.get_current_frame().get_editor().close(event)
-        print("la reponse est " + str(reply))
         if reply!="cancel":
             self.sizetab-=1
             self.forget(self.get_current_frame())
