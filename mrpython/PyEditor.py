@@ -388,11 +388,18 @@ class PyEditor(Text):
 
 
     def change_font_size(self, console, line_widget, change_fun):
+        
         fsize = self.font.cget('size')
-        self.font.configure(size=change_fun(fsize))
-        line_widget.configure(font=self.font)
+        print(change_fun(fsize))
+        new_size = change_fun(fsize)
+        if(new_size <= 0):
+            new_size = 2 
+        self.font.configure(size=new_size)
+        line_widget.config(font=self.font)
         console.change_font(self.font)
         #edit.configure(font=font)
+        
+    
 
     #
     # Event propre au pyEditor

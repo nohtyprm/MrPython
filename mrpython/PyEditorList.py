@@ -126,7 +126,6 @@ class PyEditorList(CloseableNotebook):
     #Action deleger au pyEditor courrant
     #
     def close_current_editor(self,event=None):
-        print("Closing current editor")
         reply=self.get_current_frame().get_editor().close(event)
         if reply!="cancel":
             self.sizetab-=1
@@ -207,11 +206,15 @@ class PyEditorList(CloseableNotebook):
         return self.get_current_editor().goto_line_event(event)
 
     def increase_font_size_event(self, event=None):
-        edit = self.get_current_editor()
+        edit = self.select()
         if edit:
-            edit.change_font_size(self.parent.console, self.parent.line_widget, lambda s: s + 2)
+            edit = self.get_current_editor()
+            edit.change_font_size(self.parent.console, self.get_current_frame().get_line_widget(), lambda s: s + 2)
+
 
     def decrease_font_size_event(self, event=None):
-        edit = self.get_current_editor()
+        edit = self.select()
         if edit:
-            edit.change_font_size(self.parent.console, self.parent.line_widget, lambda s: s - 2)
+            edit = self.get_current_editor()
+            edit.change_font_size(self.parent.console, self.get_current_frame().get_line_widget(), lambda s: s - 2)
+
