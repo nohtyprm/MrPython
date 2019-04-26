@@ -391,6 +391,16 @@ class TupleType(TypeAST):
 
     def __repr__(self):
         return "TupleType([{}])".format(",".join((repr(et) for et in self.elem_types)))
+    
+    def __eq__(self, other):
+        if other == None:
+            return False
+        if isinstance (other, TupleType) and self.size() == other.size():
+            for i in range(self.size()):
+                if self.elem_types[i] != other.elem_types[i]:
+                    return False
+            return True
+        return False
 
 class ListType(TypeAST):
     def __init__(self, elem_type=None, annotation=None):
