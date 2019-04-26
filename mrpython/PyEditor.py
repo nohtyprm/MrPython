@@ -14,9 +14,10 @@ import PyParse
 import sys
 import Bindings
 
+from HighlightingText import HighlightingText
 _py_version = ' (%s)' % platform.python_version()
 
-class PyEditor(Text):
+class PyEditor(HighlightingText):
     from IOBinding import  IOBinding, filesystemencoding, encoding
     from UndoDelegator import  UndoDelegator
     from Percolator import Percolator
@@ -24,7 +25,7 @@ class PyEditor(Text):
 
     def __init__(self, parent, linewidget, open=False, filename=None):
 
-        Text.__init__(self,parent)
+        HighlightingText.__init__(self,parent)
 
         
         self.list=parent.get_notebook()
@@ -405,12 +406,12 @@ class PyEditor(Text):
     # If a selection is defined in the text widget, return (start,
     # end) as Tkinter text indices, otherwise return (None, None)
     def get_selection_indices(self):
-        try:
-            first = self.index("sel.first")
-            last = self.index("sel.last")
-            return first, last
-        except TclError:
+        first = self.index("sel.first")
+        last = self.index("sel.last")
+        #weird bug..
+        if first=="None" and last=="None":
             return None, None
+        return first, last
 
 
     def indent_region_event(self, event):
