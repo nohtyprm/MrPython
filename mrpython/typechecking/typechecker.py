@@ -62,6 +62,7 @@ class TypingContext:
     def register_parameters(self, parameters, param_types):
         self.param_env = {}
         for (param, param_type) in zip(parameters, param_types):
+            param_type.protect_all_subtypes()
             self.param_env[param] = param_type
 
     def register_return_type(self, return_type):
@@ -1194,8 +1195,16 @@ def type_infer_ECall(call, ctx):
                 ctx.call_type_env.pop()
                 return None
         num_arg += 1
+        
+    #step 4: check for side effect. It should probably be integrated to step 3 for more efficiency
+    if call.fun_name in {"append"}:
+        receiver_type = call.receiver.type_infer(ctx)
+        if receiver_type.is_protected():
+            ctx.add_type_error(SideEffectWarning(ctx.function_def,call,call.fun_name, call.receiver))
+        append_type = call.arguments[0].type_infer(ctx)
+        receiver_type.elem_type.type_unification(append_type)
 
-    # step 4 : return the return type
+    # step 5 : return the return type
     if ctx.call_type_env[-1]:
         nret_type = signature.ret_type.subst(ctx.call_type_env[-1])
     else:
@@ -2229,6 +2238,23 @@ class UnknownVariableError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Variable problem"), self.var.ast.lineno, self.var.ast.col_offset
                                     , tr("there is such variable of name '{}'").format(self.var.name))
+        
+class UndeclaredVariableError(TypeError):
+    def __init__(self, in_function, var):
+        self.in_function = in_function
+        self.var = var
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "UndeclaredVariableError[{}]@{}:{}".format(self.var.var_name
+                                                       , self.var.ast.lineno
+                                                       , self.var.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Missing variable declaration"), self.var.ast.lineno, self.var.ast.col_offset
+                                    , tr("Variable(s) not declared: {}").format(self.var.var_name))
 
 class TypeComparisonError(TypeError):
     def __init__(self, in_function, expected_type, expr, expr_type, explain):
@@ -2823,24 +2849,24 @@ class ContainerAssignEmptyError(TypeError):
                                     , tr("Assignment in an empty dictionary"))
 
 
-class UndeclaredVariableError(TypeError):
-    def __init__(self, in_function, var):
+class SideEffectWarning(TypeError):
+    def __init__(self, in_function, expr, fun_name, receiver):
         self.in_function = in_function
-        self.var = var
+        self.receiver = receiver
+        self.fun_name = fun_name
+        self.expr = expr
 
     def is_fatal(self):
-        return True
+        return False
 
     def fail_string(self):
-        return "UndeclaredVariableError[{}]@{}:{}".format(self.var.var_name
-                                                       , self.var.ast.lineno
-                                                       , self.var.ast.col_offset)
+        return "SideEffectWarning[{}]g@{}:{}".format(self.fun_name, self.expr.ast.lineno, self.expr.ast.col_offset)
 
     def report(self, report):
-        report.add_convention_error('error', tr("Missing variable declaration"), self.var.ast.lineno, self.var.ast.col_offset
-                                    , tr("variable '{}' was not declared").format(self.var.var_name))
-        
-if __name__ == '__main__':
+        report.add_convention_error('warning', tr("Call to {} may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
+                                    , tr("There is a risk of side effect as {} may reference a parameter").format(self.receiver))
 
-    ctx = typecheck_from_file("../../test/progs/26_tuple_destruct_KO.py")
+
+if __name__ == '__main__':
+    ctx = typecheck_from_file("../../test/progs/25_side_effect_list_OK_00.py")
     #print(repr(ctx))

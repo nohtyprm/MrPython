@@ -108,8 +108,9 @@ TRANSLATOR_DICT = {
     , "Assignment in an empty dictionary" : { 'fr' : "Affectation dans un dictionnaire vide" }
     , "Bad variable type" : { 'fr' : "Problème de typage de variable"}
     , "Type mismatch for variable '{}', expecting '{}' instead of: {}" : { 'fr' : "La variable '{}' est déclarée avec le type '{}' qui n'est pas compatible avec le type requis: {}"}
+    , "Call to {} may cause side effect" : {'fr' : "L'appel à la méthode {} risque d'avoir un effet de bord"}
+    , "There is a risk of side effect as {} may reference a parameter" : {'fr' : "L'expression {} référence peut-être un paramètre"}
 }
-
 def tr(msg):
     global TRANSLATOR_LOCALE_KEY
 

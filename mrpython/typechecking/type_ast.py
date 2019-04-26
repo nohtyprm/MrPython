@@ -4,12 +4,13 @@
 
 class TypeAST:
     def __init__(self, annotation):
+        self.protected = False
         if annotation:
             self.annotated=True
             self.annotation=annotation
         else:
             self.annotated=False
-
+    
     def rename_type_variables(self, rmap):
         raise NotImplementedError("Type variable renaming not implemented for this node type (please report)\n  ==> {}".format(self))
 
@@ -27,6 +28,19 @@ class TypeAST:
 
     def unalias(self, type_defs):
         raise NotImplementedError("Method unalias is abstract")
+    
+    def is_protected(self):
+        return self.protected
+    
+    #when registering parameters, all subtypes must be protected
+    def protect_all_subtypes(self):
+        pass
+    
+    #boolean or on protected of all subtypes of both types
+    def type_unification(self, other):
+        return self
+            
+            
     
 class Anything(TypeAST):
     def __init__(self, annotation=None):
@@ -453,7 +467,18 @@ class ListType(TypeAST):
             return "emptylist"
 
     def __repr__(self):
-        return "ListType({})".format(repr(self.elem_type)) if self.elem_type else "ListType()"
+        return "ListType{}({})".format("_protected" if self.protected else "", repr(self.elem_type)) if self.elem_type else "ListType()"
+    
+    def protect_all_subtypes(self):
+        self.protected = True
+        self.elem_type.protect_all_subtypes()
+        
+    def type_unification(self, other):
+        if self == other:
+            self.protected = self.is_protected() or other.is_protected()
+            self.elem_type.type_unification(other.elem_type)
+        else:
+            raise NotImplementedError("Error in type_unification on EList, please report")
 
 class SetType(TypeAST):
     def __init__(self, elem_type=None, annotation=None):
