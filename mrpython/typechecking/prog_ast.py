@@ -326,6 +326,9 @@ class ENum(Expr):
     def __init__(self, node):
         self.ast = node
         self.value = node.n
+    
+    def __str__(self):
+        return str(self.value)
 
 class EStr(Expr):
     def __init__(self, node):
@@ -375,6 +378,9 @@ class EVar(Expr):
 
         else:
             raise NotImplementedError("Unsupported EVar type (please report): {}".format(self.ast))
+    
+    def __str__(self):
+        return self.name
 
 class ETuple(Expr):
     def __init__(self, node):
@@ -675,6 +681,9 @@ class Indexing(Expr):
         self.ast = node
         self.subject = parse_expression(node.value)
         self.index = parse_expression(node.slice.value)
+    
+    def __str__(self):
+        return str(self.subject) + "[" + str(self.index) + "]"
 
 class Slicing(Expr):
     def __init__(self, node):
