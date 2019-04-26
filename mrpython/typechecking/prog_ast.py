@@ -171,7 +171,7 @@ class LHSTuple:
         return len(self.elements)
         
     def __str__(self):
-        return ", ".join( ( str(elt) for elt in self.elements) )
+        return "(" + ", ".join( ( str(elt) for elt in self.elements) ) + ")"
 
     def __repr__(self):
         return "LHSTuple({})".format(", ".join ( ( repr(elt) for elt in self.elements ) ))
