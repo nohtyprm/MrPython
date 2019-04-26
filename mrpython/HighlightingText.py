@@ -100,10 +100,11 @@ class HighlightingText(tk.Text):
                 self.tag_add(tagnomatch, self.index_l_par)
                 self.nomatch_rpar = True
     
-    #done by PyEditor
-    def update_line_numbers(self):
-        pass
-
+    """
+    for more info on proxy:
+    https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
+    cf. Brian Oakley answer
+    """
     def _proxy(self, *args):
         cmd = (self._orig,) + args
         result = None
@@ -116,6 +117,19 @@ class HighlightingText(tk.Text):
         if (args[0] in ("insert", "delete") or 
             args[0:3] == ("mark", "set", "insert")):
             self.highlight_pattern("match", "nomatch", "(", ")")
+            self.highlight_pattern("match", "nomatch", "[", "]")
+            
+        # generate an event if something was added or deleted,
+        # or the cursor position changed
+        if (args[0] in ("insert", "replace", "delete") or 
+            args[0:3] == ("mark", "set", "insert") or
+            args[0:2] == ("xview", "moveto") or
+            args[0:2] == ("xview", "scroll") or
+            args[0:2] == ("yview", "moveto") or
+            args[0:2] == ("yview", "scroll")
+        ):
+            self.event_generate("<<Change>>", when="tail")
+            
         if result == None:
             return None
         return result        

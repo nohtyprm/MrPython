@@ -14,37 +14,51 @@ class PyEditorFrame(Frame):
     
     def __init__(self, parent, open=False, filename=None):
         Frame.__init__(self,parent)
+        #super(PyEditorEnro, self).__init__()
         
-        self.linenumbers = TextLineNumbers(self, width=5, height = 1)
+        
+
+        #self.grid_propagate(False)
+        
+        #self.editor.tag_configure("bigfont", font=("Helvetica", "24", "bold"))
+        
+        self.linenumbers = TextLineNumbers(22, self)
         self.editor = PyEditor(self, self.linenumbers,open, filename)
         self.linenumbers.attach(self.editor)
 
-        self.linenumbers.pack(expand=False,side="left", fill="both")
+        self.linenumbers.grid(row = 0, column = 0, sticky="ns")
+        #self.linenumbers.pack(expand=False,side="left", fill="both")
         
-        #self.editor.pack(side="left", fill="both", expand=True)
+        
+        #self.editor.config(padx=30)
+        self.editor.grid(row = 0, column = 1, sticky="nsew")
+        
+        #self.editor.pack(side="right", fill="both", expand=True)
 
+        #self.editor.bind("<<Change>>", self._on_change)
+        #self.editor.bind("<Configure>", self._on_change)
         self.sy = Scrollbar(self)
+        #self.editor.config(wrap='none')
+        self.sy.grid(row=0, column=2, sticky='ns')
         
-        self.sy.pack(expand=False,side="right", fill="y")
-        self.editor.pack(expand=True, fill='both')
+        #self.sy.pack(expand=False,side="right", fill="y")
+        #self.editor.pack(expand=True, fill='both')
         self.sy.config(command=self.editor.yview)
         
    
         self.editor['yscrollcommand'] = self.sy.set
-        self.pack()
+        #self.pack()
         
-        
-        #self.linenumbers.grid(row = 0, column = 0, sticky = "nsew")
-        #self.editor.grid(row=0, column=1, sticky = "nsew")
-        #self.sy.grid(row=0, column=2, sticky = "nsew")
-        
-        #self.columnconfigure(1, weight=1)
-        self.linenumbers.redraw()
-        
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+        self.editor.bind("<<Change>>", self._on_change)
+        self.editor.bind("<Configure>", self._on_change)
         
         #
     #Action deleger au pyEditor courrant
     #
+    def _on_change(self, event):
+        self.linenumbers.redraw()
     
     def get_line_widget(self):
         return self.nametowidget(self.linenumbers.get_line_widget())
@@ -136,11 +150,6 @@ class PyEditorFrame(Frame):
         return self.editor.toggle_tabs_event(event)
 
 
-    def increase_font_size_event(self, event=None):
-        return self.editor.increase_font_size_event(event)
-
-    def decrease_font_size_event(self, event=None):
-        return self.editor.decrease_font_size_event(event)
     
     
 

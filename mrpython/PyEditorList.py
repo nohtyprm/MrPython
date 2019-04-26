@@ -209,12 +209,12 @@ class PyEditorList(CloseableNotebook):
         edit = self.select()
         if edit:
             edit = self.get_current_editor()
-            edit.change_font_size(self.parent.console, self.get_current_frame().get_line_widget(), lambda s: s + 2)
+            edit.change_font_size(self.parent.console, lambda s: s + 2)
 
 
     def decrease_font_size_event(self, event=None):
         edit = self.select()
         if edit:
             edit = self.get_current_editor()
-            edit.change_font_size(self.parent.console, self.get_current_frame().get_line_widget(), lambda s: s - 2)
+            edit.change_font_size(self.parent.console, lambda s: s - 2)
 
