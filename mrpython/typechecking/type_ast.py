@@ -59,13 +59,16 @@ class Anything(TypeAST):
         return (self, None)
     
     def __eq__(self, other):
-        return isinstance(other, Anything)
+        return True
 
     def __str__(self):
         return "any"
 
     def __repr__(self):
         return "Anything()"
+    
+    def type_unification(self, other):
+        return other
 
 class TypeAlias(TypeAST):
     def __init__(self, alias_name, annotation=None):
@@ -93,7 +96,9 @@ class TypeAlias(TypeAST):
         return (unaliased_type, None)
     
     def __eq__(self, other):
-        return isinstance(other, BoolType)
+        if isinstance(other, Anything):
+            return True
+        return isinstance(other, TypeAlias)
 
     def __str__(self):
         return self.alias_name
@@ -144,6 +149,8 @@ class BoolType(TypeAST):
         return (self, None)
     
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, BoolType)
 
     def __str__(self):
@@ -169,6 +176,8 @@ class IntType(TypeAST):
         return (self, None)
 
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, IntType)
 
     def __str__(self):
@@ -194,6 +203,8 @@ class FloatType(TypeAST):
         return (self, None)
 
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, FloatType)
 
     def __str__(self):
@@ -220,6 +231,8 @@ class NumberType(TypeAST):
         return (self, None)
 
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, NumberType)
 
     def __str__(self):
@@ -246,6 +259,8 @@ class NoneTypeType(TypeAST):
         return (self, None)
 
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, NoneTypeType)
 
     def __str__(self):
@@ -271,6 +286,8 @@ class ImageType(TypeAST):
         return (self, None)
 
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, ImageType)
 
     def __str__(self):
@@ -286,6 +303,8 @@ class StrType(TypeAST):
         #self.elem_type = StrType() # how strange !
 
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, StrType)
 
     def rename_type_variables(self, rmap):
@@ -315,6 +334,8 @@ class TypeVariable(TypeAST):
         self.var_name = var_name
 
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, TypeVariable) and other.var_name == self.var_name
 
     def rename_type_variables(self, rmap):
@@ -406,9 +427,8 @@ class TupleType(TypeAST):
     def __repr__(self):
         return "TupleType([{}])".format(",".join((repr(et) for et in self.elem_types)))
     
-    def __eq__(self, other):
-        if other == None:
-            return False
+        if isinstance(other, Anything):
+            return True
         if isinstance (other, TupleType) and self.size() == other.size():
             for i in range(self.size()):
                 if self.elem_types[i] != other.elem_types[i]:
@@ -419,7 +439,9 @@ class TupleType(TypeAST):
 class ListType(TypeAST):
     def __init__(self, elem_type=None, annotation=None):
         super().__init__(annotation)
-        if elem_type is not None and not isinstance(elem_type, TypeAST):
+        if elem_type is None:
+            elem_type = Anything()
+        if not isinstance(elem_type, TypeAST):
             raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_type = elem_type
 
@@ -443,6 +465,8 @@ class ListType(TypeAST):
                 , None)
 
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, ListType) and other.elem_type == self.elem_type
 
     def is_hashable(self):
@@ -474,11 +498,8 @@ class ListType(TypeAST):
         self.elem_type.protect_all_subtypes()
         
     def type_unification(self, other):
-        if self == other:
-            self.protected = self.is_protected() or other.is_protected()
-            self.elem_type.type_unification(other.elem_type)
-        else:
-            raise NotImplementedError("Error in type_unification on EList, please report")
+        self.protected = self.is_protected() or other.is_protected()
+        self.elem_type.type_unification(other.elem_type)
 
 class SetType(TypeAST):
     def __init__(self, elem_type=None, annotation=None):
@@ -488,6 +509,8 @@ class SetType(TypeAST):
         self.elem_type = elem_type
 
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, SetType) and other.elem_type == self.elem_type
 
     def rename_type_variables(self, rmap):
@@ -602,6 +625,8 @@ class DictType(TypeAST):
 
     
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, DictType) and other.key_type == self.key_type \
             and other.val_type == self.val_type
 
@@ -649,6 +674,8 @@ class IterableType(TypeAST):
         return None
 
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, IterableType) and other.elem_type == self.elem_type
 
     def __str__(self):
@@ -691,6 +718,8 @@ class SequenceType(TypeAST):
 
     
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, SequenceType) and other.elem_type == self.elem_type
 
     def __str__(self):
@@ -732,6 +761,8 @@ class OptionType(TypeAST):
         return None
     
     def __eq__(self, other):
+        if isinstance(other, Anything):
+            return True
         return isinstance(other, OptionType) and other.elem_type == self.elem_type
 
     def __str__(self):
