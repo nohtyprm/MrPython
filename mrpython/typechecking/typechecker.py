@@ -399,9 +399,11 @@ def linearize_tuple_type(working_var, working_expr, declared_types, ctx, expr):
                 return True
             if declared_types is not None:
                 if working_var.var_name in declared_types:
-                    if not declared_types[working_var.var_name].type_compare(ctx, expr, working_expr, raise_error=False):
+                    var_type = declared_types[working_var.var_name]
+                    if not var_type.type_compare(ctx, expr, working_expr, raise_error=False):
                         ctx.add_type_error(VariableTypeError(expr, working_var, declared_types[working_var.var_name], working_expr))
-                    ctx.local_env[working_var.var_name] = (working_expr, ctx.fetch_scope_mode())
+                    var_type.type_unification(working_expr)
+                    ctx.local_env[working_var.var_name] = (var_type, ctx.fetch_scope_mode())
                     return True
                 else:
                     ctx.add_type_error(UndeclaredVariableError(expr, working_var))
@@ -829,12 +831,15 @@ def type_infer_EAdd(expr, ctx):
                                                    tr("Expecting a list")))
             return None
 
-        if left_type.elem_type != right_type.elem_type:
+        if not left_type.elem_type.type_compare(ctx, expr, right_type.elem_type):
             ctx.add_type_error(TypeComparisonError(ctx.function_def, left_type.elem_type, expr.right, right_type.elem_type,
                                                    tr("Expecting a list with elements of type: {}").format(left_type.elem_type)))
             return None
-
-        return left_type
+        
+        if (right_type.elem_type is None) or (left_type.elem_type is None):
+            raise NotImplementedError("Error in method type_infer_EAdd of typechecker, please report")
+            
+        return ListType(elem_type = right_type.type_unification(left_type))
 
     else:
         ctx.add_type_error(TypeComparisonError(ctx.function_def, ListType(), expr.left, left_type,
@@ -1202,7 +1207,10 @@ def type_infer_ECall(call, ctx):
         if receiver_type.is_protected():
             ctx.add_type_error(SideEffectWarning(ctx.function_def,call,call.fun_name, call.receiver))
         append_type = call.arguments[0].type_infer(ctx)
-        receiver_type.elem_type.type_unification(append_type)
+        if receiver_type.elem_type is None:
+            receiver_type.elem_type = append_type
+        else:
+            receiver_type.elem_type.type_unification(append_type)
 
     # step 5 : return the return type
     if ctx.call_type_env[-1]:
@@ -1622,10 +1630,14 @@ def check_option_type(cause_fn, expected_precise_type, ctx, expr, expr_option_ty
         return False
 
 def type_compare_NumberType(expected_type, ctx, expr, expr_type, raise_error=True):
-    # XXX: boilerplate ... could use a decorator of some sort ?
+    # XXX: boilerplate ... could use a decorator of some sort ? definitely should use a decorator with Anything added
+    
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_NumberType, expected_type, ctx, expr, expr_type, raise_error)
 
+    if isinstance(expr_type, Anything):
+        return True
+    
     if isinstance(expr_type, NumberType) \
        or isinstance(expr_type, IntType) \
        or isinstance(expr_type, FloatType): 
@@ -1641,6 +1653,9 @@ NumberType.type_compare = type_compare_NumberType
 def type_compare_IntType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_IntType, expected_type, ctx, expr, expr_type, raise_error)
+    
+    if isinstance(expr_type, Anything):
+        return True
 
     if isinstance(expr_type, IntType):
         return True
@@ -1664,6 +1679,9 @@ def type_compare_FloatType(expected_type, ctx, expr, expr_type, raise_error=True
 
     if isinstance(expr_type, (FloatType, IntType, NumberType)):
         return True
+    
+    if isinstance(expr_type, Anything):
+        return True
 
     if raise_error:
         ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a float")))
@@ -1675,7 +1693,10 @@ FloatType.type_compare = type_compare_FloatType
 def type_compare_BoolType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_BoolType, expected_type, ctx, expr, expr_type, raise_error)
-
+    
+    if isinstance(expr_type, Anything):
+        return True
+    
     if isinstance(expr_type, BoolType):
         return True
 
@@ -1689,7 +1710,8 @@ BoolType.type_compare = type_compare_BoolType
 def type_compare_FileType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, FileType):
         return True
-
+    if isinstance(expr_type, Anything):
+        return True
     if raise_error:
         ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a File")))
 
@@ -1700,10 +1722,10 @@ FileType.type_compare = type_compare_FileType
 def type_compare_ImageType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_ImageType, expected_type, ctx, expr, expr_type, raise_error)
-
+    if isinstance(expr_type, Anything):
+        return True
     if isinstance(expr_type, ImageType):
         return True
-
     if raise_error:
         ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting an image (type Image)")))
 
@@ -1715,8 +1737,13 @@ def type_compare_StrType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_StrType, expected_type, ctx, expr, expr_type, raise_error)
 
+    if isinstance(expr_type, Anything):
+        return True
+    
     if isinstance(expr_type, StrType):
         return True
+    
+    
 
     if raise_error:
         ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a string (type str)")))
@@ -1726,28 +1753,31 @@ def type_compare_StrType(expected_type, ctx, expr, expr_type, raise_error=True):
 StrType.type_compare = type_compare_StrType
 
 def type_compare_ListType(expected_type, ctx, expr, expr_type, raise_error=True):
+    
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_ListType, expected_type, ctx, expr, expr_type, raise_error)
-
+    
+    if isinstance(expr_type, Anything):
+        return True
+    
     if not isinstance(expr_type, ListType):
         if raise_error:
             ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a list")))
         return False
 
-    if expr_type.is_emptylist():
-        return True
-
-    if expected_type.is_emptylist():
-        return True
-
+    
     return expected_type.elem_type.type_compare(ctx, expr, expr_type.elem_type, raise_error)
+    
 
 ListType.type_compare = type_compare_ListType
 
 def type_compare_SetType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_SetType, expected_type, ctx, expr, expr_type, raise_error)
-
+    
+    if isinstance(expr_type, Anything):
+        return True
+    
     if not isinstance(expr_type, SetType):
         if raise_error:
             ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a set")))
@@ -1767,6 +1797,9 @@ def type_compare_IterableType(expected_type, ctx, expr, expr_type, raise_error=T
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_IterableType, expected_type, ctx, expr, expr_type, raise_error)
 
+    if isinstance(expr_type, Anything):
+        return True
+    
     if isinstance(expr_type, ListType) and expr_type.is_emptylist():
         return True
 
@@ -1794,7 +1827,9 @@ IterableType.type_compare = type_compare_IterableType
 def type_compare_SequenceType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_SequenceType, expected_type, ctx, expr, expr_type, raise_error)
-
+    if isinstance(expr_type, Anything):
+        return True
+    
     if isinstance(expr_type, SequenceType) \
        or isinstance(expr_type, ListType) \
        or isinstance(expr_type, SetType):
@@ -1815,7 +1850,8 @@ def type_compare_TypeVariable(expected_type, ctx, expr, expr_type, raise_error=T
 
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_TypeVariable, expected_type, ctx, expr, expr_type, raise_error)
-    
+    if isinstance(expr_type, Anything):
+        return True
     # some corner case handled here ...
     if expected_type == expr_type:
         return True
@@ -1855,7 +1891,9 @@ TypeVariable.type_compare = type_compare_TypeVariable
 def type_compare_NoneTypeType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_NoneTypeType, expected_type, ctx, expr, expr_type, raise_error)
-
+    if isinstance(expr_type, Anything):
+        return True
+    
     if not isinstance(expr_type, NoneTypeType):
         if raise_error:
             ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting value None")))
@@ -1877,7 +1915,9 @@ def type_compare_OptionType(expected_type, ctx, expr, expr_type, raise_error=Tru
             return True
         
     # expression type is not an option type
-
+    if isinstance(expr_type, Anything):
+        return True
+    
     if isinstance(expr_type, NoneTypeType):
         return True
         
@@ -1893,7 +1933,9 @@ OptionType.type_compare = type_compare_OptionType
 def type_compare_TupleType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_TupleType, expected_type, ctx, expr, expr_type, raise_error)
-
+    if isinstance(expr_type, Anything):
+        return True
+    
     if not isinstance(expr_type, TupleType):
         ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a tuple")))
         return False
@@ -1914,7 +1956,9 @@ TupleType.type_compare = type_compare_TupleType
 def type_compare_DictType(expected_type, ctx, expr, expr_type, raise_error=True):
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_DictType, expected_type, ctx, expr, expr_type, raise_error)
-
+    if isinstance(expr_type, Anything):
+        return True
+    
     if not isinstance(expr_type, DictType):
         ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a dictionary")))
         return False
@@ -2860,7 +2904,7 @@ class SideEffectWarning(TypeError):
         return False
 
     def fail_string(self):
-        return "SideEffectWarning[{}]g@{}:{}".format(self.fun_name, self.expr.ast.lineno, self.expr.ast.col_offset)
+        return "SideEffectWarning[{}]@{}:{}".format(self.fun_name, self.expr.ast.lineno, self.expr.ast.col_offset)
 
     def report(self, report):
         report.add_convention_error('warning', tr("Call to {} may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
@@ -2868,5 +2912,5 @@ class SideEffectWarning(TypeError):
 
 
 if __name__ == '__main__':
-    ctx = typecheck_from_file("../../test/progs/25_side_effect_list_OK_00.py")
+    ctx = typecheck_from_file("../../test/progs/27_test_concatenation_tuple_OK.py")
     #print(repr(ctx))

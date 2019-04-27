@@ -473,7 +473,7 @@ class ListType(TypeAST):
         return False
 
     def fetch_unhashable(self):
-        if self.elem_type is None:
+        if self.elem_type is None or isinstance(self.elem_type, Anything):
             return None
         result = self.elem_type.fetch_unhashable()
         if result is not None:
@@ -504,7 +504,9 @@ class ListType(TypeAST):
 class SetType(TypeAST):
     def __init__(self, elem_type=None, annotation=None):
         super().__init__(annotation)
-        if elem_type is not None and not isinstance(elem_type, TypeAST):
+        if elem_type is None:
+            elem_type = Anything()
+        if not isinstance(elem_type, TypeAST):
             raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_type = elem_type
 
@@ -516,7 +518,9 @@ class SetType(TypeAST):
     def rename_type_variables(self, rmap):
         if self.elem_type is None:
             return self
-
+        if isinstance(self.elem_type, Anything):
+            return self
+        
         nelem_type = self.elem_type.rename_type_variables(rmap)
         return SetType(nelem_type, self.annotation)
 
@@ -532,7 +536,7 @@ class SetType(TypeAST):
         return False
 
     def fetch_unhashable(self):
-        if self.elem_type is None:
+        if self.elem_type is None or isinstance(self.elem_type, Anything):
             return None  # has no unhashable
         
         result = self.elem_type.fetch_unhashable()
