@@ -45,6 +45,9 @@ class TypingContext:
         self.local_env = None
         self.call_type_env = [] # stack of type environments when calling generic functions
         self.local_env = {}  # will have global variables
+        
+        self.encountered_variables = set()
+        self.variables_to_update = {}
 
     def add_type_error(self, error):
         self.type_errors.append(error)
@@ -395,6 +398,7 @@ def linearize_tuple_type(working_var, working_expr, declared_types, ctx, expr):
     if not isinstance(working_var, LHSTuple):
         #check if working_var is an instance of LHSVar
         if isinstance(working_var, LHSVar):
+            ctx.encountered_variables = set()
             if working_var.var_name == '_': # just skip this check
                 return True
             if declared_types is not None:
@@ -402,7 +406,7 @@ def linearize_tuple_type(working_var, working_expr, declared_types, ctx, expr):
                     var_type = declared_types[working_var.var_name]
                     if not var_type.type_compare(ctx, expr, working_expr, raise_error=False):
                         ctx.add_type_error(VariableTypeError(expr, working_var, declared_types[working_var.var_name], working_expr))
-                    var_type.type_unification(working_expr)
+                    var_type = var_type.type_unification(working_expr)
                     ctx.local_env[working_var.var_name] = (var_type, ctx.fetch_scope_mode())
                     return True
                 else:
@@ -454,6 +458,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
             else:
                 mono_assign = True
 
+    
     if mono_assign:
         expr_type = assign.expr.type_infer(ctx)
         if expr_type is None:
@@ -839,7 +844,7 @@ def type_infer_EAdd(expr, ctx):
         if (right_type.elem_type is None) or (left_type.elem_type is None):
             raise NotImplementedError("Error in method type_infer_EAdd of typechecker, please report")
             
-        return ListType(elem_type = right_type.type_unification(left_type))
+        return ListType(elem_type = right_type.elem_type.type_unification(left_type.elem_type))
 
     else:
         ctx.add_type_error(TypeComparisonError(ctx.function_def, ListType(), expr.left, left_type,
@@ -1078,6 +1083,7 @@ def type_infer_EVar(var, ctx):
         return None
 
     # check if the var is a parameter
+    ctx.encountered_variables.add(var.name)
     if ctx.param_env and var.name in ctx.param_env:
         return ctx.param_env[var.name]
     # or else lookup in the local environment
@@ -1210,7 +1216,7 @@ def type_infer_ECall(call, ctx):
         if receiver_type.elem_type is None:
             receiver_type.elem_type = append_type
         else:
-            receiver_type.elem_type.type_unification(append_type)
+            receiver_type.elem_type = receiver_type.elem_type.type_unification(append_type)
 
     # step 5 : return the return type
     if ctx.call_type_env[-1]:
@@ -1351,9 +1357,10 @@ ETuple.type_infer = type_infer_ETuple
 
 def type_infer_EList(lst, ctx):
     lst_type = None
+    lst_type_prv = None
     if not lst.elements:
         return ListType()
-
+    
     for element in lst.elements:
         element_type = element.type_infer(ctx)
         if element_type is None:
@@ -1370,6 +1377,8 @@ def type_infer_EList(lst, ctx):
                 if not lst_type.type_compare(ctx, element, element_type, raise_error=False):
                     ctx.add_type_error(HeterogeneousElementError('list', lst, lst_type, element_type, element))
                     return None
+                lst_type = lst_type.type_unification(lst_type_prv)
+        lst_type_prv = lst_type
 
     return ListType(lst_type)
 
@@ -2912,5 +2921,5 @@ class SideEffectWarning(TypeError):
 
 
 if __name__ == '__main__':
-    ctx = typecheck_from_file("../../test/progs/27_test_concatenation_tuple_OK.py")
+    ctx = typecheck_from_file("../../test/progs/18_conslist_OK.py")
     #print(repr(ctx))

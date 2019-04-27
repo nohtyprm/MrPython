@@ -68,7 +68,9 @@ class Anything(TypeAST):
         return "Anything()"
     
     def type_unification(self, other):
-        return other
+        if not isinstance(other, Anything):
+            return other.type_unification(self)
+        return self
 
 class TypeAlias(TypeAST):
     def __init__(self, alias_name, annotation=None):
@@ -498,8 +500,11 @@ class ListType(TypeAST):
         self.elem_type.protect_all_subtypes()
         
     def type_unification(self, other):
+        if isinstance(other, Anything):
+            return self
         self.protected = self.is_protected() or other.is_protected()
-        self.elem_type.type_unification(other.elem_type)
+        self.elem_type = self.elem_type.type_unification(other.elem_type)
+        return self
 
 class SetType(TypeAST):
     def __init__(self, elem_type=None, annotation=None):
