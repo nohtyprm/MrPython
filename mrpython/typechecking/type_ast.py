@@ -453,7 +453,7 @@ class ListType(TypeAST):
         super().__init__(annotation)
         if elem_type is None:
             elem_type = Anything()
-        self.types_dep = []
+        self.types_dep = [elem_type]
         if types_dep is not None:
             self.types_dep = types_dep
         if not isinstance(elem_type, TypeAST):
@@ -525,7 +525,6 @@ class ListType(TypeAST):
         
     def add_type_dep(self, type_dep):
         self.types_dep.append(type_dep)
-        
     
     def is_protected(self):
         return self.protected
@@ -591,7 +590,16 @@ class SetType(TypeAST):
             return "emptyset"
 
     def __repr__(self):
-        return "SetType({})".format(repr(self.elem_type))
+        return "SetType{}({})".format("_protected" if self.protected else "",repr(self.elem_type))
+    
+    def protect_all_subtypes(self):
+        self.protected = True
+        
+    def is_protected(self):
+        return self.protected
+    
+    def type_replacement(self, other):
+        self.protected = other.protected
     
 class DictType(TypeAST):
     def __init__(self, key_type=None, val_type=None, annotation=None):

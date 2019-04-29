@@ -190,10 +190,16 @@ def build_lhs_destruct(node):
 class Assign:
     def __init__(self, node):
         self.ast = node
-
-        self.target = build_lhs_destruct(self.ast.targets[0])
-
-        self.expr = parse_expression(self.ast.value)
+        if node is not None:
+            self.target = build_lhs_destruct(self.ast.targets[0])
+    
+            self.expr = parse_expression(self.ast.value)
+    
+def build_assign(target, expr):
+    assign = Assign(None)
+    assign.target = target
+    assign.expr = expr
+    return assign
 
 class ContainerAssign:
     def __init__(self, target, expr):
@@ -389,6 +395,9 @@ class ETuple(Expr):
         for elem_node in node.elts:
             elem = parse_expression(elem_node)
             self.elements.append(elem)
+    
+    def arity(self):
+        return len(self.elements)
         
 class EAdd(Expr):
     def __init__(self, node, left, right):

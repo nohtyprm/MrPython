@@ -389,69 +389,7 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
         return None
 
     return declared_types
-"""
-fonction requires expression in which it was called, to generate proper error message, which is expr
-it requires also the target variable, working_var, and the assigned expression, working_expr
-declared_types needed to typecheck if variables must be declared (in assign and for but not in comprehension)
-ctx to affect the variable to its type in the local_env
-"""
-def linearize_tuple_expr(working_var, working_expr, declared_types, ctx, expr):
-    if not isinstance(working_var, LHSTuple):
-        #check if working_var is an instance of LHSVar
-        if isinstance(working_var, LHSVar):
-            ctx.encountered_variables = set()
-            if working_var.var_name == '_': # just skip this check
-                return True
-            expr_type = working_expr.type_infer(ctx)
-            if expr_type is None:
-                return False
-            
-            #expr_to_update = build_assign(working_var, working_expr)
-            for var_name in ctx.encountered_variables:
-                (ctx.variables_to_update.setdefault(var_name, [])).append(expr_to_update)
-            if declared_types is not None:
-                if working_var.var_name in declared_types:
-                    var_type = declared_types[working_var.var_name]
-                    if not var_type.type_compare(ctx, expr, expr_type, raise_error=False):
-                        ctx.add_type_error(VariableTypeError(expr, working_var, declared_types[working_var.var_name], working_expr))
-                    var_type = var_type.type_unification(expr_type)
-                    ctx.local_env[working_var.var_name] = (var_type, ctx.fetch_scope_mode())
-                    return True
-                else:
-                    var_type = var_type.type_unification(expr_type)
-                    ctx.local_env[working_var.var_name] = (var_type, ctx.fetch_scope_mode())
-                    ctx.add_type_error(UndeclaredVariableError(expr, working_var))
-                    return False
-            #for EComp, maybe declared_types being None is not enough
-            else:
-                ctx.local_env[working_var.var_name] = (working_expr, ctx.fetch_scope_mode())
-                return True
-        else:
-            raise NotSupportedError("Not assignating a variable, please report")
-            return False
-    elif not isinstance(working_expr, ETuple):
-        ctx.encountered_variables = set()
-        expr_type = working_expr.type_infer(ctx)
-        if expr_type is None:
-            return False
-        if isinstance(expr_type, TupleType):
-            if linearize_tuple_type(working_var,expr_type,declared_types, ctx, expr):
-                expr_to_update = build_assign(working_var, working_expr)
-                for var_name in ctx.encountered_variables:
-                    (ctx.variables_to_update.setdefault(var_name, [])).append(expr_to_update)
-                return True
-            return False
-        ctx.add_type_error(TypeExpectationError(ctx.function_def, expr, expr_type, tr("Expecting a tuple")))
-        return False
-    
-    if working_var.arity() != working_expr.arity():
-        ctx.add_type_error(TupleDestructArityError(expr, working_expr, working_expr.size(), working_var.arity()))
-        return False
-    for i in range(working_var.arity()):
-        if not linearize_tuple_expr(working_var.elements[i], working_expr.elements[i],  declared_types, ctx, expr):
-            return False
 
-    return True
 
 def type_check_Assign(assign, ctx, global_scope = False):
 
@@ -523,7 +461,7 @@ def linearize_tuple_type(working_var, working_type, declared_types, ctx, expr):
                     var_type = declared_types[working_var.var_name]
                     if not var_type.type_compare(ctx, expr, working_type, raise_error=False):
                         ctx.add_type_error(VariableTypeError(expr, working_var, declared_types[working_var.var_name], working_type))
-                    var_type = var_type.type_unification(working_type)
+                    var_type = working_type.type_unification(var_type)
                     ctx.local_env[working_var.var_name] = (var_type, ctx.fetch_scope_mode())
                     
                     ctx.local_env[working_var.var_name] = (working_type, ctx.fetch_scope_mode())
@@ -1249,6 +1187,12 @@ def get_types_dep_ListType(lst, ctx):
         return None
     return [lst]
 ListType.get_types_dep = get_types_dep_ListType
+
+def get_types_dep_SetType(s, ctx):
+    if s.is_protected():
+        return None
+    return []
+SetType.get_types_dep = get_types_dep_SetType
     
 def type_infer_ECall(call, ctx):
     # step 1 : fetch the signature of the called function
@@ -1313,7 +1257,6 @@ def type_infer_ECall(call, ctx):
         
     #step 4: check for side effect. It should probably be integrated to step 3 for more efficiency
     if call.fun_name in {"append"}:
-        receiver_type = call.receiver.type_infer(ctx)
         types_dep = call.receiver.get_types_dep(ctx)
         if types_dep is None:
             ctx.add_type_error(SideEffectWarning(ctx.function_def,call,call.fun_name, call.receiver))
@@ -1321,7 +1264,13 @@ def type_infer_ECall(call, ctx):
         append_type = call.arguments[0].type_infer(ctx)
         for t in types_dep:
             t.add_type_dep(append_type)
-
+        
+    elif call.fun_name in {"add", "remove"}:
+        types_dep = call.receiver.get_types_dep(ctx)
+        if types_dep is None:
+            ctx.add_type_error(SideEffectWarning(ctx.function_def,call,call.fun_name, call.receiver))
+            return None
+        
     # step 5 : return the return type
     if ctx.call_type_env[-1]:
         nret_type = signature.ret_type.subst(ctx.call_type_env[-1])
@@ -1472,7 +1421,7 @@ def type_infer_EList(lst, ctx):
             return None
         #print("----\nelement type={}".format(element_type))
         #print("lst type={}\n----".format(lst_type))
-        if lst_type is None:
+        if lst_type is None or isinstance(lst_type, Anything):
             lst_type= element_type
         else:
             if (isinstance(lst_type, (IntType, FloatType, NumberType)) 
@@ -1536,6 +1485,7 @@ def type_infer_Slicing(slicing, ctx):
 
     elif isinstance(subject_type, StrType):
         result_type = StrType() # XXX: typical python twist !
+        return StrType()
         
     else:
         ctx.add_type_error(SlicingError(slicing, subject_type))
@@ -1552,7 +1502,7 @@ def type_infer_Slicing(slicing, ctx):
     if slicing.step and not type_expect(ctx, slicing.step, IntType(), raise_error=True):
         return None
 
-    return result_type
+    return ListType(elem_type = result_type.elem_type, types_dep = result_type.types_dep)
 
 Slicing.type_infer = type_infer_Slicing
 
@@ -3026,6 +2976,6 @@ class SideEffectWarning(TypeError):
 
 
 if __name__ == '__main__':
-    #ctx = typecheck_from_file("../../test/progs/29_side_effect_more_complicated_KO_00.py")
-    ctx = typecheck_from_file("../../test/progs/26_side_effect_concat_KO_01.py")
+    ctx = typecheck_from_file("../../test/progs/31_side_effect_set_KO_00.py")
+    #ctx = typecheck_from_file("../../test/progs/26_side_effect_concat_KO_01.py")
     #print(repr(ctx))
