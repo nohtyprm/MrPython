@@ -6,5 +6,5 @@ def f(LL):
     #N:list[list[int]]
     N = [[], M, [1, 2]]
     M = LL[0]
-    N[0].append(1)
+    N[1].append(1)
     return 0
