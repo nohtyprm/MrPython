@@ -5,6 +5,7 @@
 class TypeAST:
     def __init__(self, annotation):
         self.protected = False
+        self.types_dep = []
         if annotation:
             self.annotated=True
             self.annotation=annotation
@@ -36,9 +37,18 @@ class TypeAST:
     def protect_all_subtypes(self):
         pass
     
+    def get_types_dep(self, ctx):
+        return []
+    
     #boolean or on protected of all subtypes of both types
     def type_unification(self, other):
         return self
+    
+    def type_replacement(self, other):
+        pass
+    
+    def add_type_dep(self, append_type):
+        pass
             
             
     
@@ -439,10 +449,13 @@ class TupleType(TypeAST):
         return False
 
 class ListType(TypeAST):
-    def __init__(self, elem_type=None, annotation=None):
+    def __init__(self, elem_type=None,  annotation=None, types_dep = None):
         super().__init__(annotation)
         if elem_type is None:
             elem_type = Anything()
+        self.types_dep = []
+        if types_dep is not None:
+            self.types_dep = types_dep
         if not isinstance(elem_type, TypeAST):
             raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_type = elem_type
@@ -505,6 +518,17 @@ class ListType(TypeAST):
         self.protected = self.is_protected() or other.is_protected()
         self.elem_type = self.elem_type.type_unification(other.elem_type)
         return self
+    
+    def type_replacement(self, other):
+        self.protected = other.protected
+        self.types_dep = other.types_dep
+        
+    def add_type_dep(self, type_dep):
+        self.types_dep.append(type_dep)
+        
+    
+    def is_protected(self):
+        return self.protected
 
 class SetType(TypeAST):
     def __init__(self, elem_type=None, annotation=None):
