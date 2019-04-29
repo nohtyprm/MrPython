@@ -10,8 +10,8 @@ def f(P):
     #K: list[list[int]]
     #L: list[list[int]]
     K, L = T
-    K[0].append(P)
+    K.append(P)
     
     #side effect
-    M[0][0].append(4)
+    M[0].append(4)
     return 0
