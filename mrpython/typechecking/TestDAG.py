@@ -4,29 +4,11 @@ import math
 from graph import Digraph
 from graph import DepthFirstTraversal
 
-if __name__ == "__main__":
-    main_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir)
-    found_path = False
-    for path in sys.path:
-        if path == main_path:
-            found_path = True
-            break
-    if not found_path:
-        sys.path.append(main_path)
-    
+
+try:
+    from .prog_ast import *
+except (ImportError, SystemError):
     from prog_ast import *
-    from type_ast import *
-    from type_parser import (type_expression_parser, function_type_parser, var_type_parser, type_def_parser)
-
-    from translate import tr
-else:
-    from prog_ast import *
-    from type_ast import *
-    from type_parser import (type_expression_parser, function_type_parser, var_type_parser, type_def_parser)
-
-    from translate import tr
-
-
 """
 2 things can be done
 -> check for return in all code branches (cannot access a nod with no successor which is not a return (implicit return))
@@ -189,42 +171,12 @@ def check_for_dead_code(CFG):
         return False
     return True
 
-"""
-    def dead_code(self):
-        marked = []
-        for i in range(self.nb_nods):
-            marked.append(False)
-        fifo = []
-        start = self.init()
-        fifo.append(start)
-        marked[start.ident] = True
-        while fifo:
-            nod = fifo.pop()
-            for v in nod.voisins:
-                if not marked[v]:
-                    fifo.append(self.get_nod(v))
-                    marked[v] = True
-        print(marked)
-        for i in range(self.nb_nods):
-            if not marked[i]:
-                print("hi")
-                instrs = self.get_nod(i).l_instr
-                if instrs:
-                    print("dead code")
-                    print(instrs)
-        
-"""
-"""
-G is in topologic order by construction, we can start from first nod then
-"""
-    
         
 def is_branch(instr):
     return isinstance(instr, If) or isinstance(instr, While) or isinstance(instr, For) or isinstance(instr, Return)
 
 def visit_prog(prog):
     for (fname, f) in prog.functions.items():
-        print(fname)
         f.compute_block()
             
 Program.visitDAG = visit_prog
@@ -323,9 +275,7 @@ def compute_block_while(whileinstr, G, l_instr):
     return (while_v, body_end)
     
 While.compute_block = compute_block_while
-
-
-
+#...
 For.compute_block = compute_block_while
 
 
@@ -337,5 +287,5 @@ def dag_from_file(filename):
     return None
 
 
-#dag_from_file("tuple-effect.py")
+dag_from_file("tuple-effect.py")
 
