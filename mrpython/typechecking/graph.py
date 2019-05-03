@@ -347,7 +347,7 @@ class DepthFirstTraversal:
             
         vertex = self.vertex_stack.pop()
         self.parents.add(vertex)
-
+        
         for dest in self.digraph.edges.get(vertex, {}):
             print("DFS: Discover vertex {} from {}".format(dest, vertex))
             print("   ==> parents={}".format(self.parents))
