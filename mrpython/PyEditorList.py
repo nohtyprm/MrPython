@@ -3,20 +3,22 @@ from tkinter import *
 from tkinter.ttk import *
 from tkinter.font import Font, nametofont
 import tkinter.messagebox as tkMessageBox
-from PyEditor import PyEditor
+from PyEditorFrame import PyEditorFrame
+
+from CloseableNotebook import CloseableNotebook
 
 MODULE_PATH = os.path.dirname(__file__)
 
 def expand_filename(fname):
     return MODULE_PATH + "/" + fname
 
-class PyEditorList(Notebook):
+class PyEditorList(CloseableNotebook):
     """
     Manages the PyEditor widgets, in editor interface
     """
     def __init__(self,parent):
         from configHandler import MrPythonConf
-        Notebook.__init__(self, parent)#), height=500)
+        CloseableNotebook.__init__(self, parent)#), height=500)
         self.parent = parent
         self.sizetab = 0
         self.recent_files_menu = None
@@ -32,21 +34,13 @@ class PyEditorList(Notebook):
         child.list = self
         self.select(child)
         self.sizetab += 1
-        #Add the close button
-        if(self.sizetab == 1):
-            picture = PhotoImage(file=expand_filename("icons/close.gif"))
-            self.close_btn=Button(editor_widget.empty_frame_space, command=editor_widget.py_notebook.close_current_editor
-                                  , image=picture)
-            #self.close_btn.config(image=picture)
-            self.close_btn.image = picture
-            self.close_btn.pack(fill=None, expand=0)
 
     def changerFileName(self,editor):
         if editor.isOpen():
             self.tab(editor,text=editor.get_file_name())
 
     def get_current_editor(self):
-        return self.nametowidget(self.select())
+        return self.nametowidget((self.nametowidget(self.select())).get_editor())
 
     def add_recent_file(self,new_file=None):
         "Load and update the recent files list and menus"
@@ -109,7 +103,7 @@ class PyEditorList(Notebook):
         def open_recent_file(fn_closure=file_name):
 
             if(self.focusOn(fn_closure)==False):
-                fileEditor=PyEditor(self,open=True,filename=fn_closure)
+                fileEditor=PyEditorFrame(self,open=True,filename=fn_closure)
                 if(fileEditor.isOpen()):
                     self.add(fileEditor,text=fileEditor.get_file_name())
         return open_recent_file
@@ -126,16 +120,16 @@ class PyEditorList(Notebook):
                 return True
         return False
 
+    def get_current_frame(self):
+        return self.nametowidget(self.select())
     #
     #Action deleger au pyEditor courrant
     #
     def close_current_editor(self,event=None):
-        reply=self.get_current_editor().close(event)
+        reply=self.get_current_frame().get_editor().close(event)
         if reply!="cancel":
             self.sizetab-=1
-            if(self.sizetab == 0):
-                self.close_btn.destroy()
-            self.forget(self.get_current_editor())
+            self.forget(self.get_current_frame())
         return reply
 
 
@@ -212,11 +206,15 @@ class PyEditorList(Notebook):
         return self.get_current_editor().goto_line_event(event)
 
     def increase_font_size_event(self, event=None):
-        edit = self.get_current_editor()
+        edit = self.select()
         if edit:
-            edit.change_font_size(self.parent.console, self.parent.line_widget, lambda s: s + 2)
+            edit = self.get_current_editor()
+            edit.change_font_size(self.parent.console, lambda s: s + 2)
+
 
     def decrease_font_size_event(self, event=None):
-        edit = self.get_current_editor()
+        edit = self.select()
         if edit:
-            edit.change_font_size(self.parent.console, self.parent.line_widget, lambda s: s - 2)
+            edit = self.get_current_editor()
+            edit.change_font_size(self.parent.console, lambda s: s - 2)
+
