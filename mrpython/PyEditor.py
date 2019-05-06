@@ -14,23 +14,23 @@ import PyParse
 import sys
 import Bindings
 
+from HighlightingText import HighlightingText
 _py_version = ' (%s)' % platform.python_version()
 
-class PyEditor(Text):
+class PyEditor(HighlightingText):
     from IOBinding import  IOBinding, filesystemencoding, encoding
     from UndoDelegator import  UndoDelegator
     from Percolator import Percolator
     from ColorDelegator import  ColorDelegator
 
-    def __init__(self, parent, open=False, filename=None):
+    def __init__(self, parent, linewidget, open=False, filename=None):
 
-        Text.__init__(self,parent)
+        HighlightingText.__init__(self,parent)
 
-        self.scroll = scroll=Scrollbar(self)
-        scroll['command'] = self.yview
-        scroll.pack(side=RIGHT, fill=Y)
-        self['yscrollcommand'] = scroll.set
-        self.list=parent
+        
+        self.list=parent.get_notebook()
+        
+        self.linewidget = linewidget
 
         self.recent_files_path = os.path.join(MrPythonConf.GetUserCfgDir(), 'recent-files.lst')
 
@@ -385,12 +385,18 @@ class PyEditor(Text):
         self.set_region(head, tail, chars, lines)
 
 
-    def change_font_size(self, console, line_widget, change_fun):
+    def change_font_size(self, console, change_fun):
+        
         fsize = self.font.cget('size')
-        self.font.configure(size=change_fun(fsize))
-        line_widget.configure(font=self.font)
+        new_size = change_fun(fsize)
+        if(new_size <= 0):
+            new_size = 2 
+        self.font.configure(size=new_size)
         console.change_font(self.font)
+        self.event_generate("<<Change>>", when="tail")
         #edit.configure(font=font)
+        
+    
 
     #
     # Event propre au pyEditor
@@ -399,12 +405,12 @@ class PyEditor(Text):
     # If a selection is defined in the text widget, return (start,
     # end) as Tkinter text indices, otherwise return (None, None)
     def get_selection_indices(self):
-        try:
-            first = self.index("sel.first")
-            last = self.index("sel.last")
-            return first, last
-        except TclError:
+        first = self.index("sel.first")
+        last = self.index("sel.last")
+        #weird bug..
+        if first=="None" and last=="None":
             return None, None
+        return first, last
 
 
     def indent_region_event(self, event):
