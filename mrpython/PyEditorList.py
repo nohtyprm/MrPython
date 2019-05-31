@@ -43,7 +43,8 @@ class PyEditorList(Notebook):
 
     def changerFileName(self,editor):
         if editor.isOpen():
-            self.tab(editor,text=editor.get_file_name())
+            print(self.get_current_editor().get_file_name())
+            self.tab(editor,text=self.get_current_editor().get_file_name())
 
     def get_current_editor(self):
         return self.nametowidget(self.select())

@@ -1,0 +1,10 @@
+digraph {
+  1 [shape=circle fillcolor=white] ;
+  2 [shape=doublecircle fillcolor=white] ;
+  3 [shape=doublecircle fillcolor=white] ;
+  4 [shape=circle fillcolor=white] ;
+  5 [shape=circle fillcolor=red, style = filled] ;
+  1 -> 3 ;
+  1 -> 2 ;
+  4 -> 5 ;
+}

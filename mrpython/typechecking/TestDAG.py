@@ -175,6 +175,10 @@ def check_for_dead_code(CFG):
 def is_branch(instr):
     return isinstance(instr, If) or isinstance(instr, While) or isinstance(instr, For) or isinstance(instr, Return)
 
+
+def is_loop(instr):
+    isinstance(instr, While) or isinstance(instr, For)
+
 def visit_prog(prog):
     for (fname, f) in prog.functions.items():
         f.compute_block()
@@ -199,6 +203,7 @@ def compute_block_block(b, G):
                 head = res
             else:
                 G.add_edges(prv_succ, res)
+                
             prv_succ = succ
                 
     #if block doesnt have any branch instr
@@ -230,9 +235,7 @@ def compute_block_function(f):
     f.close()
     check_for_return(G)
     check_for_dead_code(G)
-    print(str(G))
-    #G.is_return_defined()
-    #G.dead_code()
+    return G
             
 FunctionDef.compute_block = compute_block_function
 
@@ -271,8 +274,8 @@ def compute_block_while(whileinstr, G, l_instr):
     G.add_edges(body_end, while_v)
     
     
-    body_end.append(while_v)
-    return (while_v, body_end)
+    #body_end.append(while_v)
+    return (while_v, [while_v])
     
 While.compute_block = compute_block_while
 #...
@@ -287,5 +290,5 @@ def dag_from_file(filename):
     return None
 
 
-dag_from_file("tuple-effect.py")
+#dag_from_file("exemple.py")
 
