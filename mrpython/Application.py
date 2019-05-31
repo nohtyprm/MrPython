@@ -176,10 +176,8 @@ class Application:
 
     def open(self, event=None):
         """ Open a file in the text editor """
-        print("opening a new file")
         file_editor = PyEditorFrame(self.editor_list, open=True)
         if (self.editor_list.focusOn(file_editor.long_title()) == False):
-            print("it actually is opened")
             if (file_editor.isOpen()):
                 self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
             #not clean, io should be handled here and should not require creation of PyEditor widget
