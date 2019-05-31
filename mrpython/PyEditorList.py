@@ -37,7 +37,8 @@ class PyEditorList(CloseableNotebook):
 
     def changerFileName(self,editor):
         if editor.isOpen():
-            self.tab(editor,text=editor.get_file_name())
+            title = self.get_current_editor().get_file_name()
+            self.tab(self.get_current_frame(),text=title)
 
     def get_current_editor(self):
         return self.nametowidget((self.nametowidget(self.select())).get_editor())

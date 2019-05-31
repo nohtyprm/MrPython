@@ -26,9 +26,7 @@ class HighlightingText(tk.Text):
         self.index_r_par = 0
         self.index_l_par = 0
     
-    
-    def highlight_pattern(self, tag, tagnomatch, opening_token, closing_token, start=tk.CURRENT + " linestart", end=tk.CURRENT + " lineend",
-                          regexp=False):
+    def remove_tags(self, tag, tagnomatch):
         #remove previous tags
         if self.matched:
             self.tag_remove(tag, self.index_r_par)
@@ -37,6 +35,13 @@ class HighlightingText(tk.Text):
             self.tag_remove(tagnomatch, self.index_r_par)
         elif self.nomatch_rpar:
             self.tag_remove(tagnomatch, self.index_l_par)
+        self.matched = False
+        self.nomatch_lpar = False
+        self.nomatch_rpar = False
+    
+    def highlight_pattern(self, tag, tagnomatch, opening_token, closing_token, start=tk.CURRENT + " linestart", end=tk.CURRENT + " lineend",
+                          regexp=False):
+
             
         start = self.index(start)
         end = self.index(end)
@@ -49,9 +54,7 @@ class HighlightingText(tk.Text):
         end_pos -= 1
         c = self.get(str(line_nb) + "." + str(end_pos))
         #print("c vaut " + str(c))
-        self.matched = False
-        self.nomatch_lpar = False
-        self.nomatch_rpar = False
+
         i = 1
         #starting from left to right
         if c == closing_token:
@@ -99,7 +102,9 @@ class HighlightingText(tk.Text):
             else:
                 self.tag_add(tagnomatch, self.index_l_par)
                 self.nomatch_rpar = True
-    
+        else:
+            return False
+        return True
     """
     for more info on proxy:
     https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
@@ -116,8 +121,8 @@ class HighlightingText(tk.Text):
         # or the cursor position changed
         if (args[0] in ("insert", "delete") or 
             args[0:3] == ("mark", "set", "insert")):
-            self.highlight_pattern("match", "nomatch", "(", ")")
-            self.highlight_pattern("match", "nomatch", "[", "]")
+            self.remove_tags("match", "nomatch")
+            self.highlight_pattern("match", "nomatch", "(", ")") or self.highlight_pattern("match", "nomatch", "[", "]") or self.highlight_pattern("match", "nomatch", "{", "}")
             
         # generate an event if something was added or deleted,
         # or the cursor position changed
