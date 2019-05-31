@@ -267,10 +267,13 @@ def compute_block_if(ifinstr, G, l_instr):
 If.compute_block = compute_block_if
 
 def compute_block_while(whileinstr, G, l_instr):
-    while_v = BasicBlock(l_instr)
+    before_while = BasicBlock(l_instr)
+    while_v = BasicBlock([whileinstr])
+    G.add_vertex(before_while)
     G.add_vertex(while_v)
     (body_v, body_end) = compute_block_block(whileinstr.body, G)
     G.add_edge(while_v, body_v)
+    G.add_edge(before_while, while_v)
     G.add_edges(body_end, while_v)
     
     
@@ -290,5 +293,5 @@ def dag_from_file(filename):
     return None
 
 
-#dag_from_file("exemple.py")
+dag_from_file("exemple.py")
 
