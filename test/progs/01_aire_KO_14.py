@@ -1,4 +1,4 @@
-##!FAIL: TypeComparisonError[int/float]@14:8
+##!FAIL: VariableTypeError[p:float/int]@14:4
 
 import math
 

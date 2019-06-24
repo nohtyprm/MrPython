@@ -345,6 +345,14 @@ class TupleType(TypeAST):
                 raise ValueError("Element type is not a TypeAST: {}".format(elem_type))
         self.elem_types = elem_types
 
+    def __eq__(self, other):
+        if isinstance(other, TupleType) and len(other.elem_types) == len(self.elem_types):
+            for i in range(len(self.elem_types)):
+                if self.elem_types[i] != other.elem_types[i]:
+                    return False
+            return True
+        return False
+
     def rename_type_variables(self, rmap):
         nelem_types = []
         for elem_type in self.elem_types:
