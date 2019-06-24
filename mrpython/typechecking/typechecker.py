@@ -402,9 +402,7 @@ def linearize_tuple_type(working_var, working_type, declared_types, ctx, expr):
                     ctx.local_env[working_var.var_name] = (working_type, ctx.fetch_scope_mode())
                     return True
                 else:
-                    ctx.add_type_error(UndeclaredVariableError(expr, working_var))
                     return False
-            #for EComp, maybe declared_types being None is not enough
             else:
                 ctx.local_env[working_var.var_name] = (working_type, ctx.fetch_scope_mode())
                 return True
@@ -2291,24 +2289,6 @@ class UnknownVariableError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Variable problem"), self.var.ast.lineno, self.var.ast.col_offset
                                     , tr("there is such variable of name '{}'").format(self.var.name))
-
-class UndeclaredVariableError(TypeError):
-    def __init__(self, in_function, var):
-        self.in_function = in_function
-        self.var = var
-
-    def is_fatal(self):
-        return True
-
-    def fail_string(self):
-        return "UndeclaredVariableError[{}]@{}:{}".format(self.var.var_name
-                                                       , self.var.ast.lineno
-                                                       , self.var.ast.col_offset)
-
-    def report(self, report):
-        report.add_convention_error('error', tr("Missing variable declaration"), self.var.ast.lineno, self.var.ast.col_offset
-                                    , tr("Variable(s) not declared: {}").format(self.var.var_name))
-
 
 class TypeComparisonError(TypeError):
     def __init__(self, in_function, expected_type, expr, expr_type, explain):
