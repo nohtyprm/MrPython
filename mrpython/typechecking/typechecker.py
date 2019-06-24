@@ -348,18 +348,12 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
     
     declared_types = dict()
 
-    for _ in assign_target.variables():
-
-        var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
-        if var_name is None:
-            if strict: # in strict mode we require the declaration (only for mono-vars, for now)
-                ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, err_cat, assign_target.ast.lineno if err_cat=='header-char' else lineno, decl_type))
-                return None
-
-            return declared_types
+    var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
+    while not (var_name is None):
+        lineno -= 1
 
         if var_name in declared_types:
-            ctx.add_type_error(DuplicateMultiAssign(var, assign_target))
+            ctx.add_type_error(DuplicateMultiAssignError(lineno, var_name))
             return None
 
         if var_name == "_":
@@ -377,8 +371,8 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
                 return None
             else:
                 declared_types[var_name] = udecl_type
+        var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
 
-        lineno -= 1
 
     if strict and req_vars: # need all declarations in strict mode
         ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'unknown-vars', assign_target.ast.lineno, tr("Variable(s) not declared: {}").format(", ".join((v for v in req_vars)))))
@@ -386,7 +380,7 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
 
     return declared_types
 
-def linearize_tuple_type(working_var, working_type, declared_types, ctx, expr):
+def linearize_tuple_type(working_var, working_type, declared_types, ctx, expr, strict=False):
     if not isinstance(working_var, LHSTuple):
         #check if working_var is an instance of LHSVar
         if isinstance(working_var, LHSVar):
@@ -468,17 +462,15 @@ def type_check_Assign(assign, ctx, global_scope = False):
     expr_type = assign.expr.type_infer(ctx)
     if expr_type is None:
         return False
-    
+
+    strict = False
     # treat the simpler "mono-var" case first
     if assign.target.arity() == 1:
-        # var must be declared in such case
-        if not linearize_tuple_type(assign.target, expr_type, declared_types, ctx, assign.target):
-            return False
-        return True
+        strict = True
         
     # here we have a destructured initialization, it is not necessary to declare variables
 
-    if not linearize_tuple_type(assign.target, expr_type, None, ctx, assign.target):
+    if not linearize_tuple_type(assign.target, expr_type, declared_types, ctx, assign.target, strict):
         return False
 
     return True
@@ -535,14 +527,12 @@ def type_check_For(for_node, ctx):
         # === do like in Assign ===
         expr_type = iter_type.elem_type if not isinstance(iter_type, StrType) else StrType()
         # treat the simpler "mono-var" case first
+        strict = False
         if for_node.target.arity() == 1:
-            if not linearize_tuple_type(for_node.target, expr_type, declared_types, ctx, for_node.target):
-                ctx.pop_parent()
-                return False
-
+            strict = True
         else:
         # and now type check the body in the constructed local env
-            if not linearize_tuple_type(for_node.target, expr_type, None, ctx, for_node.target):
+            if not linearize_tuple_type(for_node.target, expr_type, declared_types, ctx, for_node.target, strict):
                 ctx.pop_parent()
                 return False
             
@@ -2135,6 +2125,21 @@ class DuplicateTypeDefError(TypeError):
 
     def is_fatal(self):
         return False
+
+class DuplicateMultiAssignError(TypeError): 
+    def __init__(self, lineno, var_name):
+        self.lineno = lineno
+        self.var_name = var_name
+
+    def fail_string(self):
+        return "DuplicateTypeDefError[{}]@{}:{}".format(self.type_name, self.lineno, 0)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Declaration problem"), self.lineno, 0
+                                    , details=tr("Variable '{}' was declared multiple times").format(self.var_name))
+
+    def is_fatal(self):
+        return True
 
     
 class AssertionInFunctionWarning(TypeError):
