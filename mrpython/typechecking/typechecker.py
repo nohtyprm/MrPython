@@ -350,7 +350,6 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
 
     var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
     while not (var_name is None):
-        lineno -= 1
 
         if var_name in declared_types:
             ctx.add_type_error(DuplicateMultiAssignError(lineno, var_name))
@@ -371,6 +370,7 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
                 return None
             else:
                 declared_types[var_name] = udecl_type
+        lineno -= 1
         var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
 
 

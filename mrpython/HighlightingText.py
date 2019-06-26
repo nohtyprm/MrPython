@@ -6,10 +6,6 @@ Created on Mon Mar  4 22:00:00 2019
 """
 import tkinter as tk
 
-
-#proxy causes "sel" tag not being added, it appears to be a windows problem
-#see the link which seems to point out the same issue
-#https://stackoverflow.com/questions/47184080/how-do-i-track-whether-a-tkinter-text-widget-has-been-modified-using-a-proxy-tha
 class HighlightingText(tk.Text):
     def __init__(self, *args, **kwargs):
         tk.Text.__init__(self, *args, **kwargs)
@@ -46,14 +42,12 @@ class HighlightingText(tk.Text):
         start = self.index(start)
         end = self.index(end)
         current = self.index("insert")
-        #print("start vaut " + str(start), " end vaut " + str(end), " current vaut " + str(current))
         nb_left_par = 0
         nb_right_par = 0
         
         (line_nb, end_pos) = map(lambda c: int(c), current.split('.'))
         end_pos -= 1
         c = self.get(str(line_nb) + "." + str(end_pos))
-        #print("c vaut " + str(c))
 
         i = 1
         #starting from left to right
@@ -76,7 +70,6 @@ class HighlightingText(tk.Text):
                 self.index_l_par =  str(line_nb) + "." + str(end_pos -i)
                 self.tag_add(tag, self.index_r_par)
                 self.tag_add(tag, self.index_l_par)
-                #print("lindex de la parenthese est " + str(self.index_l_par) + " " +str(self.index_r_par))
             else:
                 self.tag_add(tagnomatch, self.index_r_par)
                 self.nomatch_lpar = True
