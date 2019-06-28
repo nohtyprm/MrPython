@@ -16,12 +16,15 @@ if __name__ == "__main__":
     from type_parser import (type_expression_parser, function_type_parser, var_type_parser, type_def_parser)
 
     from translate import tr
+    from side_effects_utils import *
 else:
     from .prog_ast import *
     from .type_ast import *
     from .type_parser import (type_expression_parser, function_type_parser, var_type_parser, type_def_parser)
 
     from .translate import tr
+
+    from .side_effects_utils import *
 
 class TypeError:
     def is_fatal(self):
@@ -46,6 +49,11 @@ class TypingContext:
         self.call_type_env = [] # stack of type environments when calling generic functions
         self.local_env = {}  # will have global variables
 
+        self.in_call = False
+        self.protected = set()
+        self.aliasing = {}
+
+
     def add_type_error(self, error):
         self.type_errors.append(error)
         if error.is_fatal():
@@ -63,6 +71,7 @@ class TypingContext:
         self.param_env = {}
         for (param, param_type) in zip(parameters, param_types):
             self.param_env[param] = param_type
+            self.replace_alias(param, set([AliasRef('*')]))
 
     def register_return_type(self, return_type):
         self.return_type = return_type
@@ -113,13 +122,37 @@ class TypingContext:
         self.dead_variables = self.save_dead_variables
         self.save_dead_variables = None
 
+        self.aliasing = {}
+
     def fetch_scope_mode(self):
         # TODO : complete with parent stack
         if not self.parent_stack:
             return 'function'
 
+    def replace_alias(self, var, aliased):
+        self.aliasing.update({var : aliased})
+
+    def add_alias(self, var, aliased):
+        self.aliasing[var] = self.aliasing[var] | aliased
+
+    def print_alias(self):
+        res = ""
+        for (L, aliased) in self.aliasing.items():
+            res = res + str(L) + "->" + str(aliased)
+        print(res)
+
+    def get_alias(self, var_name):
+        if not isinstance(var_name, str):
+            raise NotImplementedError("Expecting string for aliasing dic")
+        if var_name in self.aliasing:
+            return self.aliasing.get(var_name)
+        return set()
+        
+
     def __repr__(self):
         return "<TypingContext[genv={}, errors={}]>".format(self.global_env, self.type_errors)
+
+TypingContext.get_all_alias = get_all_alias_ctx
 
 #############################################
 # Type checking                             #
@@ -430,7 +463,8 @@ def type_check_Assign(assign, ctx, global_scope = False):
         expr_type = assign.expr.type_infer(ctx)
         if expr_type is None:
             return False
-
+        
+        assign.side_effect(ctx)
         # nothing else to do for actual assignment
         return True
 
@@ -460,6 +494,9 @@ def type_check_Assign(assign, ctx, global_scope = False):
 
         # register declared type in environment
         ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
+        
+        assign.side_effect(ctx)
+
 
         return True
         
@@ -488,7 +525,9 @@ def type_check_Assign(assign, ctx, global_scope = False):
         
             ctx.local_env[var.var_name] = (declared_types[var.var_name], ctx.fetch_scope_mode())
         else:
-            ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())    
+            ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())
+
+    assign.side_effect(ctx)
 
     return True
 
@@ -1271,6 +1310,10 @@ def type_infer_ECall(call, ctx):
         elif isinstance(unhashable, DictType):
             ctx.add_type_error(UnhashableKeyError(call, call, unhashable.key_type))
             return None
+
+
+    if call.side_effect(ctx):
+        ctx.add_type_error(SideEffectWarning(ctx.function_def,call,call.fun_name, call.receiver))
 
     return nret_type
         
@@ -2925,6 +2968,23 @@ class ContainerAssignEmptyError(TypeError):
         report.add_convention_error('error', tr("Bad assignment"), self.cassign.container_expr.ast.lineno, self.cassign.container_expr.ast.col_offset
                                     , tr("Assignment in an empty dictionary"))
 
+
+class SideEffectWarning(TypeError):
+    def __init__(self, in_function, expr, fun_name, receiver):
+        self.in_function = in_function
+        self.receiver = receiver
+        self.fun_name = fun_name
+        self.expr = expr
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "SideEffectWarning[{}]@{}:{}".format(self.fun_name, self.expr.ast.lineno, self.expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Call to {} may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
+                                    , tr("There is a risk of side effect as {} may reference a parameter").format(self.receiver))
         
 if __name__ == '__main__':
 
