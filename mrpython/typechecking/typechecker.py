@@ -52,6 +52,7 @@ class TypingContext:
         self.in_call = False
         self.protected = set()
         self.aliasing = {}
+        self.var_def = {}
 
 
     def add_type_error(self, error):
@@ -71,7 +72,8 @@ class TypingContext:
         self.param_env = {}
         for (param, param_type) in zip(parameters, param_types):
             self.param_env[param] = param_type
-            self.replace_alias(param, set([AliasRef('*')]))
+            self.protected.add(param)
+            self.add_var_def(param)
 
     def register_return_type(self, return_type):
         self.return_type = return_type
@@ -122,18 +124,23 @@ class TypingContext:
         self.dead_variables = self.save_dead_variables
         self.save_dead_variables = None
 
+        self.in_call = False
+        self.protected = set()
         self.aliasing = {}
+        self.var_def = {}
 
     def fetch_scope_mode(self):
         # TODO : complete with parent stack
         if not self.parent_stack:
             return 'function'
 
-    def replace_alias(self, var, aliased):
-        self.aliasing.update({var : aliased})
 
+    #links must be bidirectionnal...
     def add_alias(self, var, aliased):
-        self.aliasing[var] = self.aliasing[var] | aliased
+        tmp = AliasRef(var, self.var_def[var])
+        self.aliasing[tmp] = self.aliasing[tmp] | aliased
+        for a in aliased:
+            self.aliasing[AliasRef(a.ref, self.var_def[a.ref])].add(AliasRef(var, self.var_def[var], a.index_out.copy(), a.index_in.copy()))
 
     def print_alias(self):
         res = ""
@@ -141,14 +148,18 @@ class TypingContext:
             res = res + str(L) + "->" + str(aliased)
         print(res)
 
-    def get_alias(self, var_name):
-        if not isinstance(var_name, str):
-            raise NotImplementedError("Expecting string for aliasing dic")
-        if var_name in self.aliasing:
-            return self.aliasing.get(var_name)
+    def get_alias(self, var_ref):
+        if var_ref in self.aliasing:
+            return self.aliasing.get(var_ref)
         return set()
         
-
+    def add_var_def(self, var_name):
+        if var_name in self.var_def:
+            self.var_def[var_name] += 1
+        else:
+            self.var_def.update({var_name : 0})
+        self.aliasing.update({AliasRef(var_name, self.var_def[var_name]) : set()})
+            
     def __repr__(self):
         return "<TypingContext[genv={}, errors={}]>".format(self.global_env, self.type_errors)
 
@@ -629,13 +640,14 @@ def type_check_For(for_node, ctx):
                 else:
                     ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())    
 
+        for_node.side_effect(ctx)
         # and now type check the body in the constructed local env
 
         for instr in for_node.body:
             if not instr.type_check(ctx):
                 ctx.pop_parent()
                 return False
-
+            
         ctx.pop_parent()
         return True
     
