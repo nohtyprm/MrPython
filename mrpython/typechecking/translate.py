@@ -94,6 +94,8 @@ TRANSLATOR_DICT = {
     , "Type declaration error" : { 'fr' : "Problème de déclaration de type" }
     , "Wrong use in signature of function '{}' of mutable (not hashable) type: {}" : { 'fr' : "Dans la signature de la fonction '{}' un type mutable (non-hashable) est utilisé de façon erronée dans la construction du type: {}" }
     , "Expecting a set" : { 'fr' : "J'attends un ensemble" }
+    , "Expecting a tuple" : { 'fr' : "J'attends un n-uplet (tuple)" }
+    , "Expecting an expression of tuple type, instead found type: '{}'" : { 'fr' : "J'attends une expression de type n-uplet (tuple), mais j'obtiens à la place le type: '{}'" }
     , "Type definition problem" : { 'fr' : "Problème de définition de type" }
     , "I don't understand the definition of type '{}'" : { 'fr' : "Je ne comprends pas la définition du type '{}'"}
     , "There is already a definition for type '{}'" : { 'fr' : "Il y a déjà une définition pour le type '{}'" }

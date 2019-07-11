@@ -411,7 +411,7 @@ def linearize_tuple_type(working_var, working_type, declared_types, ctx, expr, s
             raise NotSupportedError("Not assignating a variable, please report")
             return False
     elif not isinstance(working_type, TupleType):
-        ctx.add_type_error(TypeExpectationError(ctx.function_def, expr, working_type, tr("Expecting a tuple")))
+        ctx.add_type_error(TupleTypeExpectationError(ctx.function_def, expr, working_type))
         return False
     
     if working_var.arity() != working_type.size():
@@ -2701,6 +2701,23 @@ class TupleDestructArityError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Tuple destruct error"), self.destruct.ast.lineno, self.destruct.ast.col_offset
                                     , tr("Wrong number of variables to destruct tuple, expecting {} variables but {} given").format(self.expected_arity, self.actual_arity))
+
+class TupleTypeExpectationError(TypeError):
+    def __init__(self, in_function, expr, expr_type):
+        self.in_function = in_function
+        self.expr = expr
+        self.expr_type = expr_type
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "TupleTypeExpectationError[{}]@{}:{}".format(self.expr_type, self.expr.ast.lineno, self.expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Incorrect type"), self.expr.ast.lineno, self.expr.ast.col_offset
+                                    , tr("Expecting an expression of tuple type, instead found type: '{}'").format(self.expr_type))
+
 
 
 class UnknownTypeAliasError(TypeError):
