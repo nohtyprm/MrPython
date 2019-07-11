@@ -1,4 +1,4 @@
-##!FAIL: TypeExpectationError[int/Expecting a tuple]@7:11
+##!FAIL: TypeExpectationError[int/Expecting a tuple]@7:4
 
 
 def f(x):
