@@ -26,7 +26,7 @@ TRANSLATOR_DICT = {
     , "Declaration problem" : { 'fr' : 'Problème de déclaration'}
     , "Missing variable declaration" : { 'fr' : "La déclaration de variable est manquante." }
     , "Wrong variable name in declaration, it should be '{}'" : { 'fr' : "le nom de variable est erroné dans la déclaration, cela devrait être '{}'"}
-    , "Missing ':' character before variable type declaration" : { 'fr' : "il manque le caractère ':' avant le type de la variable"}
+    , "Missing ':' character before variable type declaration" : { 'fr' : "je ne comprends pas le type déclaré pour cette variable, il manque le caractère ':'"}
     , "I don't understand the declared type for variable '{}'" : { 'fr' : "je ne comprends pas le type déclaré pour la variable '{}'"}
     , "Variable problem" : { 'fr' : "Problème de variable"}
     , "there is such variable of name '{}'" : { 'fr' : "il n'y a pas de variable de nom '{}'"}
@@ -94,6 +94,8 @@ TRANSLATOR_DICT = {
     , "Type declaration error" : { 'fr' : "Problème de déclaration de type" }
     , "Wrong use in signature of function '{}' of mutable (not hashable) type: {}" : { 'fr' : "Dans la signature de la fonction '{}' un type mutable (non-hashable) est utilisé de façon erronée dans la construction du type: {}" }
     , "Expecting a set" : { 'fr' : "J'attends un ensemble" }
+    , "Expecting a tuple" : { 'fr' : "J'attends un n-uplet (tuple)" }
+    , "Expecting an expression of tuple type, instead found type: '{}'" : { 'fr' : "J'attends une expression de type n-uplet (tuple), mais j'obtiens à la place le type: '{}'" }
     , "Type definition problem" : { 'fr' : "Problème de définition de type" }
     , "I don't understand the definition of type '{}'" : { 'fr' : "Je ne comprends pas la définition du type '{}'"}
     , "There is already a definition for type '{}'" : { 'fr' : "Il y a déjà une définition pour le type '{}'" }
@@ -110,6 +112,7 @@ TRANSLATOR_DICT = {
     , "Type mismatch for variable '{}', expecting '{}' instead of: {}" : { 'fr' : "La variable '{}' est déclarée avec le type '{}' qui n'est pas compatible avec le type requis: {}"}
     , "Call to {} may cause side effect" : {'fr' : "L'appel à la méthode {} risque d'avoir un effet de bord"}
     , "There is a risk of side effect as {} may reference a parameter" : {'fr' : "L'expression {} référence peut-être un paramètre"}
+    , "Variable '{}' was declared multiple times" : { 'fr' : "La variable '{}' a été déclarée plusieurs fois"}
 }
 
 def tr(msg):

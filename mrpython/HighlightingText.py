@@ -6,10 +6,6 @@ Created on Mon Mar  4 22:00:00 2019
 """
 import tkinter as tk
 
-
-#proxy causes "sel" tag not being added, it appears to be a windows problem
-#see the link which seems to point out the same issue
-#https://stackoverflow.com/questions/47184080/how-do-i-track-whether-a-tkinter-text-widget-has-been-modified-using-a-proxy-tha
 class HighlightingText(tk.Text):
     def __init__(self, *args, **kwargs):
         tk.Text.__init__(self, *args, **kwargs)
@@ -54,6 +50,7 @@ class HighlightingText(tk.Text):
         if end_pos < 0:
             return False
         c = self.get(str(line_nb) + "." + str(end_pos))
+
         i = 1
         #starting from left to right
         if c == closing_token:
