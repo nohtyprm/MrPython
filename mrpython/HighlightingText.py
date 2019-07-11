@@ -35,7 +35,7 @@ class HighlightingText(tk.Text):
         self.nomatch_lpar = False
         self.nomatch_rpar = False
     
-    def highlight_pattern(self, tag, tagnomatch, opening_token, closing_token, start=tk.CURRENT + " linestart", end=tk.CURRENT + " lineend",
+    def highlight_pattern(self, tag, tagnomatch, opening_token, closing_token, start=tk.INSERT + " linestart", end=tk.INSERT + " lineend",
                           regexp=False):
 
             
@@ -47,6 +47,8 @@ class HighlightingText(tk.Text):
         
         (line_nb, end_pos) = map(lambda c: int(c), current.split('.'))
         end_pos -= 1
+        if end_pos < 0:
+            return False
         c = self.get(str(line_nb) + "." + str(end_pos))
 
         i = 1
@@ -77,7 +79,7 @@ class HighlightingText(tk.Text):
         elif c == opening_token:
             nb_left_par = 1
             
-            line_text = self.get(current, end)
+            line_text = self.get(current, end) 
             for c in line_text:
                 if c == closing_token:
                     nb_right_par = nb_right_par + 1
@@ -106,6 +108,9 @@ class HighlightingText(tk.Text):
     def _proxy(self, *args):
         cmd = (self._orig,) + args
         result = None
+        if (args[0] in ("insert", "delete") or 
+            args[0:3] == ("mark", "set", "insert")):
+            self.remove_tags("match", "nomatch")
         try:
             result = self.tk.call(cmd)
         except Exception:
@@ -114,7 +119,6 @@ class HighlightingText(tk.Text):
         # or the cursor position changed
         if (args[0] in ("insert", "delete") or 
             args[0:3] == ("mark", "set", "insert")):
-            self.remove_tags("match", "nomatch")
             self.highlight_pattern("match", "nomatch", "(", ")") or self.highlight_pattern("match", "nomatch", "[", "]") or self.highlight_pattern("match", "nomatch", "{", "}")
             
         # generate an event if something was added or deleted,
