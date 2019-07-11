@@ -173,6 +173,8 @@ Slicing.alias = alias_Slicing
 
 def side_effect_ECall(call, ctx):
     is_side_effect = False
+    protected_var = set()
+        
     if call.fun_name == "append":
         ctx.in_call = True
         aliases_extended = call.receiver.alias(ctx)
@@ -185,7 +187,7 @@ def side_effect_ECall(call, ctx):
         for alias in aliases_extended:
             if alias.is_protected(ctx):
                 is_side_effect = True
-                break;
+                protected_var.add(alias.ref)
 
         #variable actually referenced in expression
         aliases_arg = call.arguments[0].alias(ctx)
@@ -209,9 +211,9 @@ def side_effect_ECall(call, ctx):
         for alias in aliases_extended:
             if alias.is_protected(ctx):
                 is_side_effect = True
-                break;
+                protected_var.add(alias.ref)
             
-    return is_side_effect
+    return (is_side_effect, protected_var)
 
 
 

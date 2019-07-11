@@ -887,22 +887,16 @@ def type_infer_EAdd(expr, ctx):
                                                    tr("Expecting a list")))
             return None
 
-        if left_type.elem_type != right_type.elem_type:
+
+        if left_type.elem_type is not None and right_type.elem_type is not None and left_type.elem_type != right_type.elem_type:
             ctx.add_type_error(TypeComparisonError(ctx.function_def, left_type.elem_type, expr.right, right_type.elem_type,
                                                    tr("Expecting a list with elements of type: {}").format(left_type.elem_type)))
             return None
-        
-        return left_type
 
-        # if left_type.elem_type is not None and right_type.elem_type is not None and left_type.elem_type != right_type.elem_type:
-        #     ctx.add_type_error(TypeComparisonError(ctx.function_def, left_type.elem_type, expr.right, right_type.elem_type,
-        #                                            tr("Expecting a list with elements of type: {}").format(left_type.elem_type)))
-        #     return None
-
-        # if left_type.elem_type is None and right_type.elem_type is not None:
-        #     return right_type
-        # else:
-        #     return left_type
+        if left_type.elem_type is None and right_type.elem_type is not None:
+            return right_type
+        else:
+            return left_type
 
     else:
         ctx.add_type_error(TypeComparisonError(ctx.function_def, ListType(), expr.left, left_type,
@@ -1282,9 +1276,9 @@ def type_infer_ECall(call, ctx):
             ctx.add_type_error(UnhashableKeyError(call, call, unhashable.key_type))
             return None
 
-
-    if call.side_effect(ctx):
-        ctx.add_type_error(SideEffectWarning(ctx.function_def,call,call.fun_name, call.receiver))
+    (has_side_effect, protected_var) = call.side_effect(ctx)
+    if has_side_effect:
+        ctx.add_type_error(SideEffectWarning(ctx.function_def,call,call.fun_name, call.receiver, protected_var))
 
     return nret_type
         
@@ -2976,11 +2970,12 @@ class ContainerAssignEmptyError(TypeError):
 
 
 class SideEffectWarning(TypeError):
-    def __init__(self, in_function, expr, fun_name, receiver):
+    def __init__(self, in_function, expr, fun_name, receiver, protected_var):
         self.in_function = in_function
         self.receiver = receiver
         self.fun_name = fun_name
         self.expr = expr
+        self.protected_var = protected_var
 
     def is_fatal(self):
         return False
@@ -2989,8 +2984,8 @@ class SideEffectWarning(TypeError):
         return "SideEffectWarning[{}]@{}:{}".format(self.fun_name, self.expr.ast.lineno, self.expr.ast.col_offset)
 
     def report(self, report):
-        report.add_convention_error('warning', tr("Call to {} may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
-                                    , tr("There is a risk of side effect as {} may reference a parameter").format(self.receiver))
+        report.add_convention_error('warning', tr("Call to '{}' may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
+                                    , tr("There is a risk of side effect as on the following parameter(s) {}").format(self.protected_var))
         
 if __name__ == '__main__':
 
