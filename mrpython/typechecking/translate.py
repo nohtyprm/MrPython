@@ -26,7 +26,7 @@ TRANSLATOR_DICT = {
     , "Declaration problem" : { 'fr' : 'Problème de déclaration'}
     , "Missing variable declaration" : { 'fr' : "La déclaration de variable est manquante." }
     , "Wrong variable name in declaration, it should be '{}'" : { 'fr' : "le nom de variable est erroné dans la déclaration, cela devrait être '{}'"}
-    , "Missing ':' character before variable type declaration" : { 'fr' : "il manque le caractère ':' avant le type de la variable"}
+    , "Missing ':' character before variable type declaration" : { 'fr' : "je ne comprends pas le type déclaré pour cette variable, il manque le caractère ':'"}
     , "I don't understand the declared type for variable '{}'" : { 'fr' : "je ne comprends pas le type déclaré pour la variable '{}'"}
     , "Variable problem" : { 'fr' : "Problème de variable"}
     , "there is such variable of name '{}'" : { 'fr' : "il n'y a pas de variable de nom '{}'"}

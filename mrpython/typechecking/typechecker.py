@@ -309,7 +309,7 @@ def parse_var_name(declaration):
         else: # a space character
             pass
 
-    return (None, tr("Missing ':' in variable declaration"))
+    return (None, tr("Missing ':' character before variable type declaration"))
 
 def parse_declaration_type(ctx, lineno):
     """parse a declared type: returns a pair (v, T) with v the declared
@@ -350,7 +350,7 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
 
     var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
     if var_name is None and strict:
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, err_cat, lineno if err_cat!="header-char" else (lineno+1), tr(decl_type)))
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, err_cat, lineno if err_cat not in {"header-char"} else (lineno+1), tr(decl_type)))
         return None
 
     while var_name is not None:
@@ -376,7 +376,7 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
                 declared_types[var_name] = udecl_type
         lineno -= 1
         var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
-        if var_name is None and err_cat != 'header-char' and strict:
+        if var_name is None and err_cat not in {'header-char', 'colon'} and strict:
             ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, err_cat, lineno, tr(decl_type)))
             return None
         
@@ -399,9 +399,8 @@ def linearize_tuple_type(working_var, working_type, declared_types, ctx, expr, s
                     var_type = declared_types[working_var.var_name]
                     if not var_type.type_compare(ctx, expr, working_type, raise_error=False):
                         ctx.add_type_error(VariableTypeError(expr, working_var, declared_types[working_var.var_name], working_type))
+                        return False
                     ctx.local_env[working_var.var_name] = (var_type, ctx.fetch_scope_mode())
-                    
-                    ctx.local_env[working_var.var_name] = (working_type, ctx.fetch_scope_mode())
                     return True
                 else:
                     return False
@@ -837,16 +836,23 @@ def type_infer_EAdd(expr, ctx):
             ctx.add_type_error(TypeComparisonError(ctx.function_def, left_type, expr.right, right_type,
                                                    tr("Expecting a list")))
             return None
-        
-        if left_type.elem_type is not None and right_type.elem_type is not None and left_type.elem_type != right_type.elem_type:
+
+        if left_type.elem_type != right_type.elem_type:
             ctx.add_type_error(TypeComparisonError(ctx.function_def, left_type.elem_type, expr.right, right_type.elem_type,
                                                    tr("Expecting a list with elements of type: {}").format(left_type.elem_type)))
             return None
+        
+        return left_type
 
-        if left_type.elem_type is None and right_type.elem_type is not None:
-            return right_type
-        else:
-            return left_type
+        # if left_type.elem_type is not None and right_type.elem_type is not None and left_type.elem_type != right_type.elem_type:
+        #     ctx.add_type_error(TypeComparisonError(ctx.function_def, left_type.elem_type, expr.right, right_type.elem_type,
+        #                                            tr("Expecting a list with elements of type: {}").format(left_type.elem_type)))
+        #     return None
+
+        # if left_type.elem_type is None and right_type.elem_type is not None:
+        #     return right_type
+        # else:
+        #     return left_type
 
     else:
         ctx.add_type_error(TypeComparisonError(ctx.function_def, ListType(), expr.left, left_type,
