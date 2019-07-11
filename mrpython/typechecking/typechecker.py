@@ -349,7 +349,11 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
     declared_types = dict()
 
     var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
-    while not (var_name is None):
+    if var_name is None and strict:
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, err_cat, lineno if err_cat!="header-char" else (lineno+1), tr(decl_type)))
+        return None
+
+    while var_name is not None:
 
         if var_name in declared_types:
             ctx.add_type_error(DuplicateMultiAssignError(lineno, var_name))
@@ -372,6 +376,10 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
                 declared_types[var_name] = udecl_type
         lineno -= 1
         var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
+        if var_name is None and err_cat != 'header-char' and strict:
+            ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, err_cat, lineno, tr(decl_type)))
+            return None
+        
 
 
     if strict and req_vars: # need all declarations in strict mode
@@ -386,7 +394,7 @@ def linearize_tuple_type(working_var, working_type, declared_types, ctx, expr, s
         if isinstance(working_var, LHSVar):
             if working_var.var_name == '_': # just skip this check
                 return True
-            if declared_types is not None:
+            if strict:
                 if working_var.var_name in declared_types:
                     var_type = declared_types[working_var.var_name]
                     if not var_type.type_compare(ctx, expr, working_type, raise_error=False):
@@ -530,11 +538,10 @@ def type_check_For(for_node, ctx):
         strict = False
         if for_node.target.arity() == 1:
             strict = True
-        else:
-        # and now type check the body in the constructed local env
-            if not linearize_tuple_type(for_node.target, expr_type, declared_types, ctx, for_node.target, strict):
-                ctx.pop_parent()
-                return False
+
+        if not linearize_tuple_type(for_node.target, expr_type, declared_types, ctx, for_node.target, strict):
+            ctx.pop_parent()
+            return False
             
         for instr in for_node.body:
             if not instr.type_check(ctx):
