@@ -837,13 +837,16 @@ def type_infer_EAdd(expr, ctx):
             ctx.add_type_error(TypeComparisonError(ctx.function_def, left_type, expr.right, right_type,
                                                    tr("Expecting a list")))
             return None
-
-        if left_type.elem_type != right_type.elem_type:
+        
+        if left_type.elem_type is not None and right_type.elem_type is not None and left_type.elem_type != right_type.elem_type:
             ctx.add_type_error(TypeComparisonError(ctx.function_def, left_type.elem_type, expr.right, right_type.elem_type,
                                                    tr("Expecting a list with elements of type: {}").format(left_type.elem_type)))
             return None
 
-        return left_type
+        if left_type.elem_type is None and right_type.elem_type is not None:
+            return right_type
+        else:
+            return left_type
 
     else:
         ctx.add_type_error(TypeComparisonError(ctx.function_def, ListType(), expr.left, left_type,
