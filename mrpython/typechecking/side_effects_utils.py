@@ -135,7 +135,8 @@ def alias_ETuple(tpl, ctx):
     res = set()
     for elt in tpl.elements:
         for a in elt.alias(ctx):
-            res.add(elt.unaccess(str(i)))
+            a.unaccess(str(i))
+            res.add(a)
         i = i +1
     return res
 
