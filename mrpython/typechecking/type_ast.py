@@ -427,7 +427,9 @@ class ListType(TypeAST):
                 , None)
 
     def __eq__(self, other):
-        return isinstance(other, ListType) and other.elem_type == self.elem_type
+        return isinstance(other, ListType) \
+            and (self.elem_type is None or other.elem_type is None \
+                 or other.elem_type == self.elem_type)
 
     def is_hashable(self):
         return False

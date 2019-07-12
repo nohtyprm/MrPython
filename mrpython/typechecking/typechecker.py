@@ -16,12 +16,15 @@ if __name__ == "__main__":
     from type_parser import (type_expression_parser, function_type_parser, var_type_parser, type_def_parser)
 
     from translate import tr
+    from side_effects_utils import *
 else:
     from .prog_ast import *
     from .type_ast import *
     from .type_parser import (type_expression_parser, function_type_parser, var_type_parser, type_def_parser)
 
     from .translate import tr
+
+    from .side_effects_utils import *
 
 class TypeError:
     def is_fatal(self):
@@ -46,6 +49,12 @@ class TypingContext:
         self.call_type_env = [] # stack of type environments when calling generic functions
         self.local_env = {}  # will have global variables
 
+        self.in_call = False
+        self.protected = set()
+        self.aliasing = {}
+        self.var_def = {}
+
+
     def add_type_error(self, error):
         self.type_errors.append(error)
         if error.is_fatal():
@@ -63,6 +72,8 @@ class TypingContext:
         self.param_env = {}
         for (param, param_type) in zip(parameters, param_types):
             self.param_env[param] = param_type
+            self.protected.add(param)
+            self.add_var_def(param)
 
     def register_return_type(self, return_type):
         self.return_type = return_type
@@ -113,13 +124,46 @@ class TypingContext:
         self.dead_variables = self.save_dead_variables
         self.save_dead_variables = None
 
+        self.in_call = False
+        self.protected = set()
+        self.aliasing = {}
+        self.var_def = {}
+
     def fetch_scope_mode(self):
         # TODO : complete with parent stack
         if not self.parent_stack:
             return 'function'
 
+
+    #links must be bidirectionnal...
+    def add_alias(self, var, aliased):
+        tmp = AliasRef(var, self.var_def[var])
+        self.aliasing[tmp] = self.aliasing[tmp] | aliased
+        for a in aliased:
+            self.aliasing[AliasRef(a.ref, self.var_def[a.ref])].add(AliasRef(var, self.var_def[var], a.index_out.copy(), a.index_in.copy()))
+
+    def print_alias(self):
+        res = ""
+        for (L, aliased) in self.aliasing.items():
+            res = res + str(L) + "->" + str(aliased)
+        print(res)
+
+    def get_alias(self, var_ref):
+        if var_ref in self.aliasing:
+            return self.aliasing.get(var_ref)
+        return set()
+        
+    def add_var_def(self, var_name):
+        if var_name in self.var_def:
+            self.var_def[var_name] += 1
+        else:
+            self.var_def.update({var_name : 0})
+        self.aliasing.update({AliasRef(var_name, self.var_def[var_name]) : set()})
+            
     def __repr__(self):
         return "<TypingContext[genv={}, errors={}]>".format(self.global_env, self.type_errors)
+
+TypingContext.get_all_alias = get_all_alias_ctx
 
 #############################################
 # Type checking                             #
@@ -453,7 +497,8 @@ def type_check_Assign(assign, ctx, global_scope = False):
         expr_type = assign.expr.type_infer(ctx)
         if expr_type is None:
             return False
-
+        
+        assign.side_effect(ctx)
         # nothing else to do for actual assignment
         return True
 
@@ -472,7 +517,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
 
     strict = False
     # treat the simpler "mono-var" case first
-    if assign.target.arity() == 1:
+    if assign.target.arity() == 1:    
         strict = True
         
     # here we have a destructured initialization, it is not necessary to declare variables
@@ -480,6 +525,8 @@ def type_check_Assign(assign, ctx, global_scope = False):
     if not linearize_tuple_type(assign.target, expr_type, declared_types, ctx, assign.target, strict):
         return False
 
+    assign.side_effect(ctx)
+    
     return True
 
 Assign.type_check = type_check_Assign
@@ -542,11 +589,14 @@ def type_check_For(for_node, ctx):
             ctx.pop_parent()
             return False
             
+        for_node.side_effect(ctx)
+        # and now type check the body in the constructed local env
+
         for instr in for_node.body:
             if not instr.type_check(ctx):
                 ctx.pop_parent()
                 return False
-
+            
         ctx.pop_parent()
         return True
     
@@ -837,22 +887,16 @@ def type_infer_EAdd(expr, ctx):
                                                    tr("Expecting a list")))
             return None
 
-        if left_type.elem_type != right_type.elem_type:
+
+        if left_type.elem_type is not None and right_type.elem_type is not None and left_type.elem_type != right_type.elem_type:
             ctx.add_type_error(TypeComparisonError(ctx.function_def, left_type.elem_type, expr.right, right_type.elem_type,
                                                    tr("Expecting a list with elements of type: {}").format(left_type.elem_type)))
             return None
-        
-        return left_type
 
-        # if left_type.elem_type is not None and right_type.elem_type is not None and left_type.elem_type != right_type.elem_type:
-        #     ctx.add_type_error(TypeComparisonError(ctx.function_def, left_type.elem_type, expr.right, right_type.elem_type,
-        #                                            tr("Expecting a list with elements of type: {}").format(left_type.elem_type)))
-        #     return None
-
-        # if left_type.elem_type is None and right_type.elem_type is not None:
-        #     return right_type
-        # else:
-        #     return left_type
+        if left_type.elem_type is None and right_type.elem_type is not None:
+            return right_type
+        else:
+            return left_type
 
     else:
         ctx.add_type_error(TypeComparisonError(ctx.function_def, ListType(), expr.left, left_type,
@@ -1231,6 +1275,10 @@ def type_infer_ECall(call, ctx):
         elif isinstance(unhashable, DictType):
             ctx.add_type_error(UnhashableKeyError(call, call, unhashable.key_type))
             return None
+
+    (has_side_effect, protected_var) = call.side_effect(ctx)
+    if has_side_effect:
+        ctx.add_type_error(SideEffectWarning(ctx.function_def,call,call.fun_name, call.receiver, protected_var))
 
     return nret_type
         
@@ -2920,6 +2968,24 @@ class ContainerAssignEmptyError(TypeError):
         report.add_convention_error('error', tr("Bad assignment"), self.cassign.container_expr.ast.lineno, self.cassign.container_expr.ast.col_offset
                                     , tr("Assignment in an empty dictionary"))
 
+
+class SideEffectWarning(TypeError):
+    def __init__(self, in_function, expr, fun_name, receiver, protected_var):
+        self.in_function = in_function
+        self.receiver = receiver
+        self.fun_name = fun_name
+        self.expr = expr
+        self.protected_var = protected_var
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "SideEffectWarning[{}]@{}:{}".format(self.fun_name, self.expr.ast.lineno, self.expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Call to '{}' may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
+                                    , tr("There is a risk of side effect as on the following parameter(s) {}").format(self.protected_var))
         
 if __name__ == '__main__':
 
