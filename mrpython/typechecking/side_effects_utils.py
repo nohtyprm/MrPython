@@ -172,6 +172,13 @@ def alias_Slicing(slc, ctx):
 
 Slicing.alias = alias_Slicing
 
+## python <= 3.4  fix
+def copy_deque(deq):
+    ndeque = deque()
+    for e in deq:
+        ndeque.append(e)
+    return ndeque
+
 def side_effect_ECall(call, ctx):
     is_side_effect = False
     protected_var = set()
@@ -200,7 +207,7 @@ def side_effect_ECall(call, ctx):
                     #to ensure all aliasing links are in form LL->[.]P rather than LL[.]->P
                     alias_index_in =  alias_rec.index_in + alias_arg.index_out
                     alias_index_in.appendleft(".")
-                    tmp.add(AliasRef(alias_arg.ref, ctx.var_def[alias_arg.ref], alias_arg.index_in.copy(), alias_index_in))
+                    tmp.add(AliasRef(alias_arg.ref, ctx.var_def[alias_arg.ref], copy_deque(alias_arg.index_in), alias_index_in))
                     
                 ctx.add_alias(alias_rec.ref, tmp)
 
@@ -229,7 +236,7 @@ def linearize(ctx, lhs_expr, aliases):
         for i in range(len(lhs_expr.elements)):
             alias_elem = set()
             for a in aliases:
-                tmp = AliasRef(a.ref, ctx.var_def[a.ref], a.index_in.copy(), a.index_out.copy())
+                tmp = AliasRef(a.ref, ctx.var_def[a.ref], copy_deque(a.index_in), copy_deque(a.index_out))
                 tmp.access(str(i))
                 alias_elem.add(tmp)
             linearize(ctx, lhs_expr.elements[i], alias_elem)
