@@ -140,7 +140,7 @@ class TypingContext:
         tmp = AliasRef(var, self.var_def[var])
         self.aliasing[tmp] = self.aliasing[tmp] | aliased
         for a in aliased:
-            self.aliasing[AliasRef(a.ref, self.var_def[a.ref])].add(AliasRef(var, self.var_def[var], a.index_out.copy(), a.index_in.copy()))
+            self.aliasing[AliasRef(a.ref, self.var_def[a.ref])].add(AliasRef(var, self.var_def[var], copy_deque(a.index_out), copy_deque(a.index_in)))
 
     def print_alias(self):
         res = ""
