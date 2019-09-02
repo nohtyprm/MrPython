@@ -93,7 +93,7 @@ def get_all_alias_ctx(ctx, var):
             if alias.ref not in marked:
                 marked.add(alias.ref)
                 for a in ctx.get_alias(AliasRef(alias.ref, ctx.var_def[alias.ref])):
-                    a = AliasRef(a.ref, ctx.var_def[a.ref], a.index_in + alias.index_in, alias.index_out + a.index_out)
+                    a = AliasRef(a.ref, ctx.var_def[a.ref], concat_deque(a.index_in, alias.index_in), concat_deque(alias.index_out, a.index_out))
                     if not (a in res):
                         to_add_next.add(a)
         to_add = to_add_next
@@ -137,7 +137,7 @@ def alias_ETuple(tpl, ctx):
         for a in elt.alias(ctx):
             a.unaccess(str(i))
             res.add(a)
-        i = i +1
+        i = i + 1
     return res
 
 ETuple.alias = alias_ETuple
