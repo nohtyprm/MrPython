@@ -172,12 +172,22 @@ def alias_Slicing(slc, ctx):
 
 Slicing.alias = alias_Slicing
 
-## python <= 3.4  fix
+#########################
+## python <= 3.4  fixes
 def copy_deque(deq):
     ndeque = deque()
     for e in deq:
         ndeque.append(e)
     return ndeque
+
+
+def concat_deque(deq1, deq2):
+    ndeque = copy_deque(deq1)
+    for e in deq2:
+        ndeque.append(e)
+    return ndeque
+    
+#########################
 
 def side_effect_ECall(call, ctx):
     is_side_effect = False
@@ -205,7 +215,7 @@ def side_effect_ECall(call, ctx):
             if not alias_rec.index_out:
                 for alias_arg in aliases_arg:
                     #to ensure all aliasing links are in form LL->[.]P rather than LL[.]->P
-                    alias_index_in =  alias_rec.index_in + alias_arg.index_out
+                    alias_index_in =  concat_deque(alias_rec.index_in, alias_arg.index_out)
                     alias_index_in.appendleft(".")
                     tmp.add(AliasRef(alias_arg.ref, ctx.var_def[alias_arg.ref], copy_deque(alias_arg.index_in), alias_index_in))
                     
