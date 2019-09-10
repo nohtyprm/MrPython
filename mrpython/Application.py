@@ -218,6 +218,7 @@ class Application:
         if self.editor_list.get_size() == 0:
             self.main_view.console.no_file_to_run_message()
             return
+        
         reply = self.editor_list.get_current_editor().maybesave_run()
         if (reply != "cancel"):
             file_name = self.editor_list.get_current_editor().long_title()

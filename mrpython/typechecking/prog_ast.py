@@ -66,8 +66,8 @@ class Program:
     def build_from_ast(self, modast, filename=None, source=None):
         if filename:
             self.filename = filename
-        if source:
-            self.source = source
+
+        self.source = source
 
         if not isinstance(modast, ast.Module):
             raise ValueError("Cannot build program from AST: not a module (please report)")

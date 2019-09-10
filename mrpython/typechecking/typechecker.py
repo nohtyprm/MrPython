@@ -2846,6 +2846,8 @@ class ERangeArgumentError(TypeError):
 
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()
+    if source is None:
+        source = ""
     prog.build_from_ast(ast, filename, source)
     ctx = prog.type_check()
     return ctx

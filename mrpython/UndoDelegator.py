@@ -50,7 +50,7 @@ class UndoDelegator(Delegator):
         self.pointer = 0
         self.undolist = []
         self.undoblock = 0  # or a CommandSequence instance
-        self.set_saved(1)
+        self.set_saved(0) # Fix: not saved at first
 
     def set_saved(self, flag):
         if flag:
