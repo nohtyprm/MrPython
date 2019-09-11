@@ -48,6 +48,9 @@ TRANSLATOR_DICT = {
     , "Bad index" : { 'fr' : "Erreur d'index"}
     , "Sequence index must be an integer" : { 'fr' : "L'index de sequence doit être un entier"}
     , "Heterogeneous elements (Python101 restriction)" : { 'fr' : "Eléments hétérogènes (restriction Python 101)"}
+    , "Bad slicing" : { 'fr' : "Erreur de découpage"}
+    , "One can only slice a sequence (str, list), not a '{}'" : { 'fr' : "Le découpage n'est possible que sur les séquences (str, list) et non pour le type : {}" }
+
     , "All elements of must be of the same type '{}' but this element has incompatible type: {}" : { 'fr' : "Tous les élements doivent être du même type '{}' mais cet élément est d'un type incompatible: {}" }
     , "Unused variable name '{}' in declaration" : { 'fr' : "La variable '{}' déclarée n'est pas utilisée" }
     , "Tuple destruct error" : { 'fr' : "Erreur de destructuration de n'uplet" }

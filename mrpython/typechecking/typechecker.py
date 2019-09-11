@@ -2700,6 +2700,21 @@ class IndexingDictKeyTypeError(TypeError):
                                     , tr("Dictionnary key must be of type: {}").format(self.dict_key_type))
 
 
+class SlicingError(TypeError):
+    def __init__(self, slicing, subject_type):
+        self.slicing = slicing
+        self.subject_type = subject_type
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "SlicingError[{}]@{}:{}".format(self.subject_type, self.slicing.ast.lineno, self.slicing.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad slicing"), self.slicing.ast.lineno, self.slicing.ast.col_offset
+                                    , tr("One can only slice a sequence (str, list), not a '{}'").format(self.subject_type))
+        
 class MembershipTypeError(TypeError):
     def __init__(self, container_expr, container_type):
         self.container_expr = container_expr
