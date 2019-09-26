@@ -75,6 +75,8 @@ TRANSLATOR_DICT = {
     , "This assignment to variable '{}' is forbidden in Python101." : { 'fr' : "Cette affectation de la variable '{}' n'est pas permise en Python101 (uniquement disponible en mode expert)." }
     , "Expecting type '{}' but found '{}': there is a risk of imprecision (but it's maybe not a bug)" : { 'fr' : "J'attends le type '{}' mais j'ai trouvé '{}': il y a un risque d'imprécision (mais ce n'est peut-être pas une erreur)" }
     , "Imprecise typing" : { 'fr' : "Typage imprécis" }
+    , "Expression in instruction position" : { 'fr' : "Expression en position instruction" }
+    , "The value calculated of type `{}` is lost" : { 'fr' : "La valeur calcluée de type `{}` est perdue" }
     , "Forbidden use of parameter '{}' in assignment" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé dans une affectation (ou initialisation)" }
     , "Forbidden use of parameter '{}' in with construct" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé comme variable de la construction with" }
     , "the arguments of `range` are incorrect." : { 'fr' : 'les arguments de `range` sont incorrects.'  }

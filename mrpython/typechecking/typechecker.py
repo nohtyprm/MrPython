@@ -718,7 +718,7 @@ def type_check_ECall(enode, ctx):
     elif isinstance(call_type, NoneTypeType):
         return True
     else: # the return type is not None: it's a warning
-        ctx.add_type_error(CallNotNoneError(enode, call_type))
+        ctx.add_type_error(CallNotNoneWarning(enode, call_type))
         return True
 
 ECall.type_check = type_check_ECall
@@ -728,7 +728,7 @@ def type_check_ERange(erange, ctx):
     if erange_type is None:
         return False
     # the return type is not None: it's a warning
-    ctx.add_type_error(CallNotNoneError(erange, erange_type))
+    ctx.add_type_error(CallNotNoneWarning(erange, erange_type))
     return True
 
 ERange.type_check = type_check_ERange
@@ -3004,6 +3004,21 @@ class SideEffectWarning(TypeError):
         report.add_convention_error('warning', tr("Call to '{}' may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
                                     , tr("There is a risk of side effect as on the following parameter(s) {}").format(self.protected_var))
         
+class CallNotNoneWarning(TypeError):
+    def __init__(self, expr, call_type):
+        self.expr = expr
+        self.call_type = call_type
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "CallNotNoneWarning@{}:{}".format(self.expr.ast.lineno, self.expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Expression in instruction position"), self.expr.ast.lineno, self.expr.ast.col_offset
+                                    , tr("The value calculated of type `{}` is lost").format(self.call_type))
+
 if __name__ == '__main__':
 
     ctx = typecheck_from_file("../../test/progs/01_aire_KO_14.py")
