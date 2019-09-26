@@ -1,4 +1,4 @@
 #!/bin/bash
 
-python3 ./mrpython/Application.py $*
+python3 "$( cd "$(dirname "$0")" ; pwd -P )"/mrpython/Application.py $*
 
