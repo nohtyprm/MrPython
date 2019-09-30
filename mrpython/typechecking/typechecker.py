@@ -1317,6 +1317,7 @@ def type_infer_ECompare(ecomp, ctx):
 ECompare.type_infer = type_infer_ECompare
 
 def type_check_Condition(cond, ctx, compare):
+    #import pdb ; pdb.set_trace()
     
     if isinstance(cond, (CEq, CNotEq, CLt, CLtE, CGt, CGtE)):
         left_right_ok = False
@@ -1337,11 +1338,17 @@ def type_check_Condition(cond, ctx, compare):
 
         if left_right_ok:
             return True
-        elif ((type_expect(ctx, cond.left, right_type, raise_error=False) is None)
-              #and (type_expect(ctx, cond.right, left_type, raise_error=False) is None)
-        ):
-            ctx.add_type_error(CompareConditionError(compare, cond, left_type, right_type))
-            return False
+        else:
+
+            if ((type_expect(ctx, cond.left, right_type, raise_error=False) is None)
+                #or (type_expect(ctx, cond.right, left_type, raise_error=False) is None)
+            ):
+                ctx.add_type_error(CompareConditionError(compare, cond, left_type, right_type))
+                return False
+            else:
+                # a warning for type mismatch issues
+                ctx.add_type_error(CompareConditionWarning(compare, cond, left_type, right_type))
+
 
         return True
         
@@ -2555,6 +2562,23 @@ class CompareConditionError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Comparison error"), self.compare.ast.lineno, self.compare.ast.col_offset
                                     , tr("The two operands of the comparision should have the same type: '{}' vs. '{}'").format(self.left_type, self.right_type))
+
+class CompareConditionWarning(TypeError):
+    def __init__(self, compare, cond, left_type, right_type):
+        self.compare = compare
+        self.cond = cond
+        self.left_type = left_type
+        self.right_type = right_type
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "CompareConditionWarning[{}/{}]@{}:{}".format(self.left_type, self.right_type, self.compare.ast.lineno, self.compare.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Comparison issue"), self.compare.ast.lineno, self.compare.ast.col_offset
+                                    , tr("The two operands of the comparison are only \"weakly\" compatibles: '{}' vs. '{}'").format(self.left_type, self.right_type))
 
 class DeadVariableUseError(TypeError):
     def __init__(self, var_name, node):
