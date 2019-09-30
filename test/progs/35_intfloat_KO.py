@@ -1,3 +1,3 @@
-##!FAIL: CompareConditionWarning[int/float]@3:7
+##!FAIL: CompareConditionWarning[float/int]@3:7
 
-assert 5 // 5 == 1.0
+assert 1.0 == 5 // 5
