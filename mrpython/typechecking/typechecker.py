@@ -2092,7 +2092,19 @@ MATH_IMPORTS = {
     'math.sqrt' : function_type_parser("Number -> float").content
     , 'math.floor' : function_type_parser("Number -> int").content
     , 'math.ceil' : function_type_parser("Number -> int").content
-}
+    , 'math.sin' : function_type_parser("Number -> float").content
+    , 'math.cos' : function_type_parser("Number -> float").content
+    , 'math.tan' : function_type_parser("Number -> float").content
+    , 'math.cosh' : function_type_parser("Number -> float").content
+    , 'math.sinh' : function_type_parser("Number -> float").content
+    , 'math.tanh' : function_type_parser("Number -> float").content
+    , 'math.acos' : function_type_parser("Number -> float").content
+    , 'math.asin' : function_type_parser("Number -> float").content
+    , 'math.atan' : function_type_parser("Number -> float").content
+    , 'math.acosh' : function_type_parser("Number -> float").content
+    , 'math.asinh' : function_type_parser("Number -> float").content
+    , 'math.atanh' : function_type_parser("Number -> float").content}
+
 
 RANDOM_IMPORTS = {
     'random.random' : function_type_parser("-> float").content
