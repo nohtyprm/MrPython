@@ -1321,7 +1321,6 @@ def type_check_Condition(cond, ctx, compare):
     
     if isinstance(cond, (CEq, CNotEq, CLt, CLtE, CGt, CGtE)):
         left_right_ok = False
-        right_left_ok = False
 
         left_type = cond.left.type_infer(ctx)
 
@@ -1338,22 +1337,14 @@ def type_check_Condition(cond, ctx, compare):
         if right_type is None:
             return False
 
-        if type_expect(ctx, cond.left, right_type, raise_error=False) is not None:
-            right_left_ok = True
-
-        if left_right_ok and right_left_ok:
+        if left_right_ok:
             return True
-        else:
-
-            if ((type_expect(ctx, cond.left, right_type, raise_error=False) is None)
-                and (type_expect(ctx, cond.right, left_type, raise_error=False) is None)
-            ):
-                ctx.add_type_error(CompareConditionError(compare, cond, left_type, right_type))
-                return False
-            else:
-                # a warning for type mismatch issues
-                ctx.add_type_error(CompareConditionWarning(compare, cond, left_type, right_type))
-
+        elif ((type_expect(ctx, cond.left, right_type, raise_error=False) is None)
+              #and (type_expect(ctx, cond.right, left_type, raise_error=False) is None)
+        ):
+            ctx.add_type_error(CompareConditionError(compare, cond, left_type, right_type))
+            return False
+        
 
         return True
         
