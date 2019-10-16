@@ -11,6 +11,12 @@ def aire_triangle(a,b,c):
     # p : float
     p = (a + b + c) / 2
 
+    # j : Number
+    j = 4.2
+
+    # i : int
+    i = j + 3
+
     return math.sqrt(p * (p - a) * (p - b) * (p - c))
 
 # Jeu de tests (Etape 3)

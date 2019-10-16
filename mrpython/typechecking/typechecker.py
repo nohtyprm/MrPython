@@ -1303,7 +1303,7 @@ def type_infer_ERange(erange, ctx):
         if type_expect(ctx, erange.step, IntType()) is None:
             return None
 
-    return IterableType(IntType())
+    return SequenceType(IntType())
 
 ERange.type_infer = type_infer_ERange
 

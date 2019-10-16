@@ -49,7 +49,7 @@ class Parser:
 
     @property
     def token_type(self):
-        raise NotImplementedError("Abstract method")
+        raise NotImplementedError("Abstract method: {}".format(repr(self)))
 
     def parse(self, llparsing):
         if llparsing.debug_mode:

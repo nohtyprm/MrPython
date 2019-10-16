@@ -48,6 +48,7 @@ def type_tokenizer():
     tokenizer.add_rule(tokens.Literal('NoneType_type', 'NoneType'))
     tokenizer.add_rule(tokens.Literal('Image_type', 'Image'))
     tokenizer.add_rule(tokens.Literal('str_type', 'str'))
+    tokenizer.add_rule(tokens.Literal('range_type_type', 'range'))
     tokenizer.add_rule(tokens.Literal('file_type', 'FILE'))
 
     tokenizer.add_rule(tokens.Literal('Anything_type', 'Ω'))
@@ -158,6 +159,13 @@ def build_typeexpr_grammar(grammar=None):
         return result
     str_parser.xform_result = str_xform_result
     grammar.register('str_type', str_parser)
+
+    range_type_parser = parsers.Token('range_type_type')
+    def range_type_xform_result(result):
+        result.content = SequenceType(IntType(), annotation=result)
+        return result
+    range_type_parser.xform_result = range_type_xform_result
+    grammar.register('range_type_type', range_type_parser)
 
     NoneType_parser = parsers.Token('NoneType_type')
     def NoneType_xform_result(result):
@@ -301,6 +309,7 @@ def build_typeexpr_grammar(grammar=None):
                        .either(grammar.ref('bool_type')) \
                        .orelse(grammar.ref('int_type')) \
                        .orelse(grammar.ref('float_type')) \
+                       .orelse(grammar.ref('range_type_type')) \
                        .orelse(grammar.ref('Number_type')) \
                        .orelse(grammar.ref('Image_type')) \
                        .orelse(grammar.ref('str_type')) \
@@ -519,6 +528,9 @@ if __name__ == "__main__":
     result5 = type_parser.parse_typeexpr_from_string("str")
     print(repr(result5.content))
 
+    result5bis = type_parser.parse_typeexpr_from_string("range")
+    print(repr(result5bis.content))
+
     result6 = type_parser.parse_typeexpr_from_string("NoneType")
     print(repr(result6.content))
 
@@ -542,6 +554,7 @@ if __name__ == "__main__":
     print(repr(fresult1.content))
 
     fresult2 = type_parser.parse_functype_from_string("Number**3 -> Number")
+    print(repr(fresult2.content))
 
     
 
