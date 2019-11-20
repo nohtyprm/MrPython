@@ -689,7 +689,7 @@ class Slicing(Expr):
             self.upper = parse_expression(node.slice.upper)
         self.step = None
         if node.slice.step is not None:
-            self.step = parse_expression(node.slice.upper)
+            self.step = parse_expression(node.slice.step)
 
 def parse_subscript(node):
     if isinstance(node.slice, ast.Index):
@@ -811,7 +811,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         filename = sys.argv[1]
     else:
-        filename = "../../examples/aire.py"
+        filename = "../../examples/revstr.py"
         
     prog1.build_from_file(filename)
     print(astpp.dump(prog1.ast))

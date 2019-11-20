@@ -3053,5 +3053,5 @@ class CallNotNoneWarning(TypeError):
 
 if __name__ == '__main__':
 
-    ctx = typecheck_from_file("../../test/progs/01_aire_KO_14.py")
+    ctx = typecheck_from_file("../../examples/revstr.py")
     print(repr(ctx))
