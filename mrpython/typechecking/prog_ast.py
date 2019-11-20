@@ -364,16 +364,16 @@ def parse_constant(node):
 # XXX: this is a hack for Python>=3.8 because
 # they removed the type information in the constant parsing... 
 def parse_constant_expr(node):
-    if isinstance(node.value, (int, float, complex)):
-        return ENum(node, setval=node.value)
-    elif isinstance(node.value, str):
-        return EStr(node, setval=node.value)
-    elif node.value is True:
+    if node.value is True:
         return ETrue(node)
     elif node.value is False:
         return EFalse(node)
     elif node.value is None:
         return ENone(node)
+    elif isinstance(node.value, (int, float, complex)):
+        return ENum(node, setval=node.value)
+    elif isinstance(node.value, str):
+        return EStr(node, setval=node.value)
 
     raise ValueError("Constant not supported: {} (please report)".format(node.value))
 
