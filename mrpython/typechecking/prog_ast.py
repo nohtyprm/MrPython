@@ -326,7 +326,11 @@ class Expr:
 class ENum(Expr):
     def __init__(self, node):
         self.ast = node
-        self.value = node.n
+        # special Python >= 3.8
+        if node.__class__.__name__ == "Constant":
+            self.value = node.value
+        else: # class name = Num  (python <= 3.7)
+            self.value = node.n
 
 class EStr(Expr):
     def __init__(self, node):
@@ -758,6 +762,7 @@ class EDictComp(Expr):
 
             
 EXPRESSION_CLASSES = { "Num" : ENum
+                       , "Constant" : ENum
                        , "Str" : EStr
                        , "NameConstant"  : parse_constant
                        , "Name" : EVar
