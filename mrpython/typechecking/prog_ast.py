@@ -324,18 +324,20 @@ class Expr:
     pass
     
 class ENum(Expr):
-    def __init__(self, node):
+    def __init__(self, node, setval=None):
         self.ast = node
-        # special Python >= 3.8
-        if node.__class__.__name__ == "Constant":
-            self.value = node.value
-        else: # class name = Num  (python <= 3.7)
+        if setval is not None:
+            self.value = setval
+        else:
             self.value = node.n
 
 class EStr(Expr):
-    def __init__(self, node):
+    def __init__(self, node, setval=None):
         self.ast = node
-        self.value = node.s
+        if setval is not None:
+            self.value = setval
+        else:
+            self.value = node.s
 
 class ETrue(Expr):
     def __init__(self, node):
@@ -351,6 +353,22 @@ class ENone(Expr):
 
 def parse_constant(node):
     if node.value is True:
+        return ETrue(node)
+    elif node.value is False:
+        return EFalse(node)
+    elif node.value is None:
+        return ENone(node)
+
+    raise ValueError("Constant not supported: {} (please report)".format(node.value))
+
+# XXX: this is a hack for Python>=3.8 because
+# they removed the type information in the constant parsing... 
+def parse_constant_expr(node):
+    if isinstance(node.value, (int, float, complex)):
+        return ENum(node, setval=node.value)
+    elif isinstance(node.value, str):
+        return EStr(node, setval=node.value)
+    elif node.value is True:
         return ETrue(node)
     elif node.value is False:
         return EFalse(node)
@@ -762,7 +780,7 @@ class EDictComp(Expr):
 
             
 EXPRESSION_CLASSES = { "Num" : ENum
-                       , "Constant" : ENum
+                       , "Constant" : parse_constant_expr
                        , "Str" : EStr
                        , "NameConstant"  : parse_constant
                        , "Name" : EVar
