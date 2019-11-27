@@ -363,6 +363,11 @@ variable name and T its type, or (None, msg, err_cat) with an informational mess
     
     if (not decl_line) or decl_line[0] != '#':
         return (None, tr("Missing variable declaration"), 'header-char')
+
+    # HACK: avoid parsing type aliases as variable declarations
+    type_alias, _ = type_def_parser(decl_line)
+    if type_alias is not None:
+        return (None, tr("Not a variable type declaration : it is a type alias."), 'noerror')
     
     decl_line = decl_line[1:].strip()
     var_name, decl_line = parse_var_name(decl_line)
@@ -420,11 +425,10 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
                 declared_types[var_name] = udecl_type
         lineno -= 1
         var_name, decl_type, err_cat = parse_declaration_type(ctx, lineno)
-        if var_name is None and err_cat not in {'header-char', 'colon'} and strict:
+        if var_name is None and err_cat not in {'header-char', 'colon', 'noerror'} and strict:
             ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, err_cat, lineno, tr(decl_type)))
             return None
         
-
 
     if strict and req_vars: # need all declarations in strict mode
         ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'unknown-vars', assign_target.ast.lineno, tr("Variable(s) not declared: {}").format(", ".join((v for v in req_vars)))))
@@ -1317,7 +1321,6 @@ def type_infer_ECompare(ecomp, ctx):
 ECompare.type_infer = type_infer_ECompare
 
 def type_check_Condition(cond, ctx, compare):
-    #import pdb ; pdb.set_trace()
     
     if isinstance(cond, (CEq, CNotEq, CLt, CLtE, CGt, CGtE)):
         left_right_ok = False

@@ -432,7 +432,6 @@ def build_functype_grammar(grammar):
                       .element(grammar.ref('range_type'))
 
     def functype_parser_xform_result(result):
-        #import pdb ; pdb.set_trace()
         param_types = []
         params_content = result.content[0]
         if params_content.content:

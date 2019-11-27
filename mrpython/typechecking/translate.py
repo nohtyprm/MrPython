@@ -121,6 +121,7 @@ TRANSLATOR_DICT = {
     , "Call to '{}' may cause side effect" : {'fr' : "L'appel à la méthode '{}' risque d'avoir un effet de bord incontrôlé"}
     , "There is a risk of side effect as on the following parameter(s) {}" : {'fr' : "Il est possible qu'il y ait un effet de bord sur le(s) paramètre(s) suivant(s): {}"}
     , "Variable '{}' was declared multiple times" : { 'fr' : "La variable '{}' a été déclarée plusieurs fois"}
+    , "Not a variable type declaration : it is a type alias." : { 'fr' : "ce n'est pas une déclaration de variable mais une déclaration d'alias de type."}
 }
 
 def tr(msg):
