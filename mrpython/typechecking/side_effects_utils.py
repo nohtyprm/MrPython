@@ -36,10 +36,8 @@ class AliasRef:
             self.index_out = deque()
 
     def access(self, c):
-        if self.index_out:
+        if self.index_out and self.index_out[0] == c:
             p = self.index_out.popleft()
-            if c != p:
-                raise NotImplementedError("error in side-effect-checking, please report")
         else:
             self.index_in.append(c)
 
