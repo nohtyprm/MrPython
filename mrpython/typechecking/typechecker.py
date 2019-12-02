@@ -3021,6 +3021,21 @@ class ContainerAssignEmptyError(TypeError):
                                     , tr("Assignment in an empty dictionary"))
 
 
+class EmptyTupleError(TypeError):
+    def __init__(self, etup):
+        self.etup = etup
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "EmptyTupleError@{}:{}".format(self.etup.ast.lineno, self.etup.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Empty tuple"), self.etup.ast.lineno, self.etup.ast.col_offset
+                                    , tr("Python 101 does not allow empty tuples, only in expert mode"))
+
+
 class SideEffectWarning(TypeError):
     def __init__(self, in_function, expr, fun_name, receiver, protected_var):
         self.in_function = in_function
