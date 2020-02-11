@@ -81,6 +81,8 @@ def test_prog(prog_filename):
 
 
 def percent(value, maxi):
+    if maxi == 0:
+        return 0
     return int(100.0*value/maxi)
 
 if __name__ == "__main__":
