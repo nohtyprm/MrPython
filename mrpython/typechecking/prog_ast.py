@@ -129,6 +129,7 @@ class FunctionDef:
             signature += self.ast.args.args[len(self.ast.args.args) - 1].annotation.id
         if self.ast.returns != None: #verif que c'est nul avant
             signature += " -> " + self.ast.returns.id
+            
         print(self.ast.name + " : " + signature)
 
         first_instr = self.ast.body[0]
@@ -136,9 +137,13 @@ class FunctionDef:
         if isinstance(first_instr, ast.Expr) and isinstance(first_instr.value, ast.Str):
             self.docstring = first_instr.value.s
             next_instr_index = 1
-            #print(self.docstring)
+            print(">>> "+self.docstring)
         else:
             self.python101ready = False
+
+
+
+
 
         if signature != "":
             self.docstring = signature

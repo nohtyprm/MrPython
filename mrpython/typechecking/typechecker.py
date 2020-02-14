@@ -246,7 +246,21 @@ def type_check_Program(prog):
     for (fun_name, fun_def) in prog.functions.items():
         #print("function: "+ fun_name)
         #print(fun_def.docstring)
+
+
+        
+        # if fun_def.ast.returns == None:
         signature = function_type_parser(fun_def.docstring)
+        # else:
+        #     signature = ""
+        #     for i in range(len(fun_def.ast.args.args) - 1):
+        #         if fun_def.ast.args.args[i].annotation != None:
+        #             signature += fun_def.ast.args.args[i].annotation.id + " * ";
+        #     if fun_def.ast.args.args[len(fun_def.ast.args.args) - 1].annotation != None:
+        #         signature += fun_def.ast.args.args[len(fun_def.ast.args.args) - 1].annotation.id
+        #     signature += " -> " + fun_def.ast.returns.id
+
+
         #print(repr(signature))
         if signature.iserror:
             ctx.add_type_error(SignatureParseError(fun_name, fun_def, signature))
