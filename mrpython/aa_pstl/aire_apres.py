@@ -10,7 +10,6 @@ def aire_triangle(a : float,b : float,c : float) -> float:
 
     # Demi-périmètre
     p : float = (a + b + c) / 2
-    #p = (a + b + c) / 2
 
     return math.sqrt(p * (p - a) * (p - b) * (p - c))
 

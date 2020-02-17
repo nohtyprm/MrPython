@@ -248,7 +248,7 @@ def type_check_Program(prog):
         #print(fun_def.docstring)
 
 
-        
+
         # if fun_def.ast.returns == None:
         signature = function_type_parser(fun_def.docstring)
         # else:
@@ -534,7 +534,15 @@ def type_check_Assign(assign, ctx, global_scope = False):
     if isinstance(assign, ast.AnnAssign):
         declared_types = dict()
         declared_types[assign.target.id] = assign.annotation.id
-        #todo plusieurs variables en mm tps
+        ctx.local_env[assign.target.id] = (parse_declaration_type(assign.annotation.id), ctx.fetch_scope_mode());
+
+        """
+        l'exception "there is such variable of name" est levée -> levée depuis la classe "UnknownVariableError()" appelée
+        dans "type_infer_EVar(var, ctx)"
+        donc normalement on a géré le type déclaré mais pas le type inféré de l'expression
+        """
+
+
     else:
         declared_types = fetch_assign_declaration_types(ctx, assign.target, True if assign.target.arity() == 1 else False)
         if declared_types is None:
