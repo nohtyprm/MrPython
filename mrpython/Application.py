@@ -13,7 +13,9 @@ from translate import tr, set_translator_locale
 import multiprocessing as mp
 
 from RunReport import RunReport
-
+from tincan import (
+    TracingMrPython
+)
 class Application:
     """
     The main class of the application
@@ -52,12 +54,14 @@ class Application:
         self.icon_widget = self.main_view.icon_widget
         self.status_bar = self.main_view.status_bar
         self.console = self.main_view.console
-        self.change_mode()
+        self.change_mode(tracing=False)
         self.apply_bindings()
         self.root.protocol('WM_DELETE_WINDOW', self.close_all_event)
 
         self.running_interpreter_proxy = None
         self.running_interpreter_callback = None
+
+        self.tracing = TracingMrPython()
 
     def run(self):
         """ Run the application """
@@ -157,9 +161,10 @@ class Application:
         if filename:
             self.status_bar.update_save_label(filename)
             self.update_title()
+            self.tracing.send_statement("saved", "file")
 
 
-    def change_mode(self, event=None):
+    def change_mode(self, event=None, tracing = True):
         """ Swap the python mode : full python or student """
         if self.mode == "student":
             self.mode = "full"
@@ -168,11 +173,14 @@ class Application:
         self.icon_widget.switch_icon_mode(self.mode)
         self.console.change_mode(tr(self.mode))
         self.status_bar.change_mode(tr(self.mode))
+        if(tracing):
+            self.tracing.send_statement("switched", "mode")
 
     def new_file(self, event=None):
         """ Creates a new empty editor and put it into the pyEditorList """
         file_editor = PyEditorFrame(self.editor_list)
         self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
+        self.tracing.send_statement("created", "file")
 
     def open(self, event=None):
         """ Open a file in the text editor """
@@ -180,9 +188,10 @@ class Application:
         if (self.editor_list.focusOn(file_editor.long_title()) == False):
             if (file_editor.isOpen()):
                 self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
+                self.tracing.send_statement("opened", "file")
             #not clean, io should be handled here and should not require creation of PyEditor widget
             else:
-              file_editor.destroy()
+                file_editor.destroy()
 
     def close_all_event(self, event=None):
         """ Quit all the PyEditor : called when exiting application """
@@ -225,6 +234,7 @@ class Application:
             self.update_title()
             self.status_bar.update_save_label(file_name)
             self.console.run(file_name)
+            self.tracing.send_statement("executed", "program")
 
     def goto_position(self, lineno, col_offset):
         editor = self.editor_list.get_current_editor()
