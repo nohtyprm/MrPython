@@ -13,6 +13,7 @@ from tkinter.simpledialog import askstring
 from configHandler import MrPythonConf
 
 from codecs import BOM_UTF8
+from tincan import tracing_mrpython as tracing
 
 # Try setting the locale, so that we can find out
 # what encoding to use
@@ -296,6 +297,8 @@ class IOBinding:
             self.save(None)
             if not self.get_saved():
                 reply = "cancel"
+            else:
+                tracing.send_statement("saved", "file")
         elif confirm is None:
             reply = "cancel"
         else:
@@ -316,6 +319,8 @@ class IOBinding:
             self.save(None)
             if not self.get_saved():
                 reply = "cancel"
+            else:
+                tracing.send_statement("saved", "file")
         else:
             reply = "cancel"
         return reply
