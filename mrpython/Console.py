@@ -10,6 +10,8 @@ import version
 from translate import tr
 import io
 import rpc
+from tincan import tracing_mrpython as tracing
+
 
 class ConsoleHistory:
     def __init__(self, history_capacity=100):
@@ -416,6 +418,7 @@ class Console:
 
             self.app.icon_widget.disable_icon_running()
             self.app.running_interpreter_callback = None
+            tracing.send_statement_from_report(report)
                 
         # non-blocking call
         self.app.icon_widget.enable_icon_running()

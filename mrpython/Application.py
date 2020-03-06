@@ -59,7 +59,7 @@ class Application:
         self.running_interpreter_proxy = None
         self.running_interpreter_callback = None
 
-        tracing.send_statement("opened","application")
+        tracing.send_statement("opened", "application")
 
     def run(self):
         """ Run the application """
@@ -203,7 +203,7 @@ class Application:
             if self.running_interpreter_proxy and self.running_interpreter_proxy.process.is_alive():                
                 self.running_interpreter_proxy.process.terminate()
                 self.running_interpreter_proxy.process.join()
-            tracing.send_statement("closed","application")
+            tracing.send_statement("closed", "application")
             sys.exit(0)
 
 
@@ -232,8 +232,8 @@ class Application:
             file_name = self.editor_list.get_current_editor().long_title()
             self.update_title()
             self.status_bar.update_save_label(file_name)
+            tracing.send_statement("started", "execution")
             self.console.run(file_name)
-            tracing.send_statement("executed", "program")
 
     def goto_position(self, lineno, col_offset):
         editor = self.editor_list.get_current_editor()
