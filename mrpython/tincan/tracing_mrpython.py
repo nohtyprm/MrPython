@@ -1,3 +1,4 @@
+import threading
 from tincan import (
     RemoteLRS,
     Statement,
@@ -11,7 +12,6 @@ from tincan import (
     StateDocument,
     lrs_properties,
 )
-
 
 lrs = RemoteLRS(
     version=lrs_properties.version,
@@ -88,35 +88,39 @@ activities = {
             name=LanguageMap({'en-US': 'a warning error'}))),
     }
 
+
 def send_statement(verb, activity):
     """Send a statement with the verb and activity keys"""
-    if verb not in verbs:
-        print("Tracing: Missing key {}".format(verb))
-        return
-    if activity not in activities:
-        print("Tracing: Missing key {}".format(activity))
-        return
-    print("Tracing: Creating and Sending statement, {} {}".format(verb,activity))
-    verb = verbs[verb]
-    object = activities[activity]
-    # print("constructing the Statement...")
-    statement = Statement(
-        actor=actor,
-        verb=verb,
-        object=object
-    )
+    def thread_function(verb, activity):
+        if verb not in verbs:
+            print("Tracing: Missing key {}".format(verb))
+            return
+        if activity not in activities:
+            print("Tracing: Missing key {}".format(activity))
+            return
+        print("Tracing: Creating and Sending statement, {} {}".format(verb,activity))
+        verb = verbs[verb]
+        object = activities[activity]
+        # print("constructing the Statement...")
+        statement = Statement(
+            actor=actor,
+            verb=verb,
+            object=object
+        )
 
-    # print("saving the Statement...")
-    '''
-    response = lrs.save_statement(statement)
-    if not response:
-        print("Tracing: statement failed to save")
-    if response.success:
-        print("Tracing: Statement request has been sent properly to the LRS, Statement ID is {}".format(response.data))
-    else:
-        print("Tracing: Statement request could not been sent to the LRS: {}".format(response.data))
-    '''
+        # print("saving the Statement...")
+        '''
+        response = lrs.save_statement(statement)
+        if not response:
+            print("Tracing: statement failed to save")
+        if response.success:
+            print("Tracing: Statement request has been sent properly to the LRS, Statement ID is {}".format(response.data))
+        else:
+            print("Tracing: Statement request could not been sent to the LRS: {}".format(response.data))
+        '''
 
+    x = threading.Thread(target=thread_function, args=(verb, activity))
+    x.start()
 
 def send_statement_from_report(report):
     """Create and send a statement of the execution of the students program"""
