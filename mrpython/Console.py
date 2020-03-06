@@ -315,6 +315,7 @@ class Console:
         expr = self.input_console.get()
         if not expr:
             return
+        tracing.send_statement("started", "interpreter")
         local_interpreter = False
         if self.interpreter is None:
             self.interpreter = InterpreterProxy(self.app.root, self.app.mode, "<<console>>")
@@ -344,6 +345,7 @@ class Console:
 
             self.app.icon_widget.disable_icon_running()
             self.app.running_interpreter_callback = None
+            tracing.send_statement_from_report(report, "eval")
 
         # non-blocking call
         self.app.icon_widget.enable_icon_running()
@@ -379,6 +381,7 @@ class Console:
         """ Run the program in the current editor : execute, print results """
         # Reset the output first
         self.reset_output()
+        tracing.send_statement("started", "execution")
         # A new PyInterpreter is created each time code is run
         # It is then kept for other actions, like evaluation
         if self.interpreter is not None:
@@ -418,7 +421,7 @@ class Console:
 
             self.app.icon_widget.disable_icon_running()
             self.app.running_interpreter_callback = None
-            tracing.send_statement_from_report(report)
+            tracing.send_statement_from_report(report, "exec")
                 
         # non-blocking call
         self.app.icon_widget.enable_icon_running()

@@ -122,7 +122,7 @@ def send_statement(verb, activity):
     x = threading.Thread(target=thread_function, args=(verb, activity))
     x.start()
 
-def send_statement_from_report(report):
+def send_statement_from_report(report,mode):
     """Create and send a statement of the execution of the students program"""
     compil_fail = False
     exec_fail = False
@@ -148,5 +148,7 @@ def send_statement_from_report(report):
         send_statement("failed", "error-convention")
     elif warning:
         send_statement("failed", "error-warning")
+    elif mode == "eval":
+        send_statement("passed", "interpreter")
     else:
         send_statement("passed", "execution")
