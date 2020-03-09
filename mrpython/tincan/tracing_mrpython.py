@@ -36,8 +36,8 @@ verbs = {
         id="http://activitystrea.ms/schema/1.0/start", display=LanguageMap({'en-US': 'started'})),
     "terminated": Verb(
         id="http://activitystrea.ms/schema/1.0/terminate", display=LanguageMap({'en-US': 'terminated'})),
-    "failed": Verb(
-        id="http://adlnet.gov/expapi/verbs/failed", display=LanguageMap({'en-US': 'failed'})),
+    "had": Verb(
+        id="https://www.lip6.fr/mocah/invalidURI/verbs/had", display=LanguageMap({'en-US': 'had'})),
     "completed": Verb(
         id="http://activitystrea.ms/schema/1.0/complete", display=LanguageMap({'en-US': 'completed'})),
     }
@@ -46,13 +46,11 @@ activities = {
     "application": Activity(
         id="http://activitystrea.ms/schema/1.0/application",
         definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'an application'}),
-            description=LanguageMap({'en-US': 'the MrPython application'}))),
+            name=LanguageMap({'en-US': 'the MrPython application'}))),
     "file": Activity(
         id="http://activitystrea.ms/schema/1.0/file",
         definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a programming file'}),
-            description=LanguageMap({'en-US': 'new MrPython file'}))),
+            name=LanguageMap({'en-US': 'the student\'s editor file'}))),
     "mode": Activity(
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/mode",
         definition=ActivityDefinition(
@@ -61,13 +59,13 @@ activities = {
     "execution": Activity(
             id="https://www.lip6.fr/mocah/invalidURI/activity-types/execution",
             definition=ActivityDefinition(
-                name=LanguageMap({'en-US': 'an execution'}),
-                description=LanguageMap({'en-US': 'execution of the student program'}))),
+                name=LanguageMap({'en-US': 'a programming execution'}),
+                description=LanguageMap({'en-US': 'execution of the student\'s editor'}))),
     "interpretation": Activity(
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/interpretation",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'a programming interpretation'}),
-            description=LanguageMap({'en-US': 'the interpretation present in MrPython'}))),
+            description=LanguageMap({'en-US': 'interpretation made by the MrPython interpretor'}))),
     "error-compilation": Activity(
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/error-compilation",
         definition=ActivityDefinition(
@@ -107,7 +105,7 @@ def send_statement(verb, activity, extensions={}):
         context = Context(extensions=extensions) if extensions else None  # Context is optional
 
         if context:
-            print(context.to_json())
+            #print(context.to_json())
             statement = Statement(
                 actor=actor,
                 verb=verb,
@@ -131,8 +129,8 @@ def send_statement(verb, activity, extensions={}):
             print("Tracing: Statement request could not been sent to the LRS: {}".format(response.data))
         '''
     # Send the statement from another thread
-    x = threading.Thread(target=thread_function, args=(verb, activity))
-    x.start()
+    #x = threading.Thread(target=thread_function, args=(verb, activity))
+    #x.start()
 
 
 def send_statement_from_report(report, command, mode, instruction=None, filename=None):
@@ -156,16 +154,16 @@ def send_statement_from_report(report, command, mode, instruction=None, filename
     verb = None
     activity = None
     if compile_fail:
-        verb = "failed"
+        verb = "had"
         activity = "error-compilation"
     elif exec_fail:
-        verb = "failed"
+        verb = "had"
         activity = "error-execution"
     elif conv_fail:
-        verb = "failed"
+        verb = "had"
         activity = "error-convention"
     elif warning:
-        verb = "failed"
+        verb = "had"
         activity = "error-warning"
     elif command == "eval":
         verb = "completed"
