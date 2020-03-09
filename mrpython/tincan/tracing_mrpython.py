@@ -1,4 +1,4 @@
-import threading
+import threading, copy, os
 from tincan import (
     RemoteLRS,
     Statement,
@@ -12,14 +12,15 @@ from tincan import (
     StateDocument,
     lrs_properties,
 )
-
+from translate import tr
+#LRS server
 lrs = RemoteLRS(
     version=lrs_properties.version,
     endpoint=lrs_properties.endpoint,
     username=lrs_properties.username,
     password=lrs_properties.password)
 actor = Agent(name='AdilPython0.0.0', mbox='mailto:tincanpython@tincanapi.com')
-
+#Dictionary xAPI verbs
 verbs = {
     "created": Verb(
         id="http://activitystrea.ms/schema/1.0/create", display=LanguageMap({'en-US': 'created'})),
@@ -36,10 +37,11 @@ verbs = {
     "terminated": Verb(
         id="http://activitystrea.ms/schema/1.0/terminate", display=LanguageMap({'en-US': 'terminated'})),
     "failed": Verb(
-            id="http://adlnet.gov/expapi/verbs/failed", display=LanguageMap({'en-US': 'failed'})),
-    "passed": Verb(
-        id="http://adlnet.gov/expapi/verbs/passed", display=LanguageMap({'en-US': 'passed'})),
+        id="http://adlnet.gov/expapi/verbs/failed", display=LanguageMap({'en-US': 'failed'})),
+    "completed": Verb(
+        id="http://activitystrea.ms/schema/1.0/complete", display=LanguageMap({'en-US': 'completed'})),
     }
+#Dictionary xAPI activities
 activities = {
     "application": Activity(
         id="http://activitystrea.ms/schema/1.0/application",
@@ -56,20 +58,16 @@ activities = {
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'the programming mode'}),
             description=LanguageMap({'en-US': 'student/expert mode in MrPython'}))),
-    "function": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/function",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a programming function'}))),
-    "interpreter": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/interpreter",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a programming interpreter'}),
-            description=LanguageMap({'en-US': 'the interpreter present in MrPython'}))),
     "execution": Activity(
             id="https://www.lip6.fr/mocah/invalidURI/activity-types/execution",
             definition=ActivityDefinition(
                 name=LanguageMap({'en-US': 'an execution'}),
                 description=LanguageMap({'en-US': 'execution of the student program'}))),
+    "interpretation": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/interpretation",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'a programming interpretation'}),
+            description=LanguageMap({'en-US': 'the interpretation present in MrPython'}))),
     "error-compilation": Activity(
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/error-compilation",
         definition=ActivityDefinition(
@@ -86,30 +84,44 @@ activities = {
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/error-warning",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'a warning error'}))),
+    "function": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/function",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'a programming function'}))),
     }
 
 
-def send_statement(verb, activity):
+def send_statement(verb, activity, extensions={}):
     """Send a statement with the verb and activity keys"""
     def thread_function(verb, activity):
+        #Create the statement from the actor, verb, object and potentially the context
         if verb not in verbs:
             print("Tracing: Missing key {}".format(verb))
             return
         if activity not in activities:
             print("Tracing: Missing key {}".format(activity))
             return
-        print("Tracing: Creating and Sending statement, {} {}".format(verb,activity))
+        print("Tracing: Creating and Sending statement, {} {}".format(verb, activity))
         verb = verbs[verb]
         object = activities[activity]
-        # print("constructing the Statement...")
-        statement = Statement(
-            actor=actor,
-            verb=verb,
-            object=object
-        )
+        context = Context(extensions=extensions) if extensions else None  # Context is optional
 
-        # print("saving the Statement...")
+        if context:
+            print(context.to_json())
+            statement = Statement(
+                actor=actor,
+                verb=verb,
+                object=object,
+                context=context
+            )
+        else:
+            statement = Statement(
+                actor=actor,
+                verb=verb,
+                object=object
+            )
         '''
+        # Send statement and receive HTTP response
         response = lrs.save_statement(statement)
         if not response:
             print("Tracing: statement failed to save")
@@ -118,37 +130,66 @@ def send_statement(verb, activity):
         else:
             print("Tracing: Statement request could not been sent to the LRS: {}".format(response.data))
         '''
-
+    # Send the statement from another thread
     x = threading.Thread(target=thread_function, args=(verb, activity))
     x.start()
 
-def send_statement_from_report(report,mode):
-    """Create and send a statement of the execution of the students program"""
-    compil_fail = False
+
+def send_statement_from_report(report, command, mode, instruction=None, filename=None):
+    """Create and send a statement at the end of the execution of the students program"""
+    compile_fail = False
     exec_fail = False
     conv_fail = False
     warning = False
-    #Detect compilation errors
+    #Detect errors and type of errors
     if report.has_compilation_error():
-        compil_fail = True
+        compile_fail = True
     if report.has_execution_error():
         exec_fail = True
-
     for error in report.convention_errors:
         if error.severity == "error":
             conv_fail = True
         elif error.severity == "warning":
             warning = True
 
-    if compil_fail:
-        send_statement("failed", "error-compilation")
+    # Send different statements for different errors
+    verb = None
+    activity = None
+    if compile_fail:
+        verb = "failed"
+        activity = "error-compilation"
     elif exec_fail:
-        send_statement("failed", "error-execution")
+        verb = "failed"
+        activity = "error-execution"
     elif conv_fail:
-        send_statement("failed", "error-convention")
+        verb = "failed"
+        activity = "error-convention"
     elif warning:
-        send_statement("failed", "error-warning")
-    elif mode == "eval":
-        send_statement("passed", "interpreter")
+        verb = "failed"
+        activity = "error-warning"
+    elif command == "eval":
+        verb = "completed"
+        activity = "interpretation"
     else:
-        send_statement("passed", "execution")
+        verb = "completed"
+        activity = "execution"
+
+    # Add extensions
+    extensions = {}
+    extensions["https://www.lip6.fr/mocah/invalidURI/extensions/mode"] = mode # Expert or student
+    if command == "eval":  # If the user is using the interpreter, we send the instruction typed
+        if instruction:
+            extensions["https://www.lip6.fr/mocah/invalidURI/extensions/instruction"] = instruction
+    else:  # If the user is executing his program, we add the filename and the number of asserts made if mode = student
+        if filename:
+            extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filename"] = os.path.basename(filename)
+        if command == "exec" and tr(mode) == tr("student"):
+            extensions["https://www.lip6.fr/mocah/invalidURI/extensions/number-asserts"] = report.nb_passed_tests
+    send_statement(verb, activity, extensions=extensions)
+
+
+def test_function():
+    return
+
+if __name__ == "__main__":
+    test_function()

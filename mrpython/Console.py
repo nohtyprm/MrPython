@@ -315,7 +315,8 @@ class Console:
         expr = self.input_console.get()
         if not expr:
             return
-        tracing.send_statement("started", "interpreter")
+        tracing.send_statement("started", "interpretation",
+                               extensions={"https://www.lip6.fr/mocah/invalidURI/extensions/instruction": expr})
         local_interpreter = False
         if self.interpreter is None:
             self.interpreter = InterpreterProxy(self.app.root, self.app.mode, "<<console>>")
@@ -345,7 +346,7 @@ class Console:
 
             self.app.icon_widget.disable_icon_running()
             self.app.running_interpreter_callback = None
-            tracing.send_statement_from_report(report, "eval")
+            tracing.send_statement_from_report(report, "eval", self.mode, instruction=expr)
 
         # non-blocking call
         self.app.icon_widget.enable_icon_running()
@@ -421,7 +422,7 @@ class Console:
 
             self.app.icon_widget.disable_icon_running()
             self.app.running_interpreter_callback = None
-            tracing.send_statement_from_report(report, "exec")
+            tracing.send_statement_from_report(report, "exec", self.mode, filename=filename)
                 
         # non-blocking call
         self.app.icon_widget.enable_icon_running()

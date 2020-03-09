@@ -219,6 +219,7 @@ class Application:
                 report.set_footer("\n==================\n")
                 self.running_interpreter_callback(False, report)
             self.running_interpreter_callback = None
+            tracing.send_statement("terminated", "execution")
             return
 
         # not (yet) running
