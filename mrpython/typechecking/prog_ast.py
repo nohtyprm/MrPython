@@ -66,7 +66,7 @@ class Program:
     def build_from_ast(self, modast, filename=None, source=None):
         if filename is not None:
             self.filename = filename
-        
+
         if source is not None:
             self.source = source
 
@@ -156,7 +156,7 @@ class LHSVar:
 
     def __repr__(self):
         return "LHSVar({})".format(self.var_name)
-        
+
 class LHSTuple:
     def __init__(self, node, elements):
         self.ast = node
@@ -170,7 +170,7 @@ class LHSTuple:
 
     def arity(self):
         return len(self.elements)
-        
+
     def __str__(self):
         return ", ".join( ( str(elt) for elt in self.elements) )
 
@@ -187,7 +187,7 @@ def build_lhs_destruct(node):
         return LHSTuple(node, elements)
     else:
         return UnsupportedNode(node)
-        
+
 class Assign:
     def __init__(self, node):
         self.ast = node
@@ -201,7 +201,7 @@ class ContainerAssign:
         self.container_expr = parse_expression(target.value)
         self.container_index = parse_expression(target.slice.value)
         self.assign_expr = parse_expression(expr)
-        
+
 def parse_assign(node):
 
     # dictionary (container) assignment
@@ -227,7 +227,7 @@ class For:
             iinstr = parse_instruction(instr)
             self.body.append(iinstr)
 
-        
+
 class Return:
     def __init__(self, node):
         self.ast = node
@@ -281,19 +281,19 @@ def parse_with(node):
     if not isinstance(with_call, ast.Call):
         return UnsupportedNode(node)
     with_call = parse_expression(with_call)
-        
+
     if not node.items[0].optional_vars:
         return UnsupportedNode(node)
-        
+
     with_var = node.items[0].optional_vars.id
 
     with_body = []
     for instr in node.body:
         iinstr = parse_instruction(instr)
         with_body.append(iinstr)
-        
+
     return With(node, with_call, with_var, with_body)
-            
+
 def parse_expression_as_instruction(node):
     # XXX: do something here or way until typing for
     #      losing the returned value (except if None)
@@ -322,7 +322,7 @@ def parse_instruction(node):
 
 class Expr:
     pass
-    
+
 class ENum(Expr):
     def __init__(self, node, setval=None):
         self.ast = node
@@ -362,7 +362,7 @@ def parse_constant(node):
     raise ValueError("Constant not supported: {} (please report)".format(node.value))
 
 # XXX: this is a hack for Python>=3.8 because
-# they removed the type information in the constant parsing... 
+# they removed the type information in the constant parsing...
 def parse_constant_expr(node):
     if node.value is True:
         return ETrue(node)
@@ -406,7 +406,7 @@ class ETuple(Expr):
         for elem_node in node.elts:
             elem = parse_expression(elem_node)
             self.elements.append(elem)
-        
+
 class EAdd(Expr):
     def __init__(self, node, left, right):
         self.ast = node
@@ -436,7 +436,7 @@ class EFloorDiv(Expr):
         self.ast = node
         self.left = left
         self.right = right
-        
+
 class EMod(Expr):
     def __init__(self, node, left, right):
         self.ast = node
@@ -522,7 +522,7 @@ class ENot(Expr):
     def __init__(self, node, operand):
         self.ast = node
         self.operand = operand
-        
+
 UNOP_CLASSES = { "USub" : EUSub
                  , "Not" : ENot
 }
@@ -646,7 +646,7 @@ class ECall(Expr):
         #print("function receiver={}".format(self.receiver))
         #print("function name=", self.fun_name)
         self.arguments = []
- 
+
         for arg in self.ast.args:
             #print(astpp.dump(arg))
             earg = parse_expression(arg)
@@ -727,7 +727,7 @@ class Generator:
         self.conditions  = []
         for ifcond in self.ast.ifs:
             self.conditions.append(parse_expression(ifcond))
-        
+
 class EListComp(Expr):
     def __init__(self, node):
         self.ast = node
@@ -778,7 +778,7 @@ class EDictComp(Expr):
         for gen in node.generators:
             self.generators.append(Generator(gen))
 
-            
+
 EXPRESSION_CLASSES = { "Num" : ENum
                        , "Constant" : parse_constant_expr
                        , "Str" : EStr
@@ -835,6 +835,6 @@ if __name__ == "__main__":
         filename = sys.argv[1]
     else:
         filename = "../../examples/revstr.py"
-        
+
     prog1.build_from_file(filename)
     print(astpp.dump(prog1.ast))
