@@ -14,6 +14,8 @@ import multiprocessing as mp
 
 from RunReport import RunReport
 from tincan import tracing_mrpython as tracing
+
+
 class Application:
     """
     The main class of the application

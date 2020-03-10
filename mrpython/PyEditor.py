@@ -16,6 +16,8 @@ import Bindings
 
 from HighlightingText import HighlightingText
 _py_version = ' (%s)' % platform.python_version()
+from tincan import tracing_mrpython as tracing
+
 
 class PyEditor(HighlightingText):
     from IOBinding import  IOBinding, filesystemencoding, encoding
@@ -120,7 +122,7 @@ class PyEditor(HighlightingText):
         self.bind("<<smart-backspace>>",self.smart_backspace_event)
         self.bind("<<newline-and-indent>>",self.newline_and_indent_event)
         self.bind("<<smart-indent>>",self.smart_indent_event)
-        
+        self.bind('<Key>', self.keyword_tracing_event)
 
         #bindings keys
         if keydefs is None:
@@ -678,6 +680,38 @@ class PyEditor(HighlightingText):
             return "break"
         finally:
             self.undo_block_stop()
+
+    def keyword_tracing_event(self,event):
+        """get in real-time if the user typed a certain keyword
+        Keywords: def, insert, assert
+        """
+        def keyword_comparison(*keywords, last_char):
+            """ keywords: list of keywords we want to compare
+            last_char: character typed by the user
+            Check if the last letter typed by the user completes a keyword
+            """
+            cursor = self.index("insert") # Position of the cursor "line.column"
+            line, column_end = cursor.split('.')
+            for kw in keywords:
+                kw_length = len(kw)
+                column_begin = str(int(column_end) - kw_length) # beginning of the keyword potentially typed
+
+                index1 = "{}.{}".format(line, column_begin)
+                index2 = "{}.{}".format(line, column_end)
+
+                user_typed = self.get(index1, index2)
+                if user_typed == kw:
+                    return kw + last_char
+            return None
+
+        keyword = None
+        # Check all the keywords ending with the character typed
+        if event.char == "f":
+            keyword = keyword_comparison("de", last_char="f")
+        elif event.char == "t":
+            keyword = keyword_comparison("impor", "asser", last_char="t")
+        print(keyword)
+        #TODO: Send a statement with the keyword
 
     def set_notabs_indentwidth(self):
         "Update the indentwidth if changed and not using tabs in this window"
