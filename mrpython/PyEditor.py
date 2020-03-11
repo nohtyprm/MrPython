@@ -710,8 +710,10 @@ class PyEditor(HighlightingText):
             keyword = keyword_comparison("de", last_char="f")
         elif event.char == "t":
             keyword = keyword_comparison("impor", "asser", last_char="t")
-        print(keyword)
-        #TODO: Send a statement with the keyword
+        if keyword:
+            tracing.send_statement("typed", "keyword",
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/keyword-typed": keyword})
+
 
     def set_notabs_indentwidth(self):
         "Update the indentwidth if changed and not using tabs in this window"

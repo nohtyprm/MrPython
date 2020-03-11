@@ -315,8 +315,7 @@ class Console:
         expr = self.input_console.get()
         if not expr:
             return
-        tracing.send_statement("started", "interpretation",
-                               extensions={"https://www.lip6.fr/mocah/invalidURI/extensions/instruction": expr})
+        tracing.send_statement("started", "interpretation")
         local_interpreter = False
         if self.interpreter is None:
             self.interpreter = InterpreterProxy(self.app.root, self.app.mode, "<<console>>")

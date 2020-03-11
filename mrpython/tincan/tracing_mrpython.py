@@ -34,12 +34,14 @@ verbs = {
         id="https://www.lip6.fr/mocah/invalidURI/verbs/switched", display=LanguageMap({'en-US': 'switched'})),
     "started": Verb(
         id="http://activitystrea.ms/schema/1.0/start", display=LanguageMap({'en-US': 'started'})),
+    "completed": Verb(
+        id="http://activitystrea.ms/schema/1.0/complete", display=LanguageMap({'en-US': 'completed'})),
     "terminated": Verb(
         id="http://activitystrea.ms/schema/1.0/terminate", display=LanguageMap({'en-US': 'terminated'})),
     "had": Verb(
         id="https://www.lip6.fr/mocah/invalidURI/verbs/had", display=LanguageMap({'en-US': 'had'})),
-    "completed": Verb(
-        id="http://activitystrea.ms/schema/1.0/complete", display=LanguageMap({'en-US': 'completed'})),
+    "typed": Verb(
+        id="https://www.lip6.fr/mocah/invalidURI/verbs/typed", display=LanguageMap({'en-US': 'typed'})),
     }
 #Dictionary xAPI activities
 activities = {
@@ -82,10 +84,10 @@ activities = {
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/error-warning",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'a warning error'}))),
-    "function": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/function",
+    "keyword": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/keyword",
         definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a programming function'}))),
+            name=LanguageMap({'en-US': 'a keyword'}))),
     }
 
 
@@ -129,8 +131,8 @@ def send_statement(verb, activity, extensions={}):
             print("Tracing: Statement request could not been sent to the LRS: {}".format(response.data))
         '''
     # Send the statement from another thread
-    #x = threading.Thread(target=thread_function, args=(verb, activity))
-    #x.start()
+    x = threading.Thread(target=thread_function, args=(verb, activity))
+    x.start()
 
 
 def send_statement_from_report(report, command, mode, instruction=None, filename=None):
