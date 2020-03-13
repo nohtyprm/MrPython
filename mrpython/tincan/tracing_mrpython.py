@@ -1,4 +1,5 @@
-import threading, copy, os
+import threading, os
+import hashlib, uuid
 from tincan import (
     RemoteLRS,
     Statement,
@@ -13,14 +14,22 @@ from tincan import (
     lrs_properties,
 )
 from translate import tr
-#LRS server
+
+
+def agent_hash(student_number):
+    m = hashlib.sha1(str.encode("1234567"))
+    hash = m.hexdigest()[:10]
+    student_id = "https://www.lip6.fr/mocah/invalidURI/student-number:" + hash
+    return Agent(openid=student_id, name=hash)
+
+
 lrs = RemoteLRS(
     version=lrs_properties.version,
     endpoint=lrs_properties.endpoint,
     username=lrs_properties.username,
     password=lrs_properties.password)
-actor = Agent(name='AdilPython0.0.0', mbox='mailto:tincanpython@tincanapi.com')
-#Dictionary xAPI verbs
+actor = agent_hash("1234567")
+session = str(uuid.uuid4())[:10]
 verbs = {
     "created": Verb(
         id="http://activitystrea.ms/schema/1.0/create", display=LanguageMap({'en-US': 'created'})),
@@ -34,8 +43,10 @@ verbs = {
         id="https://www.lip6.fr/mocah/invalidURI/verbs/switched", display=LanguageMap({'en-US': 'switched'})),
     "started": Verb(
         id="http://activitystrea.ms/schema/1.0/start", display=LanguageMap({'en-US': 'started'})),
-    "completed": Verb(
-        id="http://activitystrea.ms/schema/1.0/complete", display=LanguageMap({'en-US': 'completed'})),
+    "passed": Verb(
+        id="http://adlnet.gov/expapi/verbs/passed", display=LanguageMap({'en-US': 'passed'})),
+    "failed": Verb(
+        id="http://adlnet.gov/expapi/verbs/failed", display=LanguageMap({'en-US': 'failed'})),
     "terminated": Verb(
         id="http://activitystrea.ms/schema/1.0/terminate", display=LanguageMap({'en-US': 'terminated'})),
     "had": Verb(
@@ -43,7 +54,7 @@ verbs = {
     "typed": Verb(
         id="https://www.lip6.fr/mocah/invalidURI/verbs/typed", display=LanguageMap({'en-US': 'typed'})),
     }
-#Dictionary xAPI activities
+
 activities = {
     "application": Activity(
         id="http://activitystrea.ms/schema/1.0/application",
@@ -92,7 +103,7 @@ activities = {
 
 
 def send_statement(verb, activity, extensions={}):
-    """Send a statement with the verb and activity keys"""
+    """Send a statement with the verb and activity keys and all the context extensions"""
     def thread_function(verb, activity):
         #Create the statement from the actor, verb, object and potentially the context
         if verb not in verbs:
@@ -104,32 +115,25 @@ def send_statement(verb, activity, extensions={}):
         print("Tracing: Creating and Sending statement, {} {}".format(verb, activity))
         verb = verbs[verb]
         object = activities[activity]
-        context = Context(extensions=extensions) if extensions else None  # Context is optional
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/session:"] = session
+        context = Context(extensions=extensions)
 
-        if context:
-            #print(context.to_json())
-            statement = Statement(
-                actor=actor,
-                verb=verb,
-                object=object,
-                context=context
-            )
-        else:
-            statement = Statement(
-                actor=actor,
-                verb=verb,
-                object=object
-            )
-        '''
+        statement = Statement(
+            actor=actor,
+            verb=verb,
+            object=object,
+            context=context
+        )
         # Send statement and receive HTTP response
         response = lrs.save_statement(statement)
         if not response:
             print("Tracing: statement failed to save")
-        if response.success:
-            print("Tracing: Statement request has been sent properly to the LRS, Statement ID is {}".format(response.data))
+        if not response.success:
+            print("Tracing: Statement request could not be sent to the LRS: {}".format(response.data))
         else:
-            print("Tracing: Statement request could not been sent to the LRS: {}".format(response.data))
-        '''
+            print("Tracing: Statement request has been sent properly to the LRS, Statement ID is {}".format(
+                response.data))
+
     # Send the statement from another thread
     x = threading.Thread(target=thread_function, args=(verb, activity))
     x.start()
@@ -137,46 +141,39 @@ def send_statement(verb, activity, extensions={}):
 
 def send_statement_from_report(report, command, mode, instruction=None, filename=None):
     """Create and send a statement at the end of the execution of the students program"""
-    compile_fail = False
-    exec_fail = False
-    conv_fail = False
-    warning = False
-    #Detect errors and type of errors
-    if report.has_compilation_error():
-        compile_fail = True
-    if report.has_execution_error():
-        exec_fail = True
+    # Send statements for all errors
+    success = True
     for error in report.convention_errors:
-        if error.severity == "error":
-            conv_fail = True
-        elif error.severity == "warning":
-            warning = True
-
-    # Send different statements for different errors
-    verb = None
-    activity = None
-    if compile_fail:
-        verb = "had"
-        activity = "error-compilation"
-    elif exec_fail:
-        verb = "had"
-        activity = "error-execution"
-    elif conv_fail:
-        verb = "had"
-        activity = "error-convention"
-    elif warning:
-        verb = "had"
-        activity = "error-warning"
-    elif command == "eval":
-        verb = "completed"
+        if error.severity == "warning" or error.severity == "error":
+            activity = "error-convention" if error.severity == "error" else "error-warning"
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": error.error_details()}
+            send_statement("had", activity, extensions)
+            success = False
+    for error in report.compilation_errors:
+        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": error.error_details()}
+        send_statement("had", "error-compilation", extensions)
+        success = False
+    for error in report.execution_errors:
+        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": error.error_details()}
+        send_statement("had", "error-execution", extensions)
+        success = False
+    if report.nb_passed_tests == 1:
+        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": tr("Only one (successful) test found, it's probably not enough")}
+        send_statement("had", activity, extensions)
+    elif report.nb_passed_tests == 0:
+        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": tr("There is no test! you have to write tests!")}
+        send_statement("had", activity, extensions)
+    # Send statement final report
+    if success:
+        verb = "passed"
+    else:
+        verb = "failed"
+    if command == "eval":
         activity = "interpretation"
     else:
-        verb = "completed"
         activity = "execution"
 
-    # Add extensions
-    extensions = {}
-    extensions["https://www.lip6.fr/mocah/invalidURI/extensions/mode"] = mode # Expert or student
+    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": mode}
     if command == "eval":  # If the user is using the interpreter, we send the instruction typed
         if instruction:
             extensions["https://www.lip6.fr/mocah/invalidURI/extensions/instruction"] = instruction
@@ -185,11 +182,15 @@ def send_statement_from_report(report, command, mode, instruction=None, filename
             extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filename"] = os.path.basename(filename)
         if command == "exec" and tr(mode) == tr("student"):
             extensions["https://www.lip6.fr/mocah/invalidURI/extensions/number-asserts"] = report.nb_passed_tests
-    send_statement(verb, activity, extensions=extensions)
+    send_statement(verb, activity, extensions)
 
 
-def test_function():
-    return
 
 if __name__ == "__main__":
-    test_function()
+    print("test_main")
+    '''
+    print(sys.platform)
+    print(platform.system())
+    print(getpass.getuser())
+    print(os.path)
+    '''
