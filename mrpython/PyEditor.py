@@ -122,7 +122,7 @@ class PyEditor(HighlightingText):
         self.bind("<<smart-backspace>>",self.smart_backspace_event)
         self.bind("<<newline-and-indent>>",self.newline_and_indent_event)
         self.bind("<<smart-indent>>",self.smart_indent_event)
-        self.bind('<Key>', self.keyword_tracing_event)
+        self.bind('<Key>', self.key_tracing_event)
 
         #bindings keys
         if keydefs is None:
@@ -681,8 +681,8 @@ class PyEditor(HighlightingText):
         finally:
             self.undo_block_stop()
 
-    def keyword_tracing_event(self,event):
-        """get in real-time if the user typed a certain keyword
+    def key_tracing_event(self,event):  # TODO:Maybe Put this somewhere else (check where the syntax highlighting is done)
+        """get in real-time if the user typed a certain keyword or if the user typed his student number
         Keywords: def, insert, assert
         """
         def keyword_comparison(*keywords, last_char):
@@ -713,6 +713,15 @@ class PyEditor(HighlightingText):
         if keyword:
             tracing.send_statement("typed", "keyword",
                                    {"https://www.lip6.fr/mocah/invalidURI/extensions/keyword-typed": keyword})
+
+        # For now, we detect when the student typed his number in the format 1234567@
+        if event.char == "@":
+            cursor = self.index("insert")  # Position of the cursor "line.column"
+            line, column_end = cursor.split('.')
+            student_number = self.get("{}-7c".format(cursor), cursor)
+            if len(student_number) == 7 and student_number.isnumeric():
+                tracing.init_hash(student_number)
+
 
 
     def set_notabs_indentwidth(self):

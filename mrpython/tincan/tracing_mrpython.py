@@ -1,5 +1,6 @@
 import threading, os
-import hashlib, uuid
+import hashlib, uuid, getpass
+import tincan.tracing_io as io
 from tincan import (
     RemoteLRS,
     Statement,
@@ -16,11 +17,37 @@ from tincan import (
 from translate import tr
 
 
-def agent_hash(student_number):
-    m = hashlib.sha1(str.encode("1234567"))
-    hash = m.hexdigest()[:10]
-    student_id = "https://www.lip6.fr/mocah/invalidURI/student-number:" + hash
-    return Agent(openid=student_id, name=hash)
+def create_hash():
+    """if the student number hash isn't initialized, we use the student number in the OS username.
+    If the OS is a 7 digit integer, we hash it and keep it.
+    Otherwise we keep the default.
+    """
+    student_hash = io.get_student_hash()
+    if student_hash == "not-initialized":
+        new_hash = None
+        os_username = getpass.getuser()
+        os_username = "1234367" #Test
+        if os_username.isnumeric():
+            student_number = int(os_username)
+            if student_number > 1000000 and student_number < 10000000:
+                init_hash(str(student_number))
+                return
+        io.modify_student_hash("default")
+
+
+def init_hash(student_number):
+    """
+    Create and keep a hash of the student number
+    """
+    m = hashlib.sha1(str.encode(student_number))
+    student_hash = m.hexdigest()[:10]
+    io.modify_student_hash(student_hash)
+
+
+def create_actor():
+    student_hash = io.get_student_hash()
+    student_id = "https://www.lip6.fr/mocah/invalidURI/student-number:" + student_hash
+    return Agent(openid=student_id, name=student_hash)
 
 
 lrs = RemoteLRS(
@@ -28,7 +55,8 @@ lrs = RemoteLRS(
     endpoint=lrs_properties.endpoint,
     username=lrs_properties.username,
     password=lrs_properties.password)
-actor = agent_hash("1234567")
+create_hash()
+actor = create_actor()
 session = str(uuid.uuid4())[:10]
 verbs = {
     "created": Verb(
@@ -135,8 +163,8 @@ def send_statement(verb, activity, extensions={}):
                 response.data))
 
     # Send the statement from another thread
-    x = threading.Thread(target=thread_function, args=(verb, activity))
-    x.start()
+    #x = threading.Thread(target=thread_function, args=(verb, activity))
+    #x.start()
 
 
 def send_statement_from_report(report, command, mode, instruction=None, filename=None):
