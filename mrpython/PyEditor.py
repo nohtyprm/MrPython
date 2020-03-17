@@ -720,7 +720,7 @@ class PyEditor(HighlightingText):
             line, column_end = cursor.split('.')
             student_number = self.get("{}-7c".format(cursor), cursor)
             if len(student_number) == 7 and student_number.isnumeric():
-                tracing.init_hash(student_number)
+                tracing.modify_student_number(student_number)
 
 
 

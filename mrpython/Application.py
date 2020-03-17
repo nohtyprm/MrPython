@@ -60,7 +60,7 @@ class Application:
 
         self.running_interpreter_proxy = None
         self.running_interpreter_callback = None
-
+        tracing.clear_stack()
         tracing.send_statement("opened", "application")
 
     def run(self):

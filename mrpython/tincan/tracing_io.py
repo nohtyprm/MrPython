@@ -7,7 +7,6 @@ import json
 import os
 
 filename = os.path.join(os.path.dirname(__file__), 'tracing_data.json')
-print(filename)
 
 
 def reset_file():
@@ -33,6 +32,7 @@ def get_student_hash():
 
 def add_statement(statement):
     """Add a statement to the stack"""
+    statement = statement.to_json()
     with open(filename, "r+") as f:
         data = json.load(f)
         list_statements = data["statements"]
@@ -49,6 +49,7 @@ def get_statement():
         list_statements = data["statements"]
         if list_statements:
             return list_statements[0]
+    return None
 
 
 def remove_statement():
@@ -60,12 +61,3 @@ def remove_statement():
         f.truncate(0)
         f.seek(0)
         json.dump(data, f)
-
-if __name__ == "__main__":
-    print("io")
-    """
-    modify_student_hash("XXXXXX")
-    print(get_student_hash())
-    remove_statement()
-    print(get_statement())
-    """

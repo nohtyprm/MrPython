@@ -17,9 +17,9 @@ from tincan import (
 from translate import tr
 
 
-def create_hash():
+def init_student_number():
     """if the student number hash isn't initialized, we use the student number in the OS username.
-    If the OS is a 7 digit integer, we hash it and keep it.
+    If the OS username is a 7 digit integer, we hash it and keep it.
     Otherwise we keep the default.
     """
     student_hash = io.get_student_hash()
@@ -30,14 +30,14 @@ def create_hash():
         if os_username.isnumeric():
             student_number = int(os_username)
             if student_number > 1000000 and student_number < 10000000:
-                init_hash(str(student_number))
+                modify_student_number(str(student_number))
                 return
         io.modify_student_hash("default")
 
 
-def init_hash(student_number):
+def modify_student_number(student_number):
     """
-    Create and keep a hash of the student number
+    Keep a hash of the student number
     """
     m = hashlib.sha1(str.encode(student_number))
     student_hash = m.hexdigest()[:10]
@@ -50,12 +50,122 @@ def create_actor():
     return Agent(openid=student_id, name=student_hash)
 
 
+def clear_stack():
+    """Clear the stack of statements"""
+    statement = io.get_statement()
+    while statement:  # While there are statements
+        statement = Statement.from_json(statement)
+        if send_statement_lrs(statement):  # If the statement could have been sent to the LRS
+            io.remove_statement()
+            statement = io.get_statement()
+        else:
+            return
+
+
+def send_statement_lrs(statement):
+    try:
+        response = lrs.save_statement(statement)
+    except OSError as e:
+        print("Tracing: Couldn't connect to the LRS: {}".format(e))
+        return False
+    if not response:
+        print("Tracing: statement failed to save")
+        return False
+    elif response and not response.success:
+        print("Tracing: Statement request could not be sent to the LRS: {}".format(response.data))
+        return False
+    else:
+        print("Tracing: Statement request has been sent properly to the LRS, Statement ID is {}".format(
+            response.data))
+        return True
+
+
+def send_statement(verb, activity, extensions={}):
+    """Send a statement with the verb and activity keys and the context extensions"""
+    def thread_function(verb, activity):
+        #Create the statement from the actor, verb, object and potentially the context
+        if verb not in verbs:
+            print("Tracing: Missing key {}".format(verb))
+            return
+        if activity not in activities:
+            print("Tracing: Missing key {}".format(activity))
+            return
+        print("Tracing: Creating and Sending statement, {} {}".format(verb, activity))
+        verb = verbs[verb]
+        object = activities[activity]
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/session:"] = session
+        context = Context(extensions=extensions)
+
+        statement = Statement(
+            actor=actor,
+            verb=verb,
+            object=object,
+            context=context
+        )
+        # Send statement and receive HTTP response
+        if not send_statement_lrs(statement):
+            io.add_statement(statement)
+
+    # Send the statement from another thread
+    x = threading.Thread(target=thread_function, args=(verb, activity))
+    x.start()
+
+
+def send_statement_from_report(report, command, mode, instruction=None, filename=None):
+    """Create and send a statement at the end of the execution of the students program"""
+    # Send statements for all errors
+    success = True
+    for error in report.convention_errors:
+        if error.severity == "warning" or error.severity == "error":
+            activity = "error-convention" if error.severity == "error" else "error-warning"
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": error.error_details()}
+            send_statement("had", activity, extensions)
+            success = False
+    for error in report.compilation_errors:
+        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": error.error_details()}
+        send_statement("had", "error-compilation", extensions)
+        success = False
+    for error in report.execution_errors:
+        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": error.error_details()}
+        send_statement("had", "error-execution", extensions)
+        success = False
+    #  Check if the student tested his functions
+    print(report.nb_passed_tests)
+    if report.nb_passed_tests == 1:
+        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": tr("Only one (successful) test found, it's probably not enough")}
+        send_statement("had", "error-warning", extensions)
+    elif report.nb_passed_tests == 0:
+        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": tr("There is no test! you have to write tests!")}
+        send_statement("had", "error-convention", extensions)
+    # Send statement final report
+    if success:
+        verb = "passed"
+    else:
+        verb = "failed"
+    if command == "eval":
+        activity = "interpretation"
+    else:
+        activity = "execution"
+
+    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": mode}
+    if command == "eval":  # If the user is using the interpreter, we send the instruction typed
+        if instruction:
+            extensions["https://www.lip6.fr/mocah/invalidURI/extensions/instruction"] = instruction
+    else:  # If the user is executing his program, we add the filename and the number of asserts made if mode = student
+        if filename:
+            extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filename"] = os.path.basename(filename)
+        if command == "exec" and tr(mode) == tr("student"):
+            extensions["https://www.lip6.fr/mocah/invalidURI/extensions/number-asserts"] = report.nb_passed_tests
+    #  Final statement: Execution passed or failed
+    send_statement(verb, activity, extensions)
+
+
 lrs = RemoteLRS(
     version=lrs_properties.version,
     endpoint=lrs_properties.endpoint,
     username=lrs_properties.username,
     password=lrs_properties.password)
-create_hash()
+init_student_number()
 actor = create_actor()
 session = str(uuid.uuid4())[:10]
 verbs = {
@@ -129,96 +239,17 @@ activities = {
             name=LanguageMap({'en-US': 'a keyword'}))),
     }
 
-
-def send_statement(verb, activity, extensions={}):
-    """Send a statement with the verb and activity keys and all the context extensions"""
-    def thread_function(verb, activity):
-        #Create the statement from the actor, verb, object and potentially the context
-        if verb not in verbs:
-            print("Tracing: Missing key {}".format(verb))
-            return
-        if activity not in activities:
-            print("Tracing: Missing key {}".format(activity))
-            return
-        print("Tracing: Creating and Sending statement, {} {}".format(verb, activity))
-        verb = verbs[verb]
-        object = activities[activity]
-        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/session:"] = session
-        context = Context(extensions=extensions)
-
-        statement = Statement(
-            actor=actor,
-            verb=verb,
-            object=object,
-            context=context
-        )
-        # Send statement and receive HTTP response
-        response = lrs.save_statement(statement)
-        if not response:
-            print("Tracing: statement failed to save")
-        if not response.success:
-            print("Tracing: Statement request could not be sent to the LRS: {}".format(response.data))
-        else:
-            print("Tracing: Statement request has been sent properly to the LRS, Statement ID is {}".format(
-                response.data))
-
-    # Send the statement from another thread
-    #x = threading.Thread(target=thread_function, args=(verb, activity))
-    #x.start()
-
-
-def send_statement_from_report(report, command, mode, instruction=None, filename=None):
-    """Create and send a statement at the end of the execution of the students program"""
-    # Send statements for all errors
-    success = True
-    for error in report.convention_errors:
-        if error.severity == "warning" or error.severity == "error":
-            activity = "error-convention" if error.severity == "error" else "error-warning"
-            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": error.error_details()}
-            send_statement("had", activity, extensions)
-            success = False
-    for error in report.compilation_errors:
-        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": error.error_details()}
-        send_statement("had", "error-compilation", extensions)
-        success = False
-    for error in report.execution_errors:
-        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": error.error_details()}
-        send_statement("had", "error-execution", extensions)
-        success = False
-    if report.nb_passed_tests == 1:
-        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": tr("Only one (successful) test found, it's probably not enough")}
-        send_statement("had", activity, extensions)
-    elif report.nb_passed_tests == 0:
-        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": tr("There is no test! you have to write tests!")}
-        send_statement("had", activity, extensions)
-    # Send statement final report
-    if success:
-        verb = "passed"
-    else:
-        verb = "failed"
-    if command == "eval":
-        activity = "interpretation"
-    else:
-        activity = "execution"
-
-    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": mode}
-    if command == "eval":  # If the user is using the interpreter, we send the instruction typed
-        if instruction:
-            extensions["https://www.lip6.fr/mocah/invalidURI/extensions/instruction"] = instruction
-    else:  # If the user is executing his program, we add the filename and the number of asserts made if mode = student
-        if filename:
-            extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filename"] = os.path.basename(filename)
-        if command == "exec" and tr(mode) == tr("student"):
-            extensions["https://www.lip6.fr/mocah/invalidURI/extensions/number-asserts"] = report.nb_passed_tests
-    send_statement(verb, activity, extensions)
-
-
-
 if __name__ == "__main__":
-    print("test_main")
     '''
-    print(sys.platform)
-    print(platform.system())
-    print(getpass.getuser())
-    print(os.path)
+    verb = verbs["opened"]
+    object = activities["application"]
+
+    statement = Statement(
+        actor=actor,
+        verb=verb,
+        object=object,
+    )
+    # Send statement and receive HTTP response
+    io.add_statement(statement)
     '''
+    clear_stack()
