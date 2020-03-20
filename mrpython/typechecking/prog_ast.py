@@ -4,6 +4,11 @@
 import ast
 import tokenize
 
+try:
+    from .type_ast import *
+except ImportError:
+    from type_ast import *
+
 import os.path, sys
 
 main_path = os.path.dirname(os.path.realpath(__file__))
@@ -92,6 +97,9 @@ class Program:
             elif isinstance(node, ast.Assign) or isinstance(node, ast.AnnAssign):
                 assign_ast = Assign(node)
                 self.global_vars.append(assign_ast)
+
+                if hasattr(assign_ast, "type"):
+                    print(assign_ast.type)
             else:
                 #print("Unsupported instruction: " + node)
                 self.other_top_defs.append(UnsupportedNode(node))
@@ -162,6 +170,7 @@ class LHSTuple:
     def __init__(self, node, elements):
         self.ast = node
         self.elements = elements
+        print(dir(node))
 
     def variables(self):
         vs = []
@@ -195,6 +204,18 @@ class Assign:
 
         if isinstance(node, ast.AnnAssign):
             self.target = build_lhs_destruct(self.ast.target)
+            # print("tuple annotation : " + str(dir(self.ast.annotation)) + "\n")
+            # print("value : " + str(dir(self.ast.annotation.value)) + "\n")
+            # for i in self.ast.annotation.value._attributes:
+            #     print(i)
+            print(dir(self.ast.annotation))
+            print("type annotation id :" + str(type(self.ast.annotation.id)))
+            if self.ast.annotation.id == "int":
+                self.type = IntType()
+            elif self.ast.annotation.id == "bool":
+                self.type = BoolType()
+            elif self.ast.annotation.id == "str":
+                self.type = StrType()
         else:
             self.target = build_lhs_destruct(self.ast.targets[0])
 
@@ -410,6 +431,11 @@ class EVar(Expr):
 
 class ETuple(Expr):
     def __init__(self, node):
+        # print("tuple : " + str(dir(node)) + "\n")
+        # print("elts: " + str(dir(node.elts)))
+        # print("_attributes: " + str(dir(node._attributes)))
+        # print("_fields: " + str(dir(node._fields)))
+        # print("node : " + str(type(node)))
         self.ast = node
         self.elements = []
         for elem_node in node.elts:

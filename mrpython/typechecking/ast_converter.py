@@ -49,6 +49,10 @@ class TypeConverter():
     def visit_Assign(self, node):
         print("Visit AssignType\n")
         if hasattr(node.ast, "annotation"):
+            # print("type : " + str(type(node.ast.annotation)))
+            # print(dir(node.ast.annotation))
+            # print(node.ast.annotation.__class__)
+            # print(str(type(node.ast.annotation.id)))
             self.parse_Annotation(node.ast.annotation)
         else:
             print("non")
