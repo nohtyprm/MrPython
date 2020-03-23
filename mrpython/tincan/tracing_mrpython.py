@@ -1,4 +1,4 @@
-import threading, os
+import threading, os, tokenize
 import hashlib, uuid, getpass
 import tincan.tracing_io as io
 from tincan import (
@@ -111,53 +111,90 @@ def send_statement(verb, activity, extensions={}):
     x.start()
 
 
-def send_statement_from_report(report, command, mode, instruction=None, filename=None):
+def add_extensions_error(error, error_class, filename, instruction):
+    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-severity": error.severity,  # warning or error
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/error-type": error.err_type,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/error-class": error_class,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/error-message": error.error_details(),
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/filename": os.path.basename(filename),
+                  }
+    if instruction:
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/instruction"] = instruction
+    else:
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/instruction"] = "None"
+    return extensions
+
+def send_statement_execute(report, mode, filename):
     """Create and send a statement at the end of the execution of the students program"""
+
+    with tokenize.open(filename) as fp:
+        source = fp.read()
+        source = source.split('\n')
     # Send statements for all errors
-    success = True
+    typechecking_error = False
     for error in report.convention_errors:
-        if error.severity == "warning" or error.severity == "error":
-            activity = "error-convention" if error.severity == "error" else "error-warning"
-            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": error.error_details()}
-            send_statement("had", activity, extensions)
-            success = False
+        if error.severity == "warning" or error.severity == "error":  # We don't send the 'run' messages
+            typechecking_error = True
+            if error.line:
+                instruction = source[error.line-1]
+            else:
+                instruction = None
+            extensions = add_extensions_error(error, "typechecking", filename, instruction)
+            send_statement("had", "execution-error", extensions)
+
     for error in report.compilation_errors:
-        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": error.error_details()}
-        send_statement("had", "error-compilation", extensions)
-        success = False
+        if error.line:
+            instruction = source[error.line-1]
+        else:
+            instruction = None
+        extensions = add_extensions_error(error, "compilation", filename, instruction)
+        send_statement("had", "execution-error", extensions)
+
     for error in report.execution_errors:
-        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": error.error_details()}
-        send_statement("had", "error-execution", extensions)
-        success = False
-    #  Check if the student tested his functions
-    print(report.nb_passed_tests)
-    if report.nb_passed_tests == 1:
-        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": tr("Only one (successful) test found, it's probably not enough")}
-        send_statement("had", "error-warning", extensions)
-    elif report.nb_passed_tests == 0:
-        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-details": tr("There is no test! you have to write tests!")}
-        send_statement("had", "error-convention", extensions)
-    # Send statement final report
-    if success:
+        if error.line:
+            instruction = source[error.line-1]
+        else:
+            instruction = None
+        extensions = add_extensions_error(error, "execution", filename, instruction)
+        send_statement("had", "execution-error", extensions)
+
+    #  Send a statement if the student didn't test his program enough
+    status = not (report.has_compilation_error() or report.has_execution_error())
+    if status and mode == tr("student") and report.nb_defined_funs > 0:
+        if report.nb_passed_tests == 1:
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-severity": "warning",
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/error-type": "Assertion issue",
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/error-class": "typechecking",
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/error-message":
+                              tr("Only one (successful) test found, it's probably not enough"),
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/instruction": "None",
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/filename": os.path.basename(filename),
+                          }
+            send_statement("had", "absence-tests", extensions)
+        elif report.nb_passed_tests == 0:
+            typechecking_error = True
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-severity": "error",
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/error-type": "Assertion issue",
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/error-class": "typechecking",
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/error-message":
+                              tr("There is no test! you have to write tests!"),
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/instruction": "None",
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/filename": os.path.basename(filename),
+                          }
+            send_statement("had", "absence-tests", extensions)
+
+    #  Send final statement: Execution passed or failed
+    if status and not typechecking_error:
         verb = "passed"
     else:
         verb = "failed"
-    if command == "eval":
-        activity = "interpretation"
+    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": mode,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/filename": os.path.basename(filename)}
+    if status and mode == tr("student") and report.nb_defined_funs > 0:
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/number-asserts"] = report.nb_passed_tests
     else:
-        activity = "execution"
-
-    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": mode}
-    if command == "eval":  # If the user is using the interpreter, we send the instruction typed
-        if instruction:
-            extensions["https://www.lip6.fr/mocah/invalidURI/extensions/instruction"] = instruction
-    else:  # If the user is executing his program, we add the filename and the number of asserts made if mode = student
-        if filename:
-            extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filename"] = os.path.basename(filename)
-        if command == "exec" and tr(mode) == tr("student"):
-            extensions["https://www.lip6.fr/mocah/invalidURI/extensions/number-asserts"] = report.nb_passed_tests
-    #  Final statement: Execution passed or failed
-    send_statement(verb, activity, extensions)
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/number-asserts"] = "unchecked"
+    send_statement(verb, "execution", extensions)
 
 
 lrs = RemoteLRS(
@@ -217,22 +254,14 @@ activities = {
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'a programming interpretation'}),
             description=LanguageMap({'en-US': 'interpretation made by the MrPython interpretor'}))),
-    "error-compilation": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/error-compilation",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a compilation error'}))),
-    "error-execution": Activity(
+    "execution-error": Activity(
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/error-execution",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'an execution error'}))),
-    "error-convention": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/error-convention",
+    "absence-tests": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/absence-tests",
         definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a convention error'}))),
-    "error-warning": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/error-warning",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a warning error'}))),
+            name=LanguageMap({'en-US': 'an absence of tests'}))),
     "keyword": Activity(
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/keyword",
         definition=ActivityDefinition(
