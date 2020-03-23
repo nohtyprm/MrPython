@@ -115,47 +115,70 @@ def add_extensions_error(error, error_class, filename = None, instruction = None
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-severity": error.severity,  # warning or error
                   "https://www.lip6.fr/mocah/invalidURI/extensions/error-type": error.err_type,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/error-class": error_class,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/error-message": error.error_details()
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/error-message": error.error_details(),
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/instruction": instruction
                   }
     if filename:
         extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filename"] = filename
-    if instruction:
-        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/instruction"] = instruction
     return extensions
 
 
 def send_statement_execute(report, mode, filename):
     """Create and send a statement at the end of the execution of the students program"""
-
     with tokenize.open(filename) as fp:
         source = fp.read()
         source = source.split('\n')
     # Send statements for all errors
-    typechecking_error = False
+    nb_errors = 0
+    nb_warnings = 0
     for error in report.convention_errors:
-        if error.severity == "warning" or error.severity == "error":  # We don't send the 'run' messages
-            typechecking_error = True
-            if error.line:
-                instruction = source[error.line-1]
-            else:
-                instruction = None
-            extensions = add_extensions_error(error, "typechecking", filename, instruction)
-            send_statement("had", "execution-error", extensions)
+        if error.severity == "error":
+            nb_errors += 1
+            activity = "execution-error"
+        elif error.severity == "warning":
+            nb_warnings += 1
+            activity = "execution-warning"
+        else:
+            continue
+        if error.line:
+            instruction = source[error.line-1]
+        else:
+            instruction = "None"
+        extensions = add_extensions_error(error, "typechecking", filename, instruction)
+        send_statement("had", activity, extensions)
 
     for error in report.compilation_errors:
+        if error.severity == "error":
+            nb_errors += 1
+            activity = "execution-error"
+        elif error.severity == "warning":
+            nb_warnings += 1
+            activity = "execution-warning"
+        else:
+            continue
         if error.line:
             instruction = source[error.line-1]
         else:
-            instruction = None
+            instruction = "None"
         extensions = add_extensions_error(error, "compilation", filename, instruction)
-        send_statement("had", "execution-error", extensions)
+        nb_errors += 1
+        send_statement("had", activity, extensions)
 
     for error in report.execution_errors:
+        if error.severity == "error":
+            nb_errors += 1
+            activity = "execution-error"
+        elif error.severity == "warning":
+            nb_warnings += 1
+            activity = "execution-warning"
+        else:
+            continue
         if error.line:
             instruction = source[error.line-1]
         else:
-            instruction = None
+            instruction = "None"
         extensions = add_extensions_error(error, "execution", filename, instruction)
+        nb_errors += 1
         send_statement("had", "execution-error", extensions)
 
     #  Send a statement if the student didn't test his program enough
@@ -170,9 +193,9 @@ def send_statement_execute(report, mode, filename):
                           "https://www.lip6.fr/mocah/invalidURI/extensions/instruction": "None",
                           "https://www.lip6.fr/mocah/invalidURI/extensions/filename": os.path.basename(filename),
                           }
-            send_statement("had", "absence-tests", extensions)
+            nb_warnings += 1
+            send_statement("had", "execution-warning", extensions)
         elif report.nb_passed_tests == 0:
-            typechecking_error = True
             extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-severity": "error",
                           "https://www.lip6.fr/mocah/invalidURI/extensions/error-type": "Assertion issue",
                           "https://www.lip6.fr/mocah/invalidURI/extensions/error-class": "typechecking",
@@ -181,15 +204,18 @@ def send_statement_execute(report, mode, filename):
                           "https://www.lip6.fr/mocah/invalidURI/extensions/instruction": "None",
                           "https://www.lip6.fr/mocah/invalidURI/extensions/filename": os.path.basename(filename),
                           }
-            send_statement("had", "absence-tests", extensions)
+            nb_errors += 1
+            send_statement("had", "execution-error", extensions)
 
     #  Send final statement: Execution passed or failed
-    if status and not typechecking_error:
+    if nb_errors == 0:
         verb = "passed"
     else:
         verb = "failed"
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": mode,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/filename": os.path.basename(filename)}
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/filename": os.path.basename(filename),
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/nb-errors": nb_errors,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/nb-warnings": nb_warnings}
     if status and mode == tr("student") and report.nb_defined_funs > 0:
         extensions["https://www.lip6.fr/mocah/invalidURI/extensions/number-asserts"] = report.nb_passed_tests
     else:
@@ -201,30 +227,54 @@ def send_statement_evaluate(report, mode, instruction):
     """Create and send a statement at the end of the execution of the students program"""
 
     # Send statements for all errors
-    typechecking_error = False
+    nb_errors = 0
+    nb_warnings = 0
     for error in report.convention_errors:
-        if error.severity == "warning" or error.severity == "error":  # We don't send the 'run' messages
-            typechecking_error = True
-            extensions = add_extensions_error(error, "typechecking", instruction=instruction)
-            send_statement("had", "evaluation-error", extensions)
+        if error.severity == "error":
+            nb_errors += 1
+            activity = "evaluation-error"
+        elif error.severity == "warning":
+            nb_warnings += 1
+            activity = "evaluation-warning"
+        else:
+            continue
+        extensions = add_extensions_error(error, "typechecking", instruction=instruction)
+        send_statement("had", activity, extensions)
 
     for error in report.compilation_errors:
+        if error.severity == "error":
+            nb_errors += 1
+            activity = "evaluation-error"
+        elif error.severity == "warning":
+            nb_warnings += 1
+            activity = "evaluation-warning"
+        else:
+            continue
         extensions = add_extensions_error(error, "compilation", instruction=instruction)
-        send_statement("had", "evaluation-error", extensions)
+        send_statement("had", activity, extensions)
 
     for error in report.execution_errors:
+        if error.severity == "error":
+            nb_errors += 1
+            activity = "evaluation-error"
+        elif error.severity == "warning":
+            nb_warnings += 1
+            activity = "evaluation-warning"
+        else:
+            continue
         extensions = add_extensions_error(error, "execution", instruction=instruction)
-        send_statement("had", "evaluation-error", extensions)
+        send_statement("had", activity, extensions)
 
 
     #  Send final statement: Evaluation passed or failed
-    status = not (report.has_compilation_error() or report.has_execution_error())
-    if status and not typechecking_error:
+    if nb_errors == 0:
         verb = "passed"
     else:
         verb = "failed"
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": mode,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/instruction": instruction}
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/instruction": instruction,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/nb-errors": nb_errors,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/nb-warnings": nb_warnings}
     send_statement(verb, "evaluation", extensions)
 
 
@@ -289,14 +339,18 @@ activities = {
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/execution-error",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'an execution error'}))),
-    "testing-error": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/testing-error",
+    "execution-warning": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/execution-warning",
         definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a testing error '}))),
+            name=LanguageMap({'en-US': 'an execution warning'}))),
     "evaluation-error": Activity(
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/evaluation-error",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'an evaluation error'}))),
+    "evaluation-warning": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/evaluation-warning",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'an evaluation warning'}))),
     "keyword": Activity(
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/keyword",
         definition=ActivityDefinition(
