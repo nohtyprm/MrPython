@@ -17,6 +17,17 @@ from tincan import (
 from translate import tr
 
 
+def create_actor():
+    student_hash = io.get_student_hash()
+    student_id = "https://www.lip6.fr/mocah/invalidURI/student-number:" + student_hash
+    return Agent(openid=student_id, name=student_hash)
+
+
+def update_actor():
+    global actor
+    actor = create_actor()
+
+
 def init_student_number():
     """if the student number hash isn't initialized, we use the student number in the OS username.
     If the OS username is a 7 digit integer, we hash it and keep it.
@@ -26,12 +37,10 @@ def init_student_number():
     if student_hash == "not-initialized":
         new_hash = None
         os_username = getpass.getuser()
-        os_username = "1234367" #Test
-        if os_username.isnumeric():
+        if os_username.isnumeric() and len(os_username) == 7:
             student_number = int(os_username)
-            if student_number > 1000000 and student_number < 10000000:
-                modify_student_number(str(student_number))
-                return
+            modify_student_number(str(student_number))
+            return
         io.modify_student_hash("default")
 
 
@@ -39,15 +48,16 @@ def modify_student_number(student_number):
     """
     Keep a hash of the student number
     """
+    old_hash = io.get_student_hash()
     m = hashlib.sha1(str.encode(student_number))
-    student_hash = m.hexdigest()[:10]
-    io.modify_student_hash(student_hash)
+    new_hash = m.hexdigest()[:10]
+    io.modify_student_hash(new_hash)
+    send_statement("updated", "student-number",
+                   {"https://www.lip6.fr/mocah/invalidURI/old-hash": old_hash,
+                    "https://www.lip6.fr/mocah/invalidURI/new_hash": new_hash})
+    update_actor()
 
 
-def create_actor():
-    student_hash = io.get_student_hash()
-    student_id = "https://www.lip6.fr/mocah/invalidURI/student-number:" + student_hash
-    return Agent(openid=student_id, name=student_hash)
 
 
 def clear_stack():
@@ -287,12 +297,14 @@ init_student_number()
 actor = create_actor()
 session = str(uuid.uuid4())[:10]
 verbs = {
-    "created": Verb(
-        id="http://activitystrea.ms/schema/1.0/create", display=LanguageMap({'en-US': 'created'})),
     "opened": Verb(
         id="http://activitystrea.ms/schema/1.0/open", display=LanguageMap({'en-US': 'opened'})),
     "closed": Verb(
         id="http://activitystrea.ms/schema/1.0/close", display=LanguageMap({'en-US': 'closed'})),
+    "updated": Verb(
+        id="http://activitystrea.ms/schema/1.0/update", display=LanguageMap({'en-US': 'updated'})),
+    "created": Verb(
+        id="http://activitystrea.ms/schema/1.0/create", display=LanguageMap({'en-US': 'created'})),
     "saved": Verb(
         id="http://activitystrea.ms/schema/1.0/save", display=LanguageMap({'en-US': 'saved'})),
     "switched": Verb(
@@ -316,6 +328,10 @@ activities = {
         id="http://activitystrea.ms/schema/1.0/application",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'the MrPython application'}))),
+    "student-number": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/student-number",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'his/her student number'}))),
     "file": Activity(
         id="http://activitystrea.ms/schema/1.0/file",
         definition=ActivityDefinition(
