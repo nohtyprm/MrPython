@@ -103,7 +103,7 @@ def send_statement(verb, activity, extensions={}):
         print("Tracing: Creating and Sending statement, {} {}".format(verb, activity))
         verb = verbs[verb]
         object = activities[activity]
-        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/session:"] = session
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/session"] = session
         context = Context(extensions=extensions)
 
         statement = Statement(
@@ -113,8 +113,8 @@ def send_statement(verb, activity, extensions={}):
             context=context
         )
         # Send statement and receive HTTP response
-        if not send_statement_lrs(statement):
-            io.add_statement(statement)
+        #if not send_statement_lrs(statement):
+        #    io.add_statement(statement)
 
     # Send the statement from another thread
     x = threading.Thread(target=thread_function, args=(verb, activity))
@@ -321,6 +321,8 @@ verbs = {
         id="https://www.lip6.fr/mocah/invalidURI/verbs/had", display=LanguageMap({'en-US': 'had'})),
     "typed": Verb(
         id="https://www.lip6.fr/mocah/invalidURI/verbs/typed", display=LanguageMap({'en-US': 'typed'})),
+    "modified": Verb(
+        id="https://www.lip6.fr/mocah/invalidURI/verbs/modified", display=LanguageMap({'en-US': 'modified'})),
     }
 
 activities = {
@@ -371,6 +373,10 @@ activities = {
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/keyword",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'a keyword'}))),
+    "instruction": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/instruction",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'a programming instruction'}))),
     }
 
 if __name__ == "__main__":

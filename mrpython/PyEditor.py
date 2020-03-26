@@ -118,11 +118,18 @@ class PyEditor(HighlightingText):
         self.font = nametofont(self.cget('font')).copy()
         self.configure(font=self.font)
 
+        # Tracing: send programing instruction
+        self.old_line = -1  # Number of the line. -1: default, no line saved
+        self.old_instruction = None # String of the instruction typed
+
+
     def apply_bindings(self,keydefs=None):
         self.bind("<<smart-backspace>>",self.smart_backspace_event)
         self.bind("<<newline-and-indent>>",self.newline_and_indent_event)
         self.bind("<<smart-indent>>",self.smart_indent_event)
-        self.bind('<KeyRelease>', self.key_tracing_event)
+        self.bind("<KeyPress>", self.save_instruction_event)
+        self.bind("<ButtonRelease-1>", self.send_instruction_event)
+        self.bind('<KeyRelease>', self.send_instruction_keyword_event)
 
         #bindings keys
         if keydefs is None:
@@ -509,7 +516,9 @@ class PyEditor(HighlightingText):
         if first and last:
             self.delete(first, last)
             self.mark_set("insert", first)
+            self.save_instruction_event(event)
             return "break"
+        self.save_instruction_event(event)
         # Delete whitespace left, until hitting a real char or closest
         # preceding virtual tab stop.
         chars = self.get("insert linestart", "insert")
@@ -557,7 +566,7 @@ class PyEditor(HighlightingText):
         cursor = self.index("insert")
         if cursor[:2] == "1.":  # Only if it's typed in the first line of the editor
             student_number = self.get(cursor + " linestart", cursor)
-            if student_number[0] == "#":
+            if len(student_number) >= 2 and student_number[0] == "#":
                 student_number = student_number[1:]
             if len(student_number) == 7 and student_number.isnumeric():
                 tracing.modify_student_number(student_number)
@@ -659,6 +668,7 @@ class PyEditor(HighlightingText):
                 self.smart_backspace_event(event)
             return "break"
         finally:
+            self.send_instruction_event(event)
             self.see("insert")
             self.undo_block_stop()
 
@@ -690,9 +700,53 @@ class PyEditor(HighlightingText):
         finally:
             self.undo_block_stop()
 
-    def key_tracing_event(self,event):
+    def get_current_line(self):
+        cursor = self.index("insert")
+        line = cursor.split('.')[0]
+        return line
+
+    def save_instruction_event(self, event):
+        """
+        Keep the old instruction to trace the diff between the new and the old instruction
+        This function is called when a key is pressed and in smart_backspace_event.
+        """
+        if self.old_line == -1:
+            self.old_line = self.get_current_line()
+            self.old_instruction = self.get("insert linestart", "insert lineend")
+
+    def send_instruction_event(self,event):
+        """
+        If the student modified an instruction, we send the modification
+        This function is called when the user left-click, in send_instruction_keyword_event and in
+        newline_and_indent_event.
+        """
+        # If old_line has been setup and if the cursor changed line
+        if self.old_line != -1 and self.get_current_line() != self.old_line:
+            old_line = str(self.old_line) + ".0"
+            new_instruction = self.get(old_line + " linestart", old_line + " lineend")
+            both_not_empty = (self.old_instruction != "" and not self.old_instruction.isspace())
+            both_not_empty = both_not_empty or (new_instruction != "" and not new_instruction.isspace())
+            if both_not_empty and new_instruction != self.old_instruction:
+                filename = self.short_title()
+                tracing.send_statement("modified","instruction",
+                                       {"https://www.lip6.fr/mocah/invalidURI/old-instruction": self.old_instruction,
+                                        "https://www.lip6.fr/mocah/invalidURI/new-instruction": new_instruction,
+                                        "https://www.lip6.fr/mocah/invalidURI/line-number": self.old_line,
+                                        "https://www.lip6.fr/mocah/invalidURI/filename": filename
+                                        }
+                                       )
+                print("\nline {} - old instruction: {}".format(self.old_line, self.old_instruction))
+                print("new instruction: {}".format(new_instruction))
+            # Reset
+            self.old_line = -1
+            self.old_instruction = None
+
+
+    def send_instruction_keyword_event(self,event):
         """Send a statement if the user typed a keyword """
+        self.send_instruction_event(event)
         # Check if previous word was a python Keyword
+        #print("release")
         if event.keysym == "space" or event.char == ":" or event.char == ")" or event.char == "=":
             cursor = self.index("insert")
             end_word = cursor + "-2c"
