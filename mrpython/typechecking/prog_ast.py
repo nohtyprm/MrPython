@@ -9,6 +9,11 @@ try:
 except ImportError:
     from type_ast import *
 
+try:
+    from .type_converter import *
+except ImportError:
+    from type_converter import *
+
 import os.path, sys
 
 main_path = os.path.dirname(os.path.realpath(__file__))
@@ -81,7 +86,6 @@ class Program:
 
         for node in modast.body:
             print("Passage dans un node " + str(type(node)) + "\n")
-            #print(node._attributes)
             if isinstance(node, ast.Import):
                 imp_ast = Import(node)
                 self.imports[imp_ast.name] = imp_ast
@@ -98,10 +102,11 @@ class Program:
                 assign_ast = Assign(node)
                 self.global_vars.append(assign_ast)
 
-                if hasattr(assign_ast, "type"):
-                    print(assign_ast.type)
+                if hasattr(assign_ast, "type_annotation"):
+                    # print(dir(assign_ast.type_annotation))
+                    print(str(type(type_converter(assign_ast.type_annotation))) + "\n")
             else:
-                #print("Unsupported instruction: " + node)
+                # print("Unsupported instruction: " + node)
                 self.other_top_defs.append(UnsupportedNode(node))
 
 class UnsupportedNode:
@@ -203,19 +208,28 @@ class Assign:
         self.ast = node
 
         if isinstance(node, ast.AnnAssign):
-            self.target = build_lhs_destruct(self.ast.target)
-            # print("tuple annotation : " + str(dir(self.ast.annotation)) + "\n")
-            # print("value : " + str(dir(self.ast.annotation.value)) + "\n")
-            # for i in self.ast.annotation.value._attributes:
-            #     print(i)
-            print(dir(self.ast.annotation))
-            print("type annotation id :" + str(type(self.ast.annotation.id)))
-            if self.ast.annotation.id == "int":
-                self.type = IntType()
-            elif self.ast.annotation.id == "bool":
-                self.type = BoolType()
-            elif self.ast.annotation.id == "str":
-                self.type = StrType()
+            self.type_annotation = self.ast.annotation
+
+            # print(type(self.ast.annotation))
+            # for i in self.ast.annotation.slice.value.elts:
+            #     print(type(i))
+            #     print(type(i.id))
+            #     print(i.id)
+
+            """
+            ```
+            TODO :
+            V -> dans assign on ajoute un node type_annotation qui vaut self.node.ast.annotation
+            V -> nouveau fichier type_converter.py -> fonction type_converter
+               (une sorte de visiteur sur le prog ast mais uniquement les noeuds qui concernent une annotation)
+            -> +tard dans le typer on appelera type_converter qui prendra en entrée une annotation, qui check qu'on comprend l'annotation
+               et qui renvoit soit le type construit correspondant soit une erreur
+               (ça se fait là où l'on appelle assign)
+            -> on teste si le node a une annotation, si oui notre système, sinon le truc déjà en place
+            -> on passe la pepe annotation en paramètre du constructeur du type ast
+            ```
+            """
+
         else:
             self.target = build_lhs_destruct(self.ast.targets[0])
 
@@ -577,7 +591,7 @@ class ECompare(Expr):
         self.conds = conds
 
 def parse_compare(node):
-    #print(astpp.dump(node))
+    #print(.dump(node))
     left = node.left
     conds = []
     for (op, right) in zip(node.ops, node.comparators):

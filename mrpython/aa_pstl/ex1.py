@@ -1,4 +1,6 @@
-# i : int  = 1 + 3
+# from typing import Tuple
+i : int  = 1 + 3
 # j : bool = true
 # s : str = "ok"
 x:Tuple[int, int] = (2,3)
+# print(x)
