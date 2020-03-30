@@ -305,8 +305,11 @@ class Console:
                 self.write("==> " + tr("All the {} tests passed with success").format(report.nb_passed_tests), tags=('run'))
             elif report.nb_passed_tests == 1:
                 self.write("==> " + tr("Only one (successful) test found, it's probably not enough"), tags=('warning'))
+                report.add_convention_error("warning", tr("Missing tests"), details = tr("Only one (successful) test found, it's probably not enough"))
             else:
                 self.write("==> " + tr("There is no test! you have to write tests!"), tags=('error'))
+                report.add_convention_error("error", tr("Missing tests"), details = tr("There is no test! you have to write tests!"))
+
         
         self.write(report.footer, tags=(tag))
 

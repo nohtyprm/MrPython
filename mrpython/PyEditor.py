@@ -127,6 +127,7 @@ class PyEditor(HighlightingText):
         self.bind("<<smart-backspace>>",self.smart_backspace_event)
         self.bind("<<newline-and-indent>>",self.newline_and_indent_event)
         self.bind("<<smart-indent>>",self.smart_indent_event)
+
         self.bind("<KeyPress>", self.save_instruction_event)
         self.bind("<ButtonRelease-1>", self.send_instruction_event)
         self.bind('<KeyRelease>', self.send_instruction_keyword_event)
@@ -746,8 +747,8 @@ class PyEditor(HighlightingText):
         """Send a statement if the user typed a keyword """
         self.send_instruction_event(event)
         # Check if previous word was a python Keyword
-        #print("release")
-        if event.keysym == "space" or event.char == ":" or event.char == ")" or event.char == "=":
+        #TODO: A completer
+        if event.keysym == "space" or event.char == ":" or event.char == "[" or event.char == "\"" or event.char == "(" or event.char == ")" or event.char == "=":
             cursor = self.index("insert")
             end_word = cursor + "-2c"
             tags = self.tag_names(end_word)
