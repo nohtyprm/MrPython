@@ -161,7 +161,6 @@ class Application:
         if filename:
             self.status_bar.update_save_label(filename)
             self.update_title()
-            tracing.send_statement("saved", "file")
 
 
     def change_mode(self, event=None, tracing_statement = True):
@@ -174,7 +173,8 @@ class Application:
         self.console.change_mode(tr(self.mode))
         self.status_bar.change_mode(tr(self.mode))
         if tracing_statement:
-            tracing.send_statement("switched", "mode")
+            tracing.send_statement("switched", "mode",
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": tr(self.mode)})
 
     def new_file(self, event=None):
         """ Creates a new empty editor and put it into the pyEditorList """
@@ -188,7 +188,8 @@ class Application:
         if (self.editor_list.focusOn(file_editor.long_title()) == False):
             if (file_editor.isOpen()):
                 self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
-                tracing.send_statement("opened", "file")
+                tracing.send_statement("opened", "file",
+{"https://www.lip6.fr/mocah/invalidURI/extensions/filename": file_editor.get_file_name()})
             #not clean, io should be handled here and should not require creation of PyEditor widget
             else:
                 file_editor.destroy()

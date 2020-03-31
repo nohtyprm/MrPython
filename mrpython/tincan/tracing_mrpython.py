@@ -118,8 +118,8 @@ def send_statement(verb, activity, activity_extensions=None):
             context=context
         )
         # Send statement and receive HTTP response
-        if not send_statement_lrs(statement):
-            io.add_statement(statement)
+        #if not send_statement_lrs(statement):
+        #    io.add_statement(statement)
 
     # Send the statement from another thread
     x = threading.Thread(target=thread_function, args=(verb, activity, activity_extensions))

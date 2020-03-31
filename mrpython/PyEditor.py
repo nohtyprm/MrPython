@@ -702,9 +702,28 @@ class PyEditor(HighlightingText):
             self.undo_block_stop()
 
     def get_current_line(self):
+        """Get the line number of the cursor"""
         cursor = self.index("insert")
         line = cursor.split('.')[0]
+        line = int(line)
         return line
+
+    def get_previous_function(self, line_number):
+        """Get the name of the previous function defined
+        This doesn't take indentation into consideration"""
+        assert line_number >= 1
+        while line_number >= 1:
+            head = str(line_number) + ".0 linestart"
+            tail = str(line_number) + ".0 lineend"
+            instruction = self.get(head, tail)
+            instruction = instruction.strip()
+            if instruction.startswith("def "): # Check the first previous line starting with "def "
+                instruction = instruction[4:]
+                function_name = instruction.split('(')[0]
+                function_name = function_name.strip()
+                return function_name
+            line_number -= 1
+        return "no function defined"
 
     def save_instruction_event(self, event):
         """
@@ -723,21 +742,23 @@ class PyEditor(HighlightingText):
         """
         # If old_line has been setup and if the cursor changed line
         if self.old_line != -1 and self.get_current_line() != self.old_line:
-            old_line = str(self.old_line) + ".0"
-            new_instruction = self.get(old_line + " linestart", old_line + " lineend")
+            line_number = str(self.old_line) + ".0"
+            new_instruction = self.get(line_number + " linestart", line_number + " lineend")
             both_not_empty = (self.old_instruction != "" and not self.old_instruction.isspace())
             both_not_empty = both_not_empty or (new_instruction != "" and not new_instruction.isspace())
             if both_not_empty and new_instruction != self.old_instruction:
                 filename = self.short_title()
+                name_function = self.get_previous_function(self.old_line)
                 tracing.send_statement("modified","instruction",
                                        {"https://www.lip6.fr/mocah/invalidURI/old-instruction": self.old_instruction,
                                         "https://www.lip6.fr/mocah/invalidURI/new-instruction": new_instruction,
                                         "https://www.lip6.fr/mocah/invalidURI/line-number": self.old_line,
-                                        "https://www.lip6.fr/mocah/invalidURI/filename": filename
+                                        "https://www.lip6.fr/mocah/invalidURI/filename": filename,
+                                        "https://www.lip6.fr/mocah/invalidURI/name_function": name_function,
                                         }
                                        )
-                print("\nline {} - old instruction: {}".format(self.old_line, self.old_instruction))
-                print("new instruction: {}".format(new_instruction))
+                #print("\nline {} - old instruction: {}".format(self.old_line, self.old_instruction))
+                #print("new instruction: {}".format(new_instruction))
             # Reset
             self.old_line = -1
             self.old_instruction = None

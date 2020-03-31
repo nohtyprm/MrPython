@@ -348,7 +348,7 @@ class Console:
 
             self.app.icon_widget.disable_icon_running()
             self.app.running_interpreter_callback = None
-            tracing.send_statement_evaluate(report, self.mode, instruction=expr)
+            tracing.send_statement_evaluate(report, tr(self.mode), instruction=expr)
 
         # non-blocking call
         self.app.icon_widget.enable_icon_running()
@@ -424,7 +424,7 @@ class Console:
 
             self.app.icon_widget.disable_icon_running()
             self.app.running_interpreter_callback = None
-            tracing.send_statement_execute(report, self.mode, filename=filename)
+            tracing.send_statement_execute(report, tr(self.mode), filename=filename)
                 
         # non-blocking call
         self.app.icon_widget.enable_icon_running()

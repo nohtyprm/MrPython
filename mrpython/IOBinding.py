@@ -113,7 +113,7 @@ class IOBinding:
     def __init__(self, editwin):
         self.editwin=editwin
         self.fileencoding = None
-        
+
 
     def close(self):
         # Break cycles
@@ -171,7 +171,7 @@ class IOBinding:
             self.editwin.open(filename, self.loadfile)
             return True
         return False
-           
+
 
     eol = r"(\r\n)|\n|\r"  # \r\n (Windows), \n (UNIX), or \r (Mac)
     eol_re = re.compile(eol)
@@ -297,8 +297,6 @@ class IOBinding:
             self.save(None)
             if not self.get_saved():
                 reply = "cancel"
-            else:
-                tracing.send_statement("saved", "file")
         elif confirm is None:
             reply = "cancel"
         else:
@@ -319,17 +317,18 @@ class IOBinding:
             self.save(None)
             if not self.get_saved():
                 reply = "cancel"
-            else:
-                tracing.send_statement("saved", "file")
         else:
             reply = "cancel"
         return reply
-        
+
     def save(self, event):
         if not self.filename:
             self.save_as(event)
         else:
             if self.writefile(self.filename):
+                tracing.send_statement("saved", "file",
+                                       {"https://www.lip6.fr/mocah/invalidURI/extensions/old-filename": self.filename,
+                                        "https://www.lip6.fr/mocah/invalidURI/extensions/new-filename": self.filename})
                 self.set_saved(True)
                 try:
                     self.editwin.store_file_breaks()
@@ -343,6 +342,10 @@ class IOBinding:
         ### return "break"
 
     def save_as(self, event):
+        if self.filename:
+            old_filename = self.filename
+        else:
+            old_filename = "Sans nom"
         filename = self.asksavefile()
         if filename:
             if self.writefile(filename):
@@ -353,6 +356,10 @@ class IOBinding:
                     self.editwin.store_file_breaks()
                 except AttributeError:
                     pass
+                tracing.send_statement("saved", "file",
+                                       {"https://www.lip6.fr/mocah/invalidURI/extensions/old-filename": old_filename,
+                                        "https://www.lip6.fr/mocah/invalidURI/extensions/new-filename": filename})
+
         self.editwin.focus_set()
         self.updaterecentfileslist(filename)
         return "break"
