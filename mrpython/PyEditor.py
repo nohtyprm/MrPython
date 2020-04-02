@@ -577,7 +577,7 @@ class PyEditor(HighlightingText):
             if len(student_number) >= 2 and student_number[0] == "#":
                 student_number = student_number[1:]
             if len(student_number) == 7 and student_number.isnumeric():
-                tracing.modify_student_number(student_number)
+                tracing.modify_student_number(student_number, "user-input")
 
         first, last = self.get_selection_indices()
         self.undo_block_start()

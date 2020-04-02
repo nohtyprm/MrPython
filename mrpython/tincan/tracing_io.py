@@ -11,14 +11,15 @@ filename = os.path.join(os.path.dirname(__file__), 'tracing_data.json')
 
 def reset_file():
     with open(filename, "w") as f:
-        data = {"student_hash": "default", "list_statements" : []}
+        data = {"student_hash": "default", "student_context": "default", "list_statements" : []}
         json.dump(data, f)
 
 
-def modify_student_hash(student_hash):
+def modify_student_hash(student_hash, student_context):
     with open(filename, "r+") as f:
         data = json.load(f)
         data["student_hash"] = student_hash
+        data["student_context"] = student_context
         f.truncate(0)
         f.seek(0)
         json.dump(data,f)
@@ -28,6 +29,11 @@ def get_student_hash():
     with open(filename, "r") as f:
         data = json.load(f)
         return(data["student_hash"])
+
+def get_student_context():
+    with open(filename, "r") as f:
+        data = json.load(f)
+        return(data["student_context"])
 
 
 def add_statement(statement):

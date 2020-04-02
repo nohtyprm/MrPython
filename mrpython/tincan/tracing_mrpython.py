@@ -40,24 +40,24 @@ def init_student_number():
         os_username = getpass.getuser()
         if os_username.isnumeric() and len(os_username) == 7:
             student_number = int(os_username)
-            modify_student_number(str(student_number))
+            modify_student_number(str(student_number), "username-OS")
             return
-        io.modify_student_hash("default")
+        io.modify_student_hash("default", "default")
 
 
-def modify_student_number(student_number):
+def modify_student_number(student_number, student_context):
     """
     Keep a hash of the student number
     """
     old_hash = io.get_student_hash()
     m = hashlib.sha1(str.encode(student_number))
     new_hash = m.hexdigest()[:10]
-    io.modify_student_hash(new_hash)
+    io.modify_student_hash(new_hash, student_context)
     send_statement("updated", "student-number",
-                   {"https://www.lip6.fr/mocah/invalidURI/old-hash": old_hash,
-                    "https://www.lip6.fr/mocah/invalidURI/new_hash": new_hash})
+                   {"https://www.lip6.fr/mocah/invalidURI/extensions/old-hash": old_hash,
+                    "https://www.lip6.fr/mocah/invalidURI/extensions/new_hash": new_hash,
+                    "https://www.lip6.fr/mocah/invalidURI/extensions/context": student_context})
     update_actor()
-
 
 
 
@@ -104,7 +104,8 @@ def send_statement(verb, activity, activity_extensions=None):
         print("Tracing: Creating and Sending statement, {} {}".format(verb, activity))
         verb = verbs[verb]
         object = activities[activity]
-        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session": session}
+        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session": session,
+                      "https://www.lip6.fr/mocah/invalidURI/extensions/context": io.get_student_context()}
         context = Context(extensions=extensions)
 
         if activity_extensions:
