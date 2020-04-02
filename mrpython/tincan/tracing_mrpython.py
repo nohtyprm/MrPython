@@ -303,6 +303,12 @@ verbs = {
         id="https://www.lip6.fr/mocah/invalidURI/verbs/typed", display=LanguageMap({'en-US': 'typed'})),
     "modified": Verb(
         id="https://www.lip6.fr/mocah/invalidURI/verbs/modified", display=LanguageMap({'en-US': 'modified'})),
+    "moved": Verb(
+        id="https://www.lip6.fr/mocah/invalidURI/verbs/moved", display=LanguageMap({'en-US': 'moved'})),
+    "deleted": Verb(
+        id="http://activitystrea.ms/schema/1.0/delete", display=LanguageMap({'en-US': 'deleted'})),
+    "inserted": Verb(
+        id="http://activitystrea.ms/schema/1.0/insert", display=LanguageMap({'en-US': 'inserted'})),
     }
 
 activities = {
@@ -357,6 +363,14 @@ activities = {
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/instruction",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'a programming instruction'}))),
+    "scrollbar": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/scrollbar",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'a scrollbar'}))),
+    "text": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/text",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'some text'}))),
     }
 
 if __name__ == "__main__":

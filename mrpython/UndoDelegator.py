@@ -3,6 +3,7 @@ from tkinter import *
 
 from Delegator import Delegator
 
+from tincan import tracing_mrpython as tracing
 #$ event <<redo>>
 #$ win <Control-y>
 #$ unix <Alt-z>
@@ -223,6 +224,9 @@ class InsertCommand(Command):
 
     def redo(self, text):
         text.mark_set('insert', self.index1)
+        tracing.send_statement("inserted", "text",
+                               {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.chars,
+                                "https://www.lip6.fr/mocah/invalidURI/extensions/index": self.index1})
         text.insert(self.index1, self.chars, self.tags)
         self.set_marks(text, self.marks_after)
         text.see('insert')
@@ -230,6 +234,10 @@ class InsertCommand(Command):
 
     def undo(self, text):
         text.mark_set('insert', self.index1)
+        tracing.send_statement("deleted", "text",
+                               {"https://www.lip6.fr/mocah/invalidURI/extensions/text": text.get(self.index1, self.index2),
+                                "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": self.index1,
+                                "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": self.index2})
         text.delete(self.index1, self.index2)
         self.set_marks(text, self.marks_before)
         text.see('insert')
@@ -286,12 +294,19 @@ class DeleteCommand(Command):
     def redo(self, text):
         text.mark_set('insert', self.index1)
         text.delete(self.index1, self.index2)
+        tracing.send_statement("deleted", "text",
+                               {"https://www.lip6.fr/mocah/invalidURI/extensions/text": text.get(self.index1, self.index2),
+                                "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": self.index1,
+                                "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": self.index2})
         self.set_marks(text, self.marks_after)
         text.see('insert')
         ##sys.__stderr__.write("redo: %s\n" % self)
 
     def undo(self, text):
         text.mark_set('insert', self.index1)
+        tracing.send_statement("inserted", "text",
+                               {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.chars,
+                                "https://www.lip6.fr/mocah/invalidURI/extensions/index": self.index1})
         text.insert(self.index1, self.chars)
         self.set_marks(text, self.marks_before)
         text.see('insert')

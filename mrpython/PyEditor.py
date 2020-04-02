@@ -122,15 +122,21 @@ class PyEditor(HighlightingText):
         self.old_line = -1  # Number of the line. -1: default, no line saved
         self.old_instruction = None # String of the instruction typed
 
+        self.sy = None
+
 
     def apply_bindings(self,keydefs=None):
         self.bind("<<smart-backspace>>",self.smart_backspace_event)
         self.bind("<<newline-and-indent>>",self.newline_and_indent_event)
         self.bind("<<smart-indent>>",self.smart_indent_event)
 
-        self.bind("<KeyPress>", self.save_instruction_event)
-        self.bind("<ButtonRelease-1>", self.send_instruction_event)
-        self.bind('<KeyRelease>', self.send_instruction_keyword_event)
+        self.bind("<KeyPress>", self.keypress_event)
+        self.bind('<KeyRelease>', self.keyrelease_event)
+        self.bind("<ButtonRelease-1>", self.mouserelease_event)
+        self.bind("<Control-v>", self.insert_event)
+        #self.bind("<<ArrowKey>>", self.arrowkey_event)
+        arrowkey = ['<Key-Left>', '<Key-Right>', '<Key-Up>', '<Key-Down>']
+        self.event_add("<<ArrowKey>>", *arrowkey)
 
         #bindings keys
         if keydefs is None:
@@ -515,11 +521,12 @@ class PyEditor(HighlightingText):
     def smart_backspace_event(self, event):
         first, last = self.get_selection_indices()
         if first and last:
+            self.send_deletion(first, last)
             self.delete(first, last)
             self.mark_set("insert", first)
-            self.save_instruction_event(event)
+            self.save_send_instruction()
             return "break"
-        self.save_instruction_event(event)
+        self.save_send_instruction()
         # Delete whitespace left, until hitting a real char or closest
         # preceding virtual tab stop.
         chars = self.get("insert linestart", "insert")
@@ -576,6 +583,7 @@ class PyEditor(HighlightingText):
         self.undo_block_start()
         try:
             if first and last:
+                self.send_deletion(first, last)
                 self.delete(first, last)
                 self.mark_set("insert", first)
             line = self.get("insert linestart", "insert")
@@ -669,7 +677,6 @@ class PyEditor(HighlightingText):
                 self.smart_backspace_event(event)
             return "break"
         finally:
-            self.send_instruction_event(event)
             self.see("insert")
             self.undo_block_stop()
 
@@ -680,6 +687,7 @@ class PyEditor(HighlightingText):
             if first and last:
                 if index2line(first) != index2line(last):
                     return self.indent_region_event(event)
+                self.send_deletion(first, last)
                 self.delete(first, last)
                 self.mark_set("insert", first)
             prefix = self.get("insert linestart", "insert")
@@ -705,8 +713,15 @@ class PyEditor(HighlightingText):
         """Get the line number of the cursor"""
         cursor = self.index("insert")
         line = cursor.split('.')[0]
-        line = int(line)
-        return line
+        return int(line)
+
+    def get_current_instruction(self):
+        return self.get("insert linestart", "insert lineend")
+
+    def get_number_of_lines(self):
+        end = self.index("end-1c")
+        line = end.split('.')[0]
+        return int(line)
 
     def get_previous_function(self, line_number):
         """Get the name of the previous function defined
@@ -725,59 +740,92 @@ class PyEditor(HighlightingText):
             line_number -= 1
         return "no function defined"
 
-    def save_instruction_event(self, event):
+    def save_send_instruction(self):
         """
-        Keep the old instruction to trace the diff between the new and the old instruction
+        A function tracing a statement of the modification of an instruction.
+        If the cursor's line number changed at the time this function is called and the old instruction has been
+        modified, we send a statement with the modified instruction
         This function is called when a key is pressed and in smart_backspace_event.
         """
-        if self.old_line == -1:
+        if self.old_line == -1:  # Initialize the cursor's line number and instruction
             self.old_line = self.get_current_line()
-            self.old_instruction = self.get("insert linestart", "insert lineend")
+            self.old_instruction = self.get_current_instruction()
 
-    def send_instruction_event(self,event):
-        """
-        If the student modified an instruction, we send the modification
-        This function is called when the user left-click, in send_instruction_keyword_event and in
-        newline_and_indent_event.
-        """
-        # If old_line has been setup and if the cursor changed line
-        if self.old_line != -1 and self.get_current_line() != self.old_line:
+        if self.get_current_line() != self.old_line: # If the cursor's line number changed
             line_number = str(self.old_line) + ".0"
             new_instruction = self.get(line_number + " linestart", line_number + " lineend")
-            both_not_empty = (self.old_instruction != "" and not self.old_instruction.isspace())
-            both_not_empty = both_not_empty or (new_instruction != "" and not new_instruction.isspace())
-            if both_not_empty and new_instruction != self.old_instruction:
+            not_both_empty = (self.old_instruction != "" and not self.old_instruction.isspace())
+            not_both_empty = not_both_empty or (new_instruction != "" and not new_instruction.isspace())
+            if not_both_empty and new_instruction != self.old_instruction:
                 filename = self.short_title()
                 name_function = self.get_previous_function(self.old_line)
-                tracing.send_statement("modified","instruction",
-                                       {"https://www.lip6.fr/mocah/invalidURI/old-instruction": self.old_instruction,
-                                        "https://www.lip6.fr/mocah/invalidURI/new-instruction": new_instruction,
-                                        "https://www.lip6.fr/mocah/invalidURI/line-number": self.old_line,
-                                        "https://www.lip6.fr/mocah/invalidURI/filename": filename,
-                                        "https://www.lip6.fr/mocah/invalidURI/name_function": name_function,
+                tracing.send_statement("modified", "instruction",
+                                       {"https://www.lip6.fr/mocah/invalidURI/extensions/old-instruction": self.old_instruction,
+                                        "https://www.lip6.fr/mocah/invalidURI/extensions/new-instruction": new_instruction,
+                                        "https://www.lip6.fr/mocah/invalidURI/extensions/line-number": self.old_line,
+                                        "https://www.lip6.fr/mocah/invalidURI/extensions/filename": filename,
+                                        "https://www.lip6.fr/mocah/invalidURI/extensions/name_function": name_function,
                                         }
                                        )
-                #print("\nline {} - old instruction: {}".format(self.old_line, self.old_instruction))
-                #print("new instruction: {}".format(new_instruction))
+                # print("\nline {} - old instruction: {}".format(self.old_line, self.old_instruction))
+                # print("new instruction: {}".format(new_instruction))
             # Reset
-            self.old_line = -1
-            self.old_instruction = None
+            self.old_line = self.get_current_line()
+            self.old_instruction = self.get_current_instruction()
 
+    def send_keyword(self, end_word):
+        tags = self.tag_names(end_word)
+        if 'KEYWORD' in self.tag_names(end_word):
+            index1, index2 = self.tag_prevrange('KEYWORD', end_word)
+            keyword = self.get(index1, index2)
+            tracing.send_statement("typed", "keyword",
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/keyword-typed": keyword})
+            print(keyword)
 
-    def send_instruction_keyword_event(self,event):
-        """Send a statement if the user typed a keyword """
-        self.send_instruction_event(event)
+    def send_deletion(self, first, last):
+        tracing.send_statement("deleted", "text",
+                               {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.get(first, last),
+                                "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": first,
+                                "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last})
+
+    def keypress_event(self, event):
+        self.save_send_instruction()
+
+    def mouserelease_event(self,event):
+        self.save_send_instruction()
+
+    def insert_event(self,event):
+        print(self.index("insert"))
+        print(self.clipboard_get())
+        tracing.send_statement("inserted", "text",
+                               {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.clipboard_get(),
+                                "https://www.lip6.fr/mocah/invalidURI/extensions/index": self.index("insert")})
+
+    def keyrelease_event(self,event):
+        self.save_send_instruction()
         # Check if previous word was a python Keyword
-        #TODO: A completer
-        if event.keysym == "space" or event.char == ":" or event.char == "[" or event.char == "\"" or event.char == "(" or event.char == ")" or event.char == "=":
+        char_separator = [":", ";", "[", "]", "*", "+", "-", "(", ")", "{", "}", "!", "=", "\"", "\'"]
+        keysym_separator = ["space", "Return", "KP_Enter"]
+        is_separator = event.char in char_separator
+        is_separator = is_separator or event.keysym in keysym_separator
+        if is_separator:
             cursor = self.index("insert")
             end_word = cursor + "-2c"
-            tags = self.tag_names(end_word)
-            if 'KEYWORD' in self.tag_names(end_word):
-                index1, index2 = self.tag_prevrange('KEYWORD',end_word)
-                keyword = self.get(index1, index2)
-                tracing.send_statement("typed", "keyword",
-                                       {"https://www.lip6.fr/mocah/invalidURI/extensions/keyword-typed": keyword})
+            self.send_keyword(end_word)
+
+    def send_scroll_event(self, event):
+        top, bottom = self.sy.get() # Positions [0.0, 1.0] of the bottom and top edges of the slider
+        number_lines = self.get_number_of_lines()
+        top_line = int(number_lines*top + 1)
+        bottom_line = int(number_lines*bottom)
+        tracing.send_statement("moved", "scrollbar",
+                               {"https://www.lip6.fr/mocah/invalidURI/extensions/top-line": top_line,
+                                "https://www.lip6.fr/mocah/invalidURI/extensions/bottom-line": bottom_line
+                                }
+                               )
+    def set_scrollbar(self,sy):
+        self.sy = sy
+        self.sy.bind('<ButtonRelease-1>', self.send_scroll_event)
 
     def set_notabs_indentwidth(self):
         "Update the indentwidth if changed and not using tabs in this window"
