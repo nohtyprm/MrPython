@@ -64,10 +64,10 @@ class StudentRunner:
             self.AST = ast.parse(self.source, self.filename)
         # Handle the different kinds of compilation errors
         except IndentationError as err:
-            self.report.add_compilation_error('error', tr("Bad indentation"), err.lineno, err.offset)
+            self.report.add_compilation_error('error', tr("Bad indentation"), err.lineno, err.offset, class_name="IndentationError")
             return False
         except SyntaxError as err:
-            self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=err.text)
+            self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=err.text, class_name="SyntaxError")
             return False
         except Exception as err:
             typ, exc, tb = sys.exc_info()
@@ -107,7 +107,7 @@ class StudentRunner:
             a, b, tb = sys.exc_info()
             filename, lineno, file_type, line = traceback.extract_tb(tb)[-1]
             err_str = self._extract_error_details(err)
-            self.report.add_execution_error('error', tr("Type error"), lineno, details=str(err))
+            self.report.add_execution_error('error', tr("Type error"), lineno, details=str(err), class_name="TypeError")
             return (False, None)
         except NameError as err:
             a, b, tb = sys.exc_info() # Get the traceback object
@@ -116,12 +116,12 @@ class StudentRunner:
             # traceback, [1] refers to the last error inside code
             filename, lineno, file_type, line = traceback.extract_tb(tb)[-1]
             err_str = self._extract_error_details(err)
-            self.report.add_execution_error('error', tr("Name error (unitialized variable?)"), lineno, details=err_str)
+            self.report.add_execution_error('error', tr("Name error (unitialized variable?)"), lineno, details=err_str, class_name="NameError")
             return (False, None)
         except ZeroDivisionError:
             a, b, tb = sys.exc_info()
             filename, lineno, file_type, line = traceback.extract_tb(tb)[-1]
-            self.report.add_execution_error('error', tr("Division by zero"), lineno if mode=='exec' else None)
+            self.report.add_execution_error('error', tr("Division by zero"), lineno if mode=='exec' else None, class_name="ZeroDivisionError")
             return (False, None)
         except AssertionError:
             a, b, tb = sys.exc_info()
@@ -129,7 +129,7 @@ class StudentRunner:
             traceb = traceback.extract_tb(tb)
             if len(traceb) > 1:
                 filename, lineno, file_type, line = traceb[-1]
-            self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno)
+            self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno, class_name="AssertionError")
             return (True, None)
         except Exception as err:
             a, b, tb = sys.exc_info() # Get the traceback object
@@ -155,7 +155,7 @@ class StudentRunner:
         try:
             code = compile(self.source, self.filename, 'exec')
         except SyntaxError as err:
-            self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=str(err))
+            self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=str(err), class_name="SyntaxError")
             return False
         except Exception as err:
             typ, exc, tb = sys.exc_info()
@@ -232,7 +232,8 @@ class StudentRunner:
         if missing:
             self.report.add_convention_error('warning', tr('Missing tests')
                                              , details="\n" + tr('Untested functions: ')
-                                             + "{}".format(missing) + "\n")
+                                             + "{}".format(missing) + "\n"
+                                             , class_name="MissingTestsWarning")
         elif defined_funs:
             # all the functions are tested at least once
             self.report.add_convention_error('run', tr('All functions tested'), details="==> " + tr("All functions tested (good)"))

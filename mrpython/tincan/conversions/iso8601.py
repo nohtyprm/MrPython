@@ -21,8 +21,8 @@ import datetime
 # struct_time does not preserve millisecond accuracy per
 # Tin Can spec, so this is disabled to discourage its use.
 # from time import mktime, struct_time
-import aniso8601
-from pytz import utc
+#import aniso8601
+#from pytz import utc
 
 
 def make_timedelta(value):
@@ -43,6 +43,7 @@ def make_timedelta(value):
     """
 
     if isinstance(value, str):
+        """
         try:
             return aniso8601.parse_duration(value)
         except Exception as e:
@@ -57,6 +58,8 @@ def make_timedelta(value):
                 )
             )
             raise ValueError(msg)
+        """
+        raise ValueError("String date not allowed")
 
     try:
         if isinstance(value, datetime.timedelta):
@@ -200,6 +203,7 @@ def _make_datetime(value):
     """
 
     if isinstance(value, str):
+        """
         try:
             return aniso8601.parse_datetime(value)
         except Exception as e:
@@ -213,6 +217,8 @@ def _make_datetime(value):
                     e.message,
                 )
             )
+        """
+        raise ValueError("String date not allowed")
 
     try:
         if isinstance(value, datetime.datetime):
@@ -231,7 +237,8 @@ def _make_datetime(value):
         elif isinstance(value, (tuple, list)):
             return tuple_to_datetime(value)
         else:
-            return datetime.datetime.utcfromtimestamp(value).replace(tzinfo=utc)
+            raise ValueError("Not allowed")
+            #return datetime.datetime.utcfromtimestamp(value).replace(tzinfo=utc)
     except Exception as e:
         msg = (
             "Could not convert the given value of type '%s' to a "

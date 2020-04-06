@@ -127,10 +127,11 @@ def send_statement(verb, activity, activity_extensions=None):
     x.start()
 
 
-def add_extensions_error(error, error_class, filename = None, instruction = None):
+def add_extensions_error(error, error_category, filename = None, instruction = None):
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-severity": error.severity,  # warning or error
                   "https://www.lip6.fr/mocah/invalidURI/extensions/error-type": error.err_type,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/error-class": error_class,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/error_category": error_category,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/error_class": error.class_name,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/error-message": error.error_details(),
                   "https://www.lip6.fr/mocah/invalidURI/extensions/error-instruction": instruction,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/error-line": error.line

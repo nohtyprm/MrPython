@@ -2137,7 +2137,8 @@ class UnsupportedImportError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr('Import problem'), line=self.import_ast.ast.lineno
                                     , offset=self.import_ast.ast.col_offset
-                                    , details=tr("the module '{}' is not supported in Python101").format(self.import_name))
+                                    , details=tr("the module '{}' is not supported in Python101").format(self.import_name)
+                                    , class_name=type(self).__name__)
 
 
     def is_fatal(self):
@@ -2154,7 +2155,8 @@ class SignatureParseError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Signature problem"), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
-                                    , details=tr("I don't understand the signature of function '{}'").format(self.fun_name))
+                                    , details=tr("I don't understand the signature of function '{}'").format(self.fun_name)
+                                    , class_name=type(self).__name__)
 
     def is_fatal(self):
         return False
@@ -2173,7 +2175,8 @@ class SignatureTrailingError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Signature problem"), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
-                                    , details=tr("The signature of function '{}' contains some characters at the end that I do not understand: {}").format(self.fun_name, self.trailing))
+                                    , details=tr("The signature of function '{}' contains some characters at the end that I do not understand: {}").format(self.fun_name, self.trailing)
+                                    , class_name=type(self).__name__)
 
     def is_fatal(self):
         return False
@@ -2188,7 +2191,8 @@ class TypeDefParseError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Type definition problem"), self.lineno, 0
-                                    , details=tr("I don't understand the definition of type '{}'").format(self.type_name))
+                                    , details=tr("I don't understand the definition of type '{}'").format(self.type_name)
+                                    , class_name=type(self).__name__)
 
     def is_fatal(self):
         return False
@@ -2203,7 +2207,8 @@ class DuplicateTypeDefError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Type definition problem"), self.lineno, 0
-                                    , details=tr("There is already a definition for type '{}'").format(self.type_name))
+                                    , details=tr("There is already a definition for type '{}'").format(self.type_name)
+                                    , class_name=type(self).__name__)
 
     def is_fatal(self):
         return False
@@ -2218,7 +2223,8 @@ class DuplicateMultiAssignError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Declaration problem"), self.lineno, 0
-                                    , details=tr("Variable '{}' was declared multiple times").format(self.var_name))
+                                    , details=tr("Variable '{}' was declared multiple times").format(self.var_name)
+                                    , class_name=type(self).__name__)
 
     def is_fatal(self):
         return True
@@ -2234,7 +2240,8 @@ class AssertionInFunctionWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr("Assertion issue"), self.assertion.ast.lineno, self.assertion.ast.col_offset
-                                    , details=tr("In Python101 the `asserts` are reserved for test cases, however one assert is present in the body of function '{}'").format(self.fun_name))
+                                    , details=tr("In Python101 the `asserts` are reserved for test cases, however one assert is present in the body of function '{}'").format(self.fun_name)
+                                    , class_name=type(self).__name__)
 
     def is_fatal(self):
         return False
@@ -2260,7 +2267,8 @@ class FunctionArityError(TypeError):
                                     format(self.func_def.name
                                            , len(self.signature.param_types)
                                            , len(self.func_def.parameters)
-                                           , "({})".format(", ".join(self.func_def.parameters))))
+                                           , "({})".format(", ".join(self.func_def.parameters)))
+                                    , type(self).__name__)
 
 
 class FunctionUnhashableError(TypeError):
@@ -2279,7 +2287,8 @@ class FunctionUnhashableError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Type declaration error"), self.func_def.ast.lineno, self.func_def.ast.col_offset
-                                    , tr("Wrong use in signature of function '{}' of mutable (not hashable) type: {}").format(self.func_def.name, self.unhashable_type))
+                                    , tr("Wrong use in signature of function '{}' of mutable (not hashable) type: {}").format(self.func_def.name, self.unhashable_type)
+                                    , type(self).__name__)
 
         
 class UnsupportedNodeError(TypeError):
@@ -2296,7 +2305,8 @@ class UnsupportedNodeError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr('Not-Python101'), self.node.ast.lineno, self.node.ast.col_offset
-                                    , tr("this construction is not available in Python101 (try expert mode for standard Python)"))
+                                    , tr("this construction is not available in Python101 (try expert mode for standard Python)")
+                                    , type(self).__name__)
 
 class UnsupportedTopLevelNodeError(TypeError):
     def __init__(self, node):
@@ -2312,7 +2322,8 @@ class UnsupportedTopLevelNodeError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr('Wrong statement'), self.node.ast.lineno, self.node.ast.col_offset
-                                    , tr("In Python 101 this statement cannot be done outside a function body (try expert mode for standard Python)"))
+                                    , tr("In Python 101 this statement cannot be done outside a function body (try expert mode for standard Python)")
+                                    , type(self).__name__)
 
 class WrongFunctionDefError(TypeError):
     def __init__(self, fun_def):
@@ -2328,7 +2339,8 @@ class WrongFunctionDefError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr('Wrong definition'), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
-                                    , tr("The function '{}' has no correct specification.").format(self.fun_def.ast.name))
+                                    , tr("The function '{}' has no correct specification.").format(self.fun_def.ast.name)
+                                    , type(self).__name__)
 
 
         
@@ -2358,7 +2370,7 @@ class DeclarationError(TypeError):
 
     def report(self, report):
         col_offset = self.node.ast.col_offset
-        report.add_convention_error('error', tr('Declaration problem'), self.lineno, col_offset, self.explain)
+        report.add_convention_error('error', tr('Declaration problem'), self.lineno, col_offset, self.explain, type(self).__name__)
 
 class UnknownVariableError(TypeError):
     def __init__(self, in_function, var):
@@ -2375,7 +2387,8 @@ class UnknownVariableError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Variable problem"), self.var.ast.lineno, self.var.ast.col_offset
-                                    , tr("there is such variable of name '{}'").format(self.var.name))
+                                    , tr("there is such variable of name '{}'").format(self.var.name)
+                                    , type(self).__name__)
 
 class TypeComparisonError(TypeError):
     def __init__(self, in_function, expected_type, expr, expr_type, explain):
@@ -2392,7 +2405,8 @@ class TypeComparisonError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Incompatible types"), self.expr.ast.lineno, self.expr.ast.col_offset
-                                    , tr( "Expecting type '{}' but instead found: {}").format(self.expected_type, self.expr_type))
+                                    , tr( "Expecting type '{}' but instead found: {}").format(self.expected_type, self.expr_type)
+                                    , type(self).__name__)
 
 class TypeExpectationError(TypeError):
     def __init__(self, in_function, expr, expr_type, explain):
@@ -2409,7 +2423,8 @@ class TypeExpectationError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Incorrect type"), self.expr.ast.lineno, self.expr.ast.col_offset
-                                    , tr("Found type '{}' which is incorrect: {}").format(self.expr_type, self.explain))
+                                    , tr("Found type '{}' which is incorrect: {}").format(self.expr_type, self.explain)
+                                    , type(self).__name__)
 
         
 class TypeImprecisionWarning(TypeError):
@@ -2427,7 +2442,8 @@ class TypeImprecisionWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr("Imprecise typing"), self.expr.ast.lineno, self.expr.ast.col_offset
-                                    , tr("Expecting type '{}' but found '{}': there is a risk of imprecision (but it's maybe not a bug)").format(self.expected_type, self.expr_type))
+                                    , tr("Expecting type '{}' but found '{}': there is a risk of imprecision (but it's maybe not a bug)").format(self.expected_type, self.expr_type)
+                                    , type(self).__name__)
 
     
 class OptionCoercionWarning(TypeError):
@@ -2444,7 +2460,8 @@ class OptionCoercionWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr("Imprecise typing"), self.expr.ast.lineno, self.expr.ast.col_offset
-                                    , tr("Expecting precise type '{}' but found less precise type: {}").format(self.expected_precise_type, self.expr_option_type))
+                                    , tr("Expecting precise type '{}' but found less precise type: {}").format(self.expected_precise_type, self.expr_option_type)
+                                    , type(self).__name__)
 
     
 class UnsupportedNumericTypeError(TypeError):
@@ -2460,7 +2477,8 @@ class UnsupportedNumericTypeError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Number problem"), self.num.ast.lineno, self.num.ast.col_offset
-                                    , tr("this numeric value is not supported in Python 101: {} ({})").format(self.num.value, type(self.num.value)))
+                                    , tr("this numeric value is not supported in Python 101: {} ({})").format(self.num.value, type(self.num.value))
+                                    , type(self).__name__)
 
 class WrongReturnTypeError(TypeError):
     def __init__(self, in_function, expected_type, ret_type, ret_expr):
@@ -2477,7 +2495,8 @@ class WrongReturnTypeError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Wrong return type"), self.ret_expr.ast.lineno, self.ret_expr.ast.col_offset
-                                    , tr("The declared return type for function '{}' is '{}' but the return expression has incompatible type: {}").format(self.in_function.name, self.expected_type, self.ret_type))
+                                    , tr("The declared return type for function '{}' is '{}' but the return expression has incompatible type: {}").format(self.in_function.name, self.expected_type, self.ret_type)
+                                    , type(self).__name__)
 
     
 class UnknownFunctionError(TypeError):
@@ -2493,7 +2512,8 @@ class UnknownFunctionError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Call problem"), self.call.ast.lineno, self.call.ast.col_offset
-                                    , tr("I don't know any function named '{}'").format(self.call.full_fun_name))
+                                    , tr("I don't know any function named '{}'").format(self.call.full_fun_name)
+                                    , type(self).__name__)
 
 class CallArityError(TypeError):
     def __init__(self, method_call, param_types, arguments, call):
@@ -2512,7 +2532,8 @@ class CallArityError(TypeError):
         report.add_convention_error('error', tr("Call problem"), self.call.ast.lineno, self.call.ast.col_offset
                                     , tr("calling '{}' with {} argument(s) but expecting: {}").format(self.call.fun_name
                                                                                                       , len(self.arguments)
-                                                                                                      , len(self.param_types)))
+                                                                                                      , len(self.param_types))
+                                    , type(self).__name__)
 
 class CallArgumentError(TypeError):
     def __init__(self, in_function, method_call, call, num_arg, arg, param_type):
@@ -2532,7 +2553,8 @@ class CallArgumentError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Call problem"), self.arg.ast.lineno, self.arg.ast.col_offset
                                     , tr("the {}-th argument in call to function '{}' is erroneous").format(self.num_arg
-                                                                                                           , self.call.fun_name))
+                                                                                                           , self.call.fun_name)
+                                    , type(self).__name__)
 
 class TestCaseError(TypeError):
     def __init__(self, test_case, expr_type):
@@ -2560,7 +2582,8 @@ class CompareConditionError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Comparison error"), self.compare.ast.lineno, self.compare.ast.col_offset
-                                    , tr("The two operands of the comparision should have the same type: '{}' vs. '{}'").format(self.left_type, self.right_type))
+                                    , tr("The two operands of the comparision should have the same type: '{}' vs. '{}'").format(self.left_type, self.right_type)
+                                    , type(self).__name__)
 
 class CompareConditionWarning(TypeError):
     def __init__(self, compare, cond, left_type, right_type):
@@ -2577,7 +2600,8 @@ class CompareConditionWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr("Comparison issue"), self.compare.ast.lineno, self.compare.ast.col_offset
-                                    , tr("The two operands of the comparison are only \"weakly\" compatibles: '{}' vs. '{}'").format(self.left_type, self.right_type))
+                                    , tr("The two operands of the comparison are only \"weakly\" compatibles: '{}' vs. '{}'").format(self.left_type, self.right_type)
+                                    , type(self).__name__)
 
 class DeadVariableUseError(TypeError):
     def __init__(self, var_name, node):
@@ -2592,7 +2616,8 @@ class DeadVariableUseError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
-                                    , tr("Forbidden use of variable '{}' that is not in scope (Python101 scoping rule)").format(self.var_name))
+                                    , tr("Forbidden use of variable '{}' that is not in scope (Python101 scoping rule)").format(self.var_name)
+                                    , type(self).__name__)
 
 class DeadVariableDefineError(TypeError):
     def __init__(self, var_name, node):
@@ -2607,7 +2632,8 @@ class DeadVariableDefineError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
-                                    , tr("Forbidden use of a \"dead\" variable name '{}' (Python101 rule)").format(self.var_name))
+                                    , tr("Forbidden use of a \"dead\" variable name '{}' (Python101 rule)").format(self.var_name)
+                                    , type(self).__name__)
 
 class VariableTypeError(TypeError):
     def __init__(self, target, var, declared_type, var_type):
@@ -2624,7 +2650,8 @@ class VariableTypeError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable type"), self.var.ast.lineno, self.var.ast.col_offset
-                                    , tr("Type mismatch for variable '{}', expecting '{}' instead of: {}").format(self.var.var_name, self.declared_type, self.var_type))
+                                    , tr("Type mismatch for variable '{}', expecting '{}' instead of: {}").format(self.var.var_name, self.declared_type, self.var_type)
+                                    , type(self).__name__)
 
         
 class ParameterInAssignmentError(TypeError):
@@ -2640,7 +2667,8 @@ class ParameterInAssignmentError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
-                                    , tr("Forbidden use of parameter '{}' in assignment").format(self.var_name))
+                                    , tr("Forbidden use of parameter '{}' in assignment").format(self.var_name)
+                                    , type(self).__name__)
 
 class ParameterInForError(TypeError):
     def __init__(self, var_name, node):
@@ -2655,7 +2683,8 @@ class ParameterInForError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
-                                    , tr("Forbidden use of parameter '{}' as iteration variable").format(self.var_name))
+                                    , tr("Forbidden use of parameter '{}' as iteration variable").format(self.var_name)
+                                    , type(self).__name__)
 
 class ParameterInCompError(TypeError):
     def __init__(self, var_name, node):
@@ -2670,7 +2699,8 @@ class ParameterInCompError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
-                                    , tr("Forbidden use of parameter '{}' as comprehension variable").format(self.var_name))
+                                    , tr("Forbidden use of parameter '{}' as comprehension variable").format(self.var_name)
+                                    , type(self).__name__)
 
 class ParameterInWithError(TypeError):
     def __init__(self, var_name, node):
@@ -2685,7 +2715,8 @@ class ParameterInWithError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
-                                    , tr("Forbidden use of parameter '{}' in with construct").format(self.var_name))
+                                    , tr("Forbidden use of parameter '{}' in with construct").format(self.var_name)
+                                    , type(self).__name__)
 
         
 class IndexingError(TypeError):
@@ -2701,7 +2732,8 @@ class IndexingError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad indexing"), self.indexing.ast.lineno, self.indexing.ast.col_offset
-                                    , tr("One can only index a sequence or a dictionnary, not a '{}'").format(self.subject_type))
+                                    , tr("One can only index a sequence or a dictionnary, not a '{}'").format(self.subject_type)
+                                    , type(self).__name__)
 
 
 class IndexingSequenceNotNumeric(TypeError):
@@ -2716,7 +2748,8 @@ class IndexingSequenceNotNumeric(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad index"), self.index.ast.lineno, self.index.ast.col_offset
-                                    , tr("Sequence index must be an integer"))
+                                    , tr("Sequence index must be an integer")
+                                    , type(self).__name__)
 
         
 class IndexingDictKeyTypeError(TypeError):
@@ -2732,7 +2765,8 @@ class IndexingDictKeyTypeError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad index"), self.index.ast.lineno, self.index.ast.col_offset
-                                    , tr("Dictionnary key must be of type: {}").format(self.dict_key_type))
+                                    , tr("Dictionnary key must be of type: {}").format(self.dict_key_type)
+                                    , type(self).__name__)
 
 
 class SlicingError(TypeError):
@@ -2748,7 +2782,8 @@ class SlicingError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad slicing"), self.slicing.ast.lineno, self.slicing.ast.col_offset
-                                    , tr("One can only slice a sequence (str, list), not a '{}'").format(self.subject_type))
+                                    , tr("One can only slice a sequence (str, list), not a '{}'").format(self.subject_type)
+                                    , type(self).__name__)
         
 class MembershipTypeError(TypeError):
     def __init__(self, container_expr, container_type):
@@ -2763,7 +2798,8 @@ class MembershipTypeError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad membership"), self.container_expr.ast.lineno, self.container_expr.ast.col_offset
-                                    , tr("Membership only supported for sets and dicts, not for type: {}").format(self.container_type))
+                                    , tr("Membership only supported for sets and dicts, not for type: {}").format(self.container_type)
+                                    , type(self).__name__)
         
 class HeterogeneousElementError(TypeError):
     def __init__(self, container_kind, container, container_type, element_type, element):
@@ -2781,7 +2817,8 @@ class HeterogeneousElementError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Heterogeneous elements (Python101 restriction)"), self.element.ast.lineno, self.element.ast.col_offset
-                                    , tr("All elements of must be of the same type '{}' but this element has incompatible type: {}").format(self.container_type, self.element_type))
+                                    , tr("All elements of must be of the same type '{}' but this element has incompatible type: {}").format(self.container_type, self.element_type)
+                                    , type(self).__name__)
 
 
 class TupleDestructArityError(TypeError):
@@ -2798,7 +2835,8 @@ class TupleDestructArityError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Tuple destruct error"), self.destruct.ast.lineno, self.destruct.ast.col_offset
-                                    , tr("Wrong number of variables to destruct tuple, expecting {} variables but {} given").format(self.expected_arity, self.actual_arity))
+                                    , tr("Wrong number of variables to destruct tuple, expecting {} variables but {} given").format(self.expected_arity, self.actual_arity)
+                                    , type(self).__name__)
 
 class TupleTypeExpectationError(TypeError):
     def __init__(self, in_function, expr, expr_type):
@@ -2814,7 +2852,8 @@ class TupleTypeExpectationError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Incorrect type"), self.expr.ast.lineno, self.expr.ast.col_offset
-                                    , tr("Expecting an expression of tuple type, instead found type: '{}'").format(self.expr_type))
+                                    , tr("Expecting an expression of tuple type, instead found type: '{}'").format(self.expr_type)
+                                    , type(self).__name__)
 
 
 
@@ -2833,7 +2872,8 @@ class UnknownTypeAliasError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Type name error"), self.lineno, self.col_offset
-                                    , tr("I don't find any definition for the type: {}").format(self.unknown_alias))
+                                    , tr("I don't find any definition for the type: {}").format(self.unknown_alias)
+                                    , type(self).__name__)
 
 class ExprAsInstrWarning(TypeError):
     def __init__(self, enode):
@@ -2847,7 +2887,8 @@ class ExprAsInstrWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr("Expression problem"), self.enode.ast.lineno, self.enode.ast.col_offset
-                                    , tr("This expression is in instruction position, the computed value is lost"))
+                                    , tr("This expression is in instruction position, the computed value is lost")
+                                    , type(self).__name__)
         
 class NoReturnInFunctionError(TypeError):
     def __init__(self, fun_def):
@@ -2861,7 +2902,8 @@ class NoReturnInFunctionError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Return problem"), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
-                                    , tr("The function '{}' should have `return` statement(s)").format(self.fun_def.name))
+                                    , tr("The function '{}' should have `return` statement(s)").format(self.fun_def.name)
+                                    , type(self).__name__)
 
 
 class ForbiddenMultiAssign(TypeError):
@@ -2876,7 +2918,8 @@ class ForbiddenMultiAssign(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Assignment problem"), self.var.ast.lineno, self.var.ast.col_offset
-                                    , tr("This assignment to variable '{}' is forbidden in Python101.").format(self.var.var_name))
+                                    , tr("This assignment to variable '{}' is forbidden in Python101.").format(self.var.var_name)
+                                    , type(self).__name__)
     
 
 
@@ -2892,7 +2935,8 @@ class ERangeArgumentError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Range problem"), self.erange.ast.lineno, self.erange.ast.col_offset
-                                    , tr("the arguments of `range` are incorrect."))
+                                    , tr("the arguments of `range` are incorrect.")
+                                    , type(self).__name__)
 
 def typecheck_from_ast(ast, filename=None, source=None):
     prog = Program()
@@ -2921,7 +2965,8 @@ class IteratorTypeError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad iterator"), self.for_node.iter.ast.lineno, self.for_node.iter.ast.col_offset
-                                    , tr("Not an iterable type: {}").format(self.iter_type))
+                                    , tr("Not an iterable type: {}").format(self.iter_type)
+                                    , type(self).__name__)
 
     
 
@@ -2938,7 +2983,8 @@ class IterVariableInEnvError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
-                                    , tr("The iterator variable '{}' is already declared").format(self.var_name))
+                                    , tr("The iterator variable '{}' is already declared").format(self.var_name)
+                                    , type(self).__name__)
 
 class WithVariableInEnvError(TypeError):
     def __init__(self, var_name, node):
@@ -2953,7 +2999,8 @@ class WithVariableInEnvError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
-                                    , tr("The `with` variable '{}' is already declared").format(self.var_name))
+                                    , tr("The `with` variable '{}' is already declared").format(self.var_name)
+                                    , type(self).__name__)
 
 
 
@@ -2971,7 +3018,8 @@ class UnhashableElementError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad set"), self.element.ast.lineno, self.element.ast.col_offset
-                                    , tr("Unhashable (mutable) element forbidden in set, element type is: {}").format(self.element_type))
+                                    , tr("Unhashable (mutable) element forbidden in set, element type is: {}").format(self.element_type)
+                                    , type(self).__name__)
 
 
 class UnhashableKeyError(TypeError):
@@ -2988,7 +3036,8 @@ class UnhashableKeyError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad dictionary"), self.key.ast.lineno, self.key.ast.col_offset
-                                    , tr("Unhashable (mutable) key in dictionary, key type is: {}").format(self.key_type))
+                                    , tr("Unhashable (mutable) key in dictionary, key type is: {}").format(self.key_type)
+                                    , type(self).__name__)
 
 
 class ContainerAssignTypeError(TypeError):
@@ -3004,7 +3053,8 @@ class ContainerAssignTypeError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad assignment"), self.cassign.container_expr.ast.lineno, self.cassign.container_expr.ast.col_offset
-                                    , tr("In Python101 this kind of assignment is only available for dictionaries, not for objects of type: {}").format(self.container_type))
+                                    , tr("In Python101 this kind of assignment is only available for dictionaries, not for objects of type: {}").format(self.container_type)
+                                    , type(self).__name__)
 
 class ContainerAssignEmptyError(TypeError):
     def __init__(self, cassign):
@@ -3018,7 +3068,8 @@ class ContainerAssignEmptyError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad assignment"), self.cassign.container_expr.ast.lineno, self.cassign.container_expr.ast.col_offset
-                                    , tr("Assignment in an empty dictionary"))
+                                    , tr("Assignment in an empty dictionary")
+                                    , type(self).__name__)
 
 
 class EmptyTupleError(TypeError):
@@ -3033,7 +3084,8 @@ class EmptyTupleError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Empty tuple"), self.etup.ast.lineno, self.etup.ast.col_offset
-                                    , tr("Python 101 does not allow empty tuples, only in expert mode"))
+                                    , tr("Python 101 does not allow empty tuples, only in expert mode")
+                                    , type(self).__name__)
 
 
 class SideEffectWarning(TypeError):
@@ -3052,7 +3104,8 @@ class SideEffectWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr("Call to '{}' may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
-                                    , tr("There is a risk of side effect as on the following parameter(s) {}").format(self.protected_var))
+                                    , tr("There is a risk of side effect as on the following parameter(s) {}").format(self.protected_var)
+                                    , type(self).__name__)
         
 class CallNotNoneWarning(TypeError):
     def __init__(self, expr, call_type):
@@ -3067,7 +3120,8 @@ class CallNotNoneWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr("Expression in instruction position"), self.expr.ast.lineno, self.expr.ast.col_offset
-                                    , tr("The value calculated of type `{}` is lost").format(self.call_type))
+                                    , tr("The value calculated of type `{}` is lost").format(self.call_type)
+                                    , type(self).__name__)
 
 if __name__ == '__main__':
 
