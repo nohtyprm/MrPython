@@ -570,14 +570,22 @@ class PyEditor(HighlightingText):
 
 
     def newline_and_indent_event(self, event):
-        # Change the hash identifier if the user typed his student number in the form #1234567
+        # Change the hash identifier if the user typed his student number in the form #1234567 [optional partner:1234567]
         cursor = self.index("insert")
         if cursor[:2] == "1.":  # Only if it's typed in the first line of the editor
-            student_number = self.get(cursor + " linestart", cursor)
-            if len(student_number) >= 2 and student_number[0] == "#":
-                student_number = student_number[1:]
+            list_numbers = self.get(cursor + " linestart", cursor + "lineend")
+            if len(list_numbers) >= 2 and list_numbers[0] == "#":
+                list_numbers = list_numbers[1:]  # Remove the #
+            list_numbers.strip()
+            list_numbers = list_numbers.split()
+            student_number = list_numbers[0]
             if len(student_number) == 7 and student_number.isnumeric():
                 tracing.modify_student_number(student_number, "user-input")
+                if len(list_numbers) == 2:
+                    partner_number = list_numbers[1]
+                    if len(partner_number) == 7 and partner_number.isnumeric():
+                        tracing.modify_partner_number(partner_number)
+
 
         first, last = self.get_selection_indices()
         self.undo_block_start()

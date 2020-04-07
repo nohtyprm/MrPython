@@ -61,7 +61,7 @@ class Application:
         self.running_interpreter_proxy = None
         self.running_interpreter_callback = None
         tracing.clear_stack()
-        tracing.send_statement("opened", "application")
+        tracing.send_statement_open_app()
 
     def run(self):
         """ Run the application """
@@ -188,8 +188,10 @@ class Application:
         if (self.editor_list.focusOn(file_editor.long_title()) == False):
             if (file_editor.isOpen()):
                 self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
-                tracing.send_statement("opened", "file",
-{"https://www.lip6.fr/mocah/invalidURI/extensions/filename": file_editor.get_file_name()})
+                extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/filename": file_editor.get_file_name()}
+                with open(file_editor.long_title(), "r") as source:
+                    extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filetext"] = source.read()
+                tracing.send_statement("opened", "file", extensions)
             #not clean, io should be handled here and should not require creation of PyEditor widget
             else:
                 file_editor.destroy()
@@ -206,7 +208,7 @@ class Application:
             if self.running_interpreter_proxy and self.running_interpreter_proxy.process.is_alive():                
                 self.running_interpreter_proxy.process.terminate()
                 self.running_interpreter_proxy.process.join()
-            tracing.send_statement("closed", "application")
+            tracing.send_statement_close_app()
             sys.exit(0)
 
 

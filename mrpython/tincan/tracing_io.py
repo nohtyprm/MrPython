@@ -30,6 +30,38 @@ def get_student_hash():
         data = json.load(f)
         return(data["student_hash"])
 
+
+def modify_partner_hash(partner_hash):
+    with open(filename, "r+") as f:
+        data = json.load(f)
+        data["partner_hash"] = partner_hash
+        f.truncate(0)
+        f.seek(0)
+        json.dump(data,f)
+
+
+def get_partner_hash():
+    with open(filename, "r") as f:
+        data = json.load(f)
+        return(data["partner_hash"])
+
+
+def modify_machine_id(partner_hash):
+    with open(filename, "r+") as f:
+        data = json.load(f)
+        data["machine_id"] = partner_hash
+        f.truncate(0)
+        f.seek(0)
+        json.dump(data,f)
+
+
+def get_machine_id():
+    with open(filename, "r") as f:
+        data = json.load(f)
+        return(data["machine_id"])
+
+
+
 def get_student_context():
     with open(filename, "r") as f:
         data = json.load(f)
