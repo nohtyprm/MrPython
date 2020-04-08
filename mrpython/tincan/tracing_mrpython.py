@@ -2,7 +2,7 @@ import threading, os, tokenize
 import hashlib, uuid, getpass
 import tincan.tracing_io as io
 import copy
-from datetime import datetime
+import time
 from tincan import (
     RemoteLRS,
     Statement,
@@ -107,6 +107,17 @@ def clear_stack():
             return
 
 
+def user_is_typing():
+    """Keep the timestamp of the last action"""
+    global last_typing_timestamp
+    last_typing_timestamp = time.time()
+    #print(last_typing_timestamp)
+
+
+def get_last_typing_timestamp():
+    return last_typing_timestamp
+
+
 def send_statement_lrs(statement):
     try:
         response = lrs.save_statement(statement)
@@ -153,8 +164,8 @@ def send_statement(verb, activity, activity_extensions=None):
             context=context
         )
         # Send statement and receive HTTP response
-        if not send_statement_lrs(statement):
-            io.add_statement(statement)
+        #if not send_statement_lrs(statement):
+        #    io.add_statement(statement)
 
     # Send the statement from another thread
     x = threading.Thread(target=thread_function, args=(verb, activity, activity_extensions))
@@ -163,15 +174,21 @@ def send_statement(verb, activity, activity_extensions=None):
 
 def send_statement_open_app():
     global time_opened
-    time_opened = datetime.now()
+    time_opened = time.time()
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/machine-id": io.get_machine_id()}
     send_statement("opened", "application", {})
 
 
 def send_statement_close_app():
-    elapsed_time = datetime.now() - time_opened
-    elapsed_time = str(elapsed_time).split('.',1)[0] # Remove microseconds
+    elapsed_seconds = int(time.time() - time_opened)
+    m, s = divmod(elapsed_seconds, 60)
+    h, m = divmod(m, 60)
+    if m < 10:
+        m = "0" + str(m)
+    if s < 10:
+        s = "0" + str(s)
+    elapsed_time = "{}:{}:{}".format(h, m, s)
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/elapsed_time": elapsed_time}
     send_statement("closed", "application")
@@ -367,6 +384,8 @@ verbs = {
         id="http://activitystrea.ms/schema/1.0/delete", display=LanguageMap({'en-US': 'deleted'})),
     "inserted": Verb(
         id="http://activitystrea.ms/schema/1.0/insert", display=LanguageMap({'en-US': 'inserted'})),
+    "entered": Verb(
+        id="https://www.lip6.fr/mocah/invalidURI/verbs/entered", display=LanguageMap({'en-US': 'entered'})),
     }
 
 activities = {
@@ -437,5 +456,19 @@ activities = {
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/text",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'some text'}))),
+    "typing-state": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/typing-state",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'a typing state'}))),
+    "idle-state": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/state",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'an idle state'}))),
+    "deep-idle-state": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/state",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'a deep idle state'}))),
     }
 
+
+last_typing_timestamp = None

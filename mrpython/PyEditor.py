@@ -31,7 +31,7 @@ class PyEditor(HighlightingText):
 
         
         self.list=parent.get_notebook()
-        
+
         self.linewidget = linewidget
 
         self.recent_files_path = os.path.join(MrPythonConf.GetUserCfgDir(), 'recent-files.lst')
@@ -519,6 +519,7 @@ class PyEditor(HighlightingText):
             maxvalue=16)
 
     def smart_backspace_event(self, event):
+        tracing.user_is_typing()
         first, last = self.get_selection_indices()
         if first and last:
             self.send_deletion(first, last)
@@ -570,7 +571,9 @@ class PyEditor(HighlightingText):
 
 
     def newline_and_indent_event(self, event):
-        # Change the hash identifier if the user typed his student number in the form #1234567 [optional partner:1234567]
+        tracing.user_is_typing()
+
+        # Change the hash identifier if the user typed his student number in the form #1234567 [+ optional partner]
         cursor = self.index("insert")
         if cursor[:2] == "1.":  # Only if it's typed in the first line of the editor
             list_numbers = self.get(cursor + " linestart", cursor + "lineend")
@@ -689,6 +692,7 @@ class PyEditor(HighlightingText):
             self.undo_block_stop()
 
     def smart_indent_event(self, event):
+        tracing.user_is_typing()
         first, last = self.get_selection_indices()
         self.undo_block_start()
         try:
@@ -797,6 +801,7 @@ class PyEditor(HighlightingText):
                                 "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last})
 
     def keypress_event(self, event):
+        tracing.user_is_typing()
         self.save_send_instruction()
 
     def mouserelease_event(self,event):
@@ -810,6 +815,7 @@ class PyEditor(HighlightingText):
                                 "https://www.lip6.fr/mocah/invalidURI/extensions/index": self.index("insert")})
 
     def keyrelease_event(self,event):
+        tracing.user_is_typing()
         self.save_send_instruction()
         # Check if previous word was a python Keyword
         char_separator = [":", ";", "[", "]", "*", "+", "-", "(", ")", "{", "}", "!", "=", "\"", "\'"]

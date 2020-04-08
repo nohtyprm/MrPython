@@ -44,7 +44,7 @@ class Application:
             set_translator_locale(language)
 
         self.root = Tk()
-        
+
         self.root.geometry('768x612')
         self.root.title("MrPython")
 
@@ -60,6 +60,11 @@ class Application:
 
         self.running_interpreter_proxy = None
         self.running_interpreter_callback = None
+
+        self.root.after(1000, self.check_user_state)
+        self.old_timestamp = None
+        self.state = "deep-idle"  # 3 states: deep-idle, idle or typing
+
         tracing.clear_stack()
         tracing.send_statement_open_app()
 
@@ -132,6 +137,33 @@ class Application:
         for event, keylist in keydefs.items():
             if keylist:
                 self.root.event_add(event, *keylist)
+
+    def check_user_state(self):
+        """
+        Send a statement of the state of the user. User has 3 state: active, idle or deep-idle.
+        """
+        last_active_time = tracing.get_last_typing_timestamp()
+        if last_active_time is not None:  # If the user has typied
+            if self.old_timestamp is None:  # Setup previous active timestamp
+                tracing.send_statement("entered", "typing-state",
+                                       {"https://www.lip6.fr/mocah/invalidURI/extensions/old-state": self.state})
+                self.state = "typing"
+            else:
+                elapsed_time = last_active_time - self.old_timestamp
+                # If user is inactive for 60 seconds
+                if elapsed_time > 60 and self.state == "idle":
+                    tracing.send_statement("entered", "deep-idle-state")
+                    self.state = "deep-idle"
+                # If user is inactive for 5 seconds
+                elif elapsed_time > 5 and self.state == "typing":
+                    tracing.send_statement("entered", "idle-state")
+                    self.state = "idle"
+                # If user typed and was inactive
+                elif elapsed_time < 5 and (self.state == "idle" or self.state == "deep-idle"):
+                    tracing.send_statement("entered", "typing-state")
+                    self.state = "typing"
+            self.old_timestamp = last_active_time
+        self.root.after(1000, self.check_user_state)
 
 
     def update_title(self, event=None):
