@@ -32,7 +32,7 @@ def type_tokenizer():
     # spaces
     tokenizer.add_rule(tokens.CharSet('space', ' ', '\t', '\r'))
     tokenizer.add_rule(tokens.Char('newline', '\n'))
-    
+
     # symbols
     tokenizer.add_rule(tokens.Literal('arrow', "->"))
     tokenizer.add_rule(tokens.Literal('expr', "**"))
@@ -77,11 +77,11 @@ def type_tokenizer():
 
     # naturals
     tokenizer.add_rule(tokens.Regexp('natural', "[1-9][0-9]*"))
-    
+
     # identifiers
     tokenizer.add_rule(tokens.Regexp('identifier',
                                      "[a-zA-Z_][a-zA-Z_0-9]*'*"))
-    
+
     return tokenizer
 
 def build_typeexpr_grammar(grammar=None):
@@ -274,7 +274,7 @@ def build_typeexpr_grammar(grammar=None):
         return result
     dict_parser.xform_result = dict_xform_result
     grammar.register('dict_type', dict_parser)
-    
+
     emptydict_parser = parsers.Token("emptydict_type")
     def emptydict_xform_result(result):
         result.content = DictType()
@@ -291,18 +291,18 @@ def build_typeexpr_grammar(grammar=None):
                                  .forget(grammar.ref('spaces'))) \
                         .forget(grammar.ref('spaces')) \
                         .skip(parsers.Token('close_bracket'))
-                                 
+
     def tuple_xform_result(result):
         elem_types = []
         for elem_result in result.content.content:
             elem_types.append(elem_result.content)
-            
+
         result.content = TupleType(elem_types, annotation=result)
         return result
-    
+
     tuple_parser.xform_result = tuple_xform_result
     grammar.register('tuple_type', tuple_parser)
-    
+
 
     type_expr = parsers.Choice() \
                        .forget(grammar.ref('spaces')) \
@@ -358,10 +358,10 @@ def build_vartype_grammar(grammar):
     grammar.entry = var_parser
 
     return grammar
-    
+
 
 def build_functype_grammar(grammar):
-    
+
     dom_elem_parser = parsers.Tuple() \
                       .element(grammar.ref('typeexpr')) \
                       .skip(grammar.ref('nspaces')) \
@@ -387,9 +387,9 @@ def build_functype_grammar(grammar):
             new_content = [type_result.content for _ in range(nb_repeat)]
             result.content = new_content
             return result
-        
+
     dom_elem_parser.xform_result = dom_elem_xform_result
-    
+
     grammar.register('dom_elem', dom_elem_parser)
 
     domain_parser = parsers.List(grammar.ref('dom_elem'), sep='mult') \
@@ -398,7 +398,7 @@ def build_functype_grammar(grammar):
     def domain_xform_result(result):
         if result.content is None:
             return result
-        
+
         domain_types = []
         for elem in result.content:
             if isinstance(elem.content, TypeAST):
@@ -408,7 +408,7 @@ def build_functype_grammar(grammar):
 
         result.content = domain_types
         return result
-                
+
     domain_parser.xform_result = domain_xform_result
 
     grammar.register('domain_type', domain_parser)
@@ -476,7 +476,7 @@ class TypeParser:
         parser = LLParsing(self.vartype_grammar)
         parser.tokenizer = self.tokenizer
         self.tokenizer.from_string(string)
-        return parser.parse()        
+        return parser.parse()
 
     def parse_functype_from_string(self, string):
         parser = LLParsing(self.functype_grammar)
@@ -554,6 +554,3 @@ if __name__ == "__main__":
 
     fresult2 = type_parser.parse_functype_from_string("Number**3 -> Number")
     print(repr(fresult2.content))
-
-    
-

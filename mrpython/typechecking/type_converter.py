@@ -17,7 +17,8 @@ def type_converter(annotation):
             types.append(type_converter(i))
         return TupleType(types)
     else:
-        return "UnsupportedNode"
+        # return "UnsupportedNode"
+        return None
 
 if __name__ == "__main__":
     import sys
