@@ -124,19 +124,28 @@ class PyEditor(HighlightingText):
 
         self.sy = None
 
+        # Used for tracing keywords. Check send_keyword for more information.
+        self.last_event = None  # ButtonPress, Up, Right, Left, Down
+        self.previous_cursor_position = None
+        self.state = "browsing"  # browsing or typing
+
 
     def apply_bindings(self,keydefs=None):
         self.bind("<<smart-backspace>>",self.smart_backspace_event)
         self.bind("<<newline-and-indent>>",self.newline_and_indent_event)
         self.bind("<<smart-indent>>",self.smart_indent_event)
 
-        self.bind("<KeyPress>", self.keypress_event)
+
         self.bind('<KeyRelease>', self.keyrelease_event)
-        self.bind("<ButtonRelease-1>", self.mouserelease_event)
         self.bind("<Control-v>", self.insert_event)
-        #self.bind("<<ArrowKey>>", self.arrowkey_event)
-        arrowkey = ['<Key-Left>', '<Key-Right>', '<Key-Up>', '<Key-Down>']
-        self.event_add("<<ArrowKey>>", *arrowkey)
+        self.bind("<<prev-move-cursor>>", self.prev_move_cursor_event)
+        self.bind("<<move-cursor>>", self.move_cursor_event)
+        prev_move_cursor = ['<KeyPress-Left>', '<KeyPress-Right>', '<KeyPress-Up>', '<KeyPress-Down>',
+                        '<ButtonPress-1>']
+        move_cursor = ['<KeyRelease-Left>', '<KeyRelease-Right>', '<KeyRelease-Up>', '<KeyRelease-Down>',
+                        '<ButtonRelease-1>']
+        self.event_add("<<prev-move-cursor>>", *prev_move_cursor)
+        self.event_add("<<move-cursor>>", *move_cursor)
 
         #bindings keys
         if keydefs is None:
@@ -572,6 +581,11 @@ class PyEditor(HighlightingText):
 
     def newline_and_indent_event(self, event):
         tracing.user_is_typing()
+        # Trace last word if it's a keyword
+        if self.state == "typing":
+            cursor = self.index("insert")
+            self.send_keyword(cursor)
+            self.state = "browsing"
 
         # Change the hash identifier if the user typed his student number in the form #1234567 [+ optional partner]
         cursor = self.index("insert")
@@ -581,13 +595,14 @@ class PyEditor(HighlightingText):
                 list_numbers = list_numbers[1:]  # Remove the #
             list_numbers.strip()
             list_numbers = list_numbers.split()
-            student_number = list_numbers[0]
-            if len(student_number) == 7 and student_number.isnumeric():
-                tracing.modify_student_number(student_number, "user-input")
-                if len(list_numbers) == 2:
-                    partner_number = list_numbers[1]
-                    if len(partner_number) == 7 and partner_number.isnumeric():
-                        tracing.modify_partner_number(partner_number)
+            if len(list_numbers) >= 1:
+                student_number = list_numbers[0]
+                if len(student_number) == 7 and student_number.isnumeric():
+                    tracing.modify_student_number(student_number, "user-input")
+                    if len(list_numbers) == 2:
+                        partner_number = list_numbers[1]
+                        if len(partner_number) == 7 and partner_number.isnumeric():
+                            tracing.modify_partner_number(partner_number)
 
 
         first, last = self.get_selection_indices()
@@ -779,20 +794,40 @@ class PyEditor(HighlightingText):
                                         "https://www.lip6.fr/mocah/invalidURI/extensions/name_function": name_function,
                                         }
                                        )
-                # print("\nline {} - old instruction: {}".format(self.old_line, self.old_instruction))
-                # print("new instruction: {}".format(new_instruction))
+                #print("line {} - old instruction: {}".format(self.old_line, self.old_instruction))
+                #print("new instruction: {}".format(new_instruction))
             # Reset
             self.old_line = self.get_current_line()
             self.old_instruction = self.get_current_instruction()
 
     def send_keyword(self, end_word):
+        """We send a keyword when the tag 'KEYWORD' is in the tags of end_word.
+
+        self.state = "typing" when a key has been pressed (keyrelease)
+        self.state = "browsing" when the cursor has been moved (with the arrows or with a mouse click)
+        , when backspace is pressed or when user inputs a newline.
+
+        This function is called when self.state = "typing" and:
+        -a user types a separator character (keyrelease_event). end_word is the character of the last word.
+        -a user types a newline (newline_and_indent_event).
+        end_word is the character of the previous instruction's last character.
+        -the cursor has been moved (prev_move_cursor_event and move_cursor_event)
+        end_word is the character of the previous cursor position.
+
+        We don't simply check all keypress because we want to prevent cases where the user types something
+        like 'define' or 'assert'.
+        In these cases, the user typed the keywords 'def' or 'as' but we don't want to trace these.
+
+        self.state is used to prevent sending the same keyword multiple times and
+        to only trace the keywords the user effectively typed.
+        """
         tags = self.tag_names(end_word)
-        if 'KEYWORD' in self.tag_names(end_word):
+        if 'KEYWORD' in self.tag_names(end_word + "-1c"):
             index1, index2 = self.tag_prevrange('KEYWORD', end_word)
             keyword = self.get(index1, index2)
             tracing.send_statement("typed", "keyword",
                                    {"https://www.lip6.fr/mocah/invalidURI/extensions/keyword-typed": keyword})
-            print(keyword)
+            print("Keyword typed: " + keyword)
 
     def send_deletion(self, first, last):
         tracing.send_statement("deleted", "text",
@@ -800,32 +835,39 @@ class PyEditor(HighlightingText):
                                 "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": first,
                                 "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last})
 
-    def keypress_event(self, event):
-        tracing.user_is_typing()
+    def prev_move_cursor_event(self,event):
+        if event.type == "ButtonPress":
+            self.last_event = "ButtonPress"
+        else:
+            self.last_event = event.keysym  # Right Up Left or Down
+        self.previous_cursor_position = self.index("insert")
+
+
+    def move_cursor_event(self,event):
         self.save_send_instruction()
 
-    def mouserelease_event(self,event):
-        self.save_send_instruction()
+        if self.state == "typing" and (event.type == self.last_event or event.keysym == self.last_event):
+            self.send_keyword(self.previous_cursor_position)
+        self.state = "browsing"
 
     def insert_event(self,event):
-        print(self.index("insert"))
-        print(self.clipboard_get())
         tracing.send_statement("inserted", "text",
                                {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.clipboard_get(),
                                 "https://www.lip6.fr/mocah/invalidURI/extensions/index": self.index("insert")})
 
     def keyrelease_event(self,event):
         tracing.user_is_typing()
+
         self.save_send_instruction()
         # Check if previous word was a python Keyword
         char_separator = [":", ";", "[", "]", "*", "+", "-", "(", ")", "{", "}", "!", "=", "\"", "\'"]
-        keysym_separator = ["space", "Return", "KP_Enter"]
-        is_separator = event.char in char_separator
-        is_separator = is_separator or event.keysym in keysym_separator
-        if is_separator:
+        if self.state == "typing" and (event.char in char_separator or event.keysym == "space"):
             cursor = self.index("insert")
-            end_word = cursor + "-2c"
+            end_word = cursor + "-1c"
             self.send_keyword(end_word)
+        self.state = "typing"
+        if event.keysym == "BackSpace":
+            self.state = "browsing"
 
     def send_scroll_event(self, event):
         top, bottom = self.sy.get() # Positions [0.0, 1.0] of the bottom and top edges of the slider

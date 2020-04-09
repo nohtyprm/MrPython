@@ -18,6 +18,8 @@ from tincan import (
 from translate import tr
 
 
+show_extensions = False
+
 def create_actor():
     student_hash = io.get_student_hash()
     student_id = "https://www.lip6.fr/mocah/invalidURI/student-number:" + student_hash
@@ -147,6 +149,9 @@ def send_statement(verb, activity, activity_extensions=None):
             print("Tracing: Missing activity key {}".format(activity))
             return
         print("Tracing: Creating and Sending statement, {} {}".format(verb, activity))
+        if activity_extensions and show_extensions:
+            for key,value in activity_extensions.items():
+                print("{} : {}".format(os.path.basename(key), value))
         verb = verbs[verb]
         object = activities[activity]
         extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session,
