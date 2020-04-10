@@ -234,7 +234,7 @@ def send_statement_execute(report, mode, filename):
             instruction = source[error.line-1]
         else:
             instruction = "None"
-        extensions = add_extensions_error(error, "typechecking", filename, instruction)
+        extensions = add_extensions_error(error, "convention", filename, instruction)
         send_statement("had", activity, activity_extensions=extensions)
 
     for error in report.compilation_errors:
@@ -302,7 +302,7 @@ def send_statement_evaluate(report, mode, instruction):
             activity = "evaluation-warning"
         else:
             continue
-        extensions = add_extensions_error(error, "typechecking", instruction=instruction)
+        extensions = add_extensions_error(error, "convention", instruction=instruction)
         send_statement("had", activity, activity_extensions=extensions)
 
     for error in report.compilation_errors:

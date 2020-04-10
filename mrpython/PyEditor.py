@@ -138,6 +138,7 @@ class PyEditor(HighlightingText):
 
         self.bind('<KeyRelease>', self.keyrelease_event)
         self.bind("<Control-v>", self.insert_event)
+        self.bind("<Control-c>", self.copied_event)
         self.bind("<<prev-move-cursor>>", self.prev_move_cursor_event)
         self.bind("<<move-cursor>>", self.move_cursor_event)
         prev_move_cursor = ['<KeyPress-Left>', '<KeyPress-Right>', '<KeyPress-Up>', '<KeyPress-Down>',
@@ -855,6 +856,13 @@ class PyEditor(HighlightingText):
                                {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.clipboard_get(),
                                 "https://www.lip6.fr/mocah/invalidURI/extensions/index": self.index("insert")})
 
+    def copied_event(self,event):
+        first, last = self.get_selection_indices()
+        if first and last:
+            text = self.get(first,last)
+            tracing.send_statement("copied", "text",
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/text": text})
+
     def keyrelease_event(self,event):
         tracing.user_is_typing()
 
@@ -874,11 +882,13 @@ class PyEditor(HighlightingText):
         number_lines = self.get_number_of_lines()
         top_line = int(number_lines*top + 1)
         bottom_line = int(number_lines*bottom)
+        '''
         tracing.send_statement("moved", "scrollbar",
                                {"https://www.lip6.fr/mocah/invalidURI/extensions/top-line": top_line,
                                 "https://www.lip6.fr/mocah/invalidURI/extensions/bottom-line": bottom_line
                                 }
                                )
+        '''
     def set_scrollbar(self,sy):
         self.sy = sy
         self.sy.bind('<ButtonRelease-1>', self.send_scroll_event)
