@@ -394,31 +394,22 @@ def fetch_assign_mypy_types(ctx, assign_target, strict=False):
     # if strict:
     #     return None
 
-    req_vars = { v.var_name for v in assign_target.variables() if v.var_name != "_" }
-    if not req_vars:  # if there is no required var, this means all vars are _'s
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("The special variable '_' cannot be use alone")))
-        return None
-
     var_name = assign_target.id
+    decl_type = TypeConverter(assign_target.annotation)
     declared_types = dict()
 
     if var_name == "_":
         ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("The special variable '_' cannot be declared")))
         return None
 
-    if var_name not in req_vars: # if not a special var, it must be required
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("Unused variable name '{}' in declaration").format(var_name)))
-
+    udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
+    if udecl_type is None:
+        ctx.add_type_error(UnknownTypeAliasError(decl_type, unknown_alias, lineno, assign_target.ast.col_offset))
+        return None
     else:
-        req_vars.remove(var_name)
-        udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
-        if udecl_type is None:
-            ctx.add_type_error(UnknownTypeAliasError(decl_type, unknown_alias, lineno, assign_target.ast.col_offset))
-            return None
-        else:
-            declared_types[var_name] = udecl_type
+        declared_types[var_name] = udecl_type
 
-    declared_type[var_name] = TypeConverter(assign_target.annotation)
+    declared_type[var_name] = decl_type
 
     return declared_types
 
