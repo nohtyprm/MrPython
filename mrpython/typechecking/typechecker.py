@@ -391,7 +391,7 @@ variable name and T its type, or (None, msg, err_cat) with an informational mess
     return (var_name, decl_type.content, "")
 
 def fetch_assign_mypy_types(ctx, assign_target, strict=False):
-    # if strict:
+    # if strict: # TODO
     #     return None
 
     var_name = assign_target.id
