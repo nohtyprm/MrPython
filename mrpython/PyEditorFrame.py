@@ -40,7 +40,6 @@ class PyEditorFrame(Frame):
         self.sy = Scrollbar(self)
         #self.editor.config(wrap='none')
         self.sy.grid(row=0, column=2, sticky='ns')
-        self.editor.set_scrollbar(self.sy)
         #self.sy.pack(expand=False,side="right", fill="y")
         #self.editor.pack(expand=True, fill='both')
         self.sy.config(command=self.editor.yview)

@@ -322,6 +322,7 @@ class IOBinding:
         return reply
 
     def save(self, event):
+        tracing.user_is_interacting()
         if not self.filename:
             self.save_as(event)
         else:
@@ -341,6 +342,7 @@ class IOBinding:
         ### return "break"
 
     def save_as(self, event):
+        tracing.user_is_interacting()
         if self.filename:
             old_filename = self.filename
         else:

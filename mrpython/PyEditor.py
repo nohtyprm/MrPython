@@ -125,8 +125,6 @@ class PyEditor(HighlightingText):
         self.sy = None
 
         # Used for tracing keywords. Check send_keyword for more information.
-        self.last_event = None  # ButtonPress, Up, Right, Left, Down
-        self.previous_cursor_position = None
         self.state = "browsing"  # browsing or typing
 
 
@@ -135,10 +133,9 @@ class PyEditor(HighlightingText):
         self.bind("<<newline-and-indent>>",self.newline_and_indent_event)
         self.bind("<<smart-indent>>",self.smart_indent_event)
 
-
         self.bind('<KeyRelease>', self.keyrelease_event)
-        self.bind("<Control-v>", self.insert_event)
-        self.bind("<Control-c>", self.copied_event)
+        self.bind("<<paste>>", self.insert_event)
+        self.bind("<<copy>>", self.copied_event)
         self.bind("<<prev-move-cursor>>", self.prev_move_cursor_event)
         self.bind("<<move-cursor>>", self.move_cursor_event)
         prev_move_cursor = ['<KeyPress-Left>', '<KeyPress-Right>', '<KeyPress-Up>', '<KeyPress-Down>',
@@ -154,7 +151,6 @@ class PyEditor(HighlightingText):
         for event, keylist in keydefs.items():
             if keylist:
                 self.event_add(event, *keylist)
-
 
     def ResetColorizer(self):
         "Update the color theme"
@@ -828,7 +824,7 @@ class PyEditor(HighlightingText):
             keyword = self.get(index1, index2)
             tracing.send_statement("typed", "keyword",
                                    {"https://www.lip6.fr/mocah/invalidURI/extensions/keyword-typed": keyword})
-            print("Keyword typed: " + keyword)
+            #print("Keyword typed: " + keyword)
 
     def send_deletion(self, first, last):
         tracing.send_statement("deleted", "text",
@@ -837,19 +833,14 @@ class PyEditor(HighlightingText):
                                 "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last})
 
     def prev_move_cursor_event(self,event):
-        if event.type == "ButtonPress":
-            self.last_event = "ButtonPress"
-        else:
-            self.last_event = event.keysym  # Right Up Left or Down
-        self.previous_cursor_position = self.index("insert")
+        if self.state == "typing":
+            self.send_keyword(self.index("insert"))
+        self.state = "browsing"
 
 
     def move_cursor_event(self,event):
         self.save_send_instruction()
 
-        if self.state == "typing" and (event.type == self.last_event or event.keysym == self.last_event):
-            self.send_keyword(self.previous_cursor_position)
-        self.state = "browsing"
 
     def insert_event(self,event):
         tracing.send_statement("inserted", "text",
@@ -876,22 +867,6 @@ class PyEditor(HighlightingText):
         self.state = "typing"
         if event.keysym == "BackSpace":
             self.state = "browsing"
-
-    def send_scroll_event(self, event):
-        top, bottom = self.sy.get() # Positions [0.0, 1.0] of the bottom and top edges of the slider
-        number_lines = self.get_number_of_lines()
-        top_line = int(number_lines*top + 1)
-        bottom_line = int(number_lines*bottom)
-        '''
-        tracing.send_statement("moved", "scrollbar",
-                               {"https://www.lip6.fr/mocah/invalidURI/extensions/top-line": top_line,
-                                "https://www.lip6.fr/mocah/invalidURI/extensions/bottom-line": bottom_line
-                                }
-                               )
-        '''
-    def set_scrollbar(self,sy):
-        self.sy = sy
-        self.sy.bind('<ButtonRelease-1>', self.send_scroll_event)
 
     def set_notabs_indentwidth(self):
         "Update the indentwidth if changed and not using tabs in this window"

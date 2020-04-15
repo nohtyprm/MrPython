@@ -55,7 +55,7 @@ class Application:
         self.icon_widget = self.main_view.icon_widget
         self.status_bar = self.main_view.status_bar
         self.console = self.main_view.console
-        self.change_mode(tracing_statement=False)
+        self.change_mode()
         self.apply_bindings()
         self.root.protocol('WM_DELETE_WINDOW', self.close_all_event)
 
@@ -63,7 +63,7 @@ class Application:
         self.running_interpreter_callback = None
 
         self.root.after(1000, self.check_user_state)
-        self.state = "deep-idle"  # 3 states: deep-idle, idle or typing
+        self.state = "idle"  # 3 states: idle, interacting or typing
 
         tracing.clear_stack()
         tracing.send_statement_open_app()
@@ -140,24 +140,21 @@ class Application:
 
     def check_user_state(self):
         """
-        Send a statement of the state of the user. User has 3 state: active, idle or deep-idle.
+        Send a statement of the state of the user. User has 3 state: idle, interacting or typing
         """
-        last_active_time = tracing.get_last_typing_timestamp()
-        if last_active_time is not None:  # If the user has typied
+        last_action, last_active_time = tracing.get_last_action()
+        if last_active_time is not None and last_action is not None:
             elapsed_time = time.time() - last_active_time
-            # If user is inactive for 60 seconds
-            if elapsed_time > 60 and self.state == "idle":
-                tracing.send_statement("entered", "deep-idle-state")
-                self.state = "deep-idle"
-            # If user is inactive for 5 seconds
-            elif elapsed_time > 5 and self.state == "typing":
+            if elapsed_time > 30 and self.state != "idle":
                 tracing.send_statement("entered", "idle-state")
                 self.state = "idle"
-            # If user typed and was inactive
-            elif elapsed_time < 5 and (self.state == "idle" or self.state == "deep-idle"):
+            elif self.state != "interacting" and last_action == "interacting":
+                tracing.send_statement("entered", "interacting-state")
+                self.state = "interacting"
+            elif self.state != "typing" and last_action == "typing":
                 tracing.send_statement("entered", "typing-state")
                 self.state = "typing"
-        self.root.after(1000, self.check_user_state)
+        self.root.after(200, self.check_user_state)
 
 
     def update_title(self, event=None):
@@ -189,7 +186,7 @@ class Application:
             self.update_title()
 
 
-    def change_mode(self, event=None, tracing_statement = True):
+    def change_mode(self, event=None):
         """ Swap the python mode : full python or student """
         if self.mode == "student":
             self.mode = "full"
@@ -198,18 +195,21 @@ class Application:
         self.icon_widget.switch_icon_mode(self.mode)
         self.console.change_mode(tr(self.mode))
         self.status_bar.change_mode(tr(self.mode))
-        if tracing_statement:
+        if event:
+            tracing.user_is_interacting()
             tracing.send_statement("switched", "mode",
                                    {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": tr(self.mode)})
 
     def new_file(self, event=None):
         """ Creates a new empty editor and put it into the pyEditorList """
+        tracing.user_is_interacting()
         file_editor = PyEditorFrame(self.editor_list)
         self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
         tracing.send_statement("created", "file")
 
     def open(self, event=None):
         """ Open a file in the text editor """
+        tracing.user_is_interacting()
         file_editor = PyEditorFrame(self.editor_list, open=True)
         if (self.editor_list.focusOn(file_editor.long_title()) == False):
             if (file_editor.isOpen()):
@@ -240,7 +240,7 @@ class Application:
 
     def run_module(self, event=None):
         """ Run the code : give the file name and code will be run from the source file """
-
+        tracing.user_is_interacting()
         # already running
         if self.running_interpreter_callback:
             if self.running_interpreter_proxy and self.running_interpreter_proxy.process.is_alive():

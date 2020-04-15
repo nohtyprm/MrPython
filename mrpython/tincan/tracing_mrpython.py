@@ -2,7 +2,7 @@ import threading, os, tokenize
 import hashlib, uuid, getpass
 import tincan.tracing_io as io
 import copy
-import time
+import time, datetime
 from tincan import (
     RemoteLRS,
     Statement,
@@ -18,7 +18,7 @@ from tincan import (
 from translate import tr
 
 
-show_extensions = False
+show_statement_details = True
 
 def create_actor():
     student_hash = io.get_student_hash()
@@ -111,13 +111,18 @@ def clear_stack():
 
 def user_is_typing():
     """Keep the timestamp of the last action"""
-    global last_typing_timestamp
-    last_typing_timestamp = time.time()
-    #print(last_typing_timestamp)
+    global last_action_timestamp, last_action
+    last_action_timestamp = time.time()
+    last_action = "typing"
+
+def user_is_interacting():
+    global last_action_timestamp, last_action
+    last_action_timestamp = time.time()
+    last_action = "interacting"
 
 
-def get_last_typing_timestamp():
-    return last_typing_timestamp
+def get_last_action():
+    return (last_action, last_action_timestamp)
 
 
 def send_statement_lrs(statement):
@@ -149,9 +154,6 @@ def send_statement(verb, activity, activity_extensions=None):
             print("Tracing: Missing activity key {}".format(activity))
             return
         print("Tracing: Creating and Sending statement, {} {}".format(verb, activity))
-        if activity_extensions and show_extensions:
-            for key,value in activity_extensions.items():
-                print("{} : {}".format(os.path.basename(key), value))
         verb = verbs[verb]
         object = activities[activity]
         extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session,
@@ -166,8 +168,13 @@ def send_statement(verb, activity, activity_extensions=None):
             actor=actor,
             verb=verb,
             object=object,
-            context=context
+            context=context,
+            timestamp=datetime.datetime.now()
         )
+        if show_statement_details:
+            import json
+            for k, v in json.loads(statement.to_json()).items():
+                print(k,v)
         # Send statement and receive HTTP response
         #if not send_statement_lrs(statement):
         #    io.add_statement(statement)
@@ -465,15 +472,16 @@ activities = {
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/typing-state",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'a typing state'}))),
+    "interacting-state": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/interacting-sttate",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'an interacting state'}))),
     "idle-state": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/state",
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/idle-state",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'an idle state'}))),
-    "deep-idle-state": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/state",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a deep idle state'}))),
     }
 
 
-last_typing_timestamp = None
+last_action_timestamp = None
+last_action = None
