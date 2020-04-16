@@ -3,6 +3,7 @@ import hashlib, uuid, getpass
 import tincan.tracing_io as io
 import copy
 import time, datetime
+import json
 from tincan import (
     RemoteLRS,
     Statement,
@@ -18,7 +19,7 @@ from tincan import (
 from translate import tr
 
 
-show_statement_details = True
+show_statement_details = False
 
 def create_actor():
     student_hash = io.get_student_hash()
@@ -172,7 +173,6 @@ def send_statement(verb, activity, activity_extensions=None):
             timestamp=datetime.datetime.now()
         )
         if show_statement_details:
-            import json
             for k, v in json.loads(statement.to_json()).items():
                 print(k,v)
         # Send statement and receive HTTP response
@@ -207,13 +207,21 @@ def send_statement_close_app():
 
 
 def add_extensions_error(error, error_category, filename = None, instruction = None):
-    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/error-severity": error.severity,  # warning or error
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/error-type": error.err_type,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/error_category": error_category,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/error_class": error.class_name,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/error-message": error.error_details(),
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/error-instruction": instruction,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/error-line": error.line
+    groups = error_groups[error.class_name]
+    if "&" in groups:
+        first_group, second_group = groups.split("&")
+    else:
+        first_group = groups
+        second_group = "No second group"
+    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/severity": error.severity,  # warning or error
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/type": error.err_type,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/category": error_category,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/class": error.class_name,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/message": error.error_details(),
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/instruction": instruction,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/line": error.line,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/first-group": first_group,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/second-group": second_group,
                   }
     if filename:
         extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filename"] = os.path.basename(filename)
@@ -485,3 +493,5 @@ activities = {
 
 last_action_timestamp = None
 last_action = None
+with open(os.path.join(os.path.dirname(__file__), "tracing_error_groups.json"))as file:
+    error_groups = json.load(file)

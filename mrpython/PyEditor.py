@@ -133,6 +133,7 @@ class PyEditor(HighlightingText):
         self.bind("<<newline-and-indent>>",self.newline_and_indent_event)
         self.bind("<<smart-indent>>",self.smart_indent_event)
 
+        self.bind('<KeyPress>', self.keypress_event)
         self.bind('<KeyRelease>', self.keyrelease_event)
         self.bind("<<paste>>", self.insert_event)
         self.bind("<<copy>>", self.copied_event)
@@ -854,9 +855,10 @@ class PyEditor(HighlightingText):
             tracing.send_statement("copied", "text",
                                    {"https://www.lip6.fr/mocah/invalidURI/extensions/text": text})
 
-    def keyrelease_event(self,event):
+    def keypress_event(self,event):
         tracing.user_is_typing()
 
+    def keyrelease_event(self,event):
         self.save_send_instruction()
         # Check if previous word was a python Keyword
         char_separator = [":", ";", "[", "]", "*", "+", "-", "(", ")", "{", "}", "!", "=", "\"", "\'"]

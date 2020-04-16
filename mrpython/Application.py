@@ -145,15 +145,17 @@ class Application:
         last_action, last_active_time = tracing.get_last_action()
         if last_active_time is not None and last_action is not None:
             elapsed_time = time.time() - last_active_time
-            if elapsed_time > 30 and self.state != "idle":
-                tracing.send_statement("entered", "idle-state")
-                self.state = "idle"
-            elif self.state != "interacting" and last_action == "interacting":
-                tracing.send_statement("entered", "interacting-state")
-                self.state = "interacting"
-            elif self.state != "typing" and last_action == "typing":
-                tracing.send_statement("entered", "typing-state")
-                self.state = "typing"
+            if elapsed_time > 30:
+                if self.state != "idle":
+                    tracing.send_statement("entered", "idle-state")
+                    self.state = "idle"
+            else:
+                if self.state != "interacting" and last_action == "interacting":
+                    tracing.send_statement("entered", "interacting-state")
+                    self.state = "interacting"
+                elif self.state != "typing" and last_action == "typing":
+                    tracing.send_statement("entered", "typing-state")
+                    self.state = "typing"
         self.root.after(200, self.check_user_state)
 
 
