@@ -112,18 +112,16 @@ def clear_stack():
 
 def user_is_typing():
     """Keep the timestamp of the last action"""
-    global last_action_timestamp, last_action
-    last_action_timestamp = time.time()
-    last_action = "typing"
+    global last_typing_timestamp
+    last_typing_timestamp = time.time()
 
 def user_is_interacting():
-    global last_action_timestamp, last_action
-    last_action_timestamp = time.time()
-    last_action = "interacting"
+    global last_interacting_timestamp
+    last_interacting_timestamp = time.time()
 
 
-def get_last_action():
-    return (last_action, last_action_timestamp)
+def get_action_timestamps():
+    return (last_typing_timestamp, last_interacting_timestamp)
 
 
 def send_statement_lrs(statement):
@@ -143,45 +141,50 @@ def send_statement_lrs(statement):
             response.data))
         return True
 
-
 def send_statement(verb, activity, activity_extensions=None):
     """Send a statement with the verb and activity keys and the context extensions"""
-    def thread_function(verb, activity, activity_extensions):
-        #Create the statement from the actor, verb, object and potentially the context
-        if verb not in verbs:
-            print("Tracing: Missing verb key {}".format(verb))
-            return
-        if activity not in activities:
-            print("Tracing: Missing activity key {}".format(activity))
-            return
-        print("Tracing: Creating and Sending statement, {} {}".format(verb, activity))
-        verb = verbs[verb]
-        object = activities[activity]
-        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session,
-                      "https://www.lip6.fr/mocah/invalidURI/extensions/context": io.get_student_context()}
-        context = Context(extensions=extensions)
-
-        if activity_extensions:
-            object = copy.deepcopy(object)
-            object.definition.extensions = activity_extensions
-
-        statement = Statement(
-            actor=actor,
-            verb=verb,
-            object=object,
-            context=context,
-            timestamp=datetime.datetime.now()
-        )
-        if show_statement_details:
-            for k, v in json.loads(statement.to_json()).items():
-                print(k,v)
+    def thread_function(statement):
+        pass
         # Send statement and receive HTTP response
-        #if not send_statement_lrs(statement):
-        #    io.add_statement(statement)
+        if not send_statement_lrs(statement):
+            io.add_statement(statement)
+    #Create the statement from the actor, verb, object and potentially the context
+    send_to_LRS = False
+    if verb not in verbs:
+        print("Tracing: Missing verb key {}".format(verb))
+        return
+    if activity not in activities:
+        print("Tracing: Missing activity key {}".format(activity))
+        return
+    if send_to_LRS:
+        print("Tracing: Creating and Sending statement, {} {}".format(verb, activity))
+    else:
+        print("Tracing: Creating (without sending) statement, {} {}".format(verb, activity))
+    verb = verbs[verb]
+    object = activities[activity]
+    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/context": io.get_student_context()}
+    context = Context(extensions=extensions)
 
+    if activity_extensions:
+        object = copy.deepcopy(object)
+        object.definition.extensions = activity_extensions
+
+    statement = Statement(
+        actor=actor,
+        verb=verb,
+        object=object,
+        context=context,
+        timestamp=datetime.datetime.now()
+    )
+    if show_statement_details:
+        for k, v in json.loads(statement.to_json()).items():
+            print(k,v)
     # Send the statement from another thread
-    x = threading.Thread(target=thread_function, args=(verb, activity, activity_extensions))
-    x.start()
+    if send_to_LRS:
+        x = threading.Thread(target=thread_function, args=(statement,))
+        x.start()
+
 
 
 def send_statement_open_app():
@@ -266,7 +269,6 @@ def send_statement_execute(report, mode, filename):
         else:
             instruction = "None"
         extensions = add_extensions_error(error, "compilation", filename, instruction)
-        nb_errors += 1
         send_statement("had", activity, activity_extensions=extensions)
 
     for error in report.execution_errors:
@@ -283,7 +285,6 @@ def send_statement_execute(report, mode, filename):
         else:
             instruction = "None"
         extensions = add_extensions_error(error, "execution", filename, instruction)
-        nb_errors += 1
         send_statement("had", "execution-error", activity_extensions=extensions)
 
     #  Send final statement: Execution passed or failed
@@ -491,7 +492,7 @@ activities = {
     }
 
 
-last_action_timestamp = None
-last_action = None
+last_typing_timestamp = None
+last_interacting_timestamp = None
 with open(os.path.join(os.path.dirname(__file__), "tracing_error_groups.json"))as file:
     error_groups = json.load(file)

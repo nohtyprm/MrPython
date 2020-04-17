@@ -328,7 +328,7 @@ class IOBinding:
         else:
             if self.writefile(self.filename):
                 tracing.send_statement("saved", "file",
-                                       {"https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.filename})
+                                       {"https://www.lip6.fr/mocah/invalidURI/extensions/filename": os.path.basename(self.filename)})
                 self.set_saved(True)
                 try:
                     self.editwin.store_file_breaks()
@@ -358,8 +358,8 @@ class IOBinding:
                 except AttributeError:
                     pass
                 tracing.send_statement("saved-as", "file",
-                                       {"https://www.lip6.fr/mocah/invalidURI/extensions/old-filename": old_filename,
-                                        "https://www.lip6.fr/mocah/invalidURI/extensions/new-filename": filename})
+                                       {"https://www.lip6.fr/mocah/invalidURI/extensions/old-filename": os.path.basename(old_filename),
+                                        "https://www.lip6.fr/mocah/invalidURI/extensions/new-filename": os.path.basename(filename)})
 
         self.editwin.focus_set()
         self.updaterecentfileslist(filename)

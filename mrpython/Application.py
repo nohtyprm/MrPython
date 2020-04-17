@@ -142,21 +142,40 @@ class Application:
         """
         Send a statement of the state of the user. User has 3 state: idle, interacting or typing
         """
-        last_action, last_active_time = tracing.get_last_action()
-        if last_active_time is not None and last_action is not None:
-            elapsed_time = time.time() - last_active_time
-            if elapsed_time > 30:
-                if self.state != "idle":
-                    tracing.send_statement("entered", "idle-state")
-                    self.state = "idle"
-            else:
-                if self.state != "interacting" and last_action == "interacting":
-                    tracing.send_statement("entered", "interacting-state")
-                    self.state = "interacting"
-                elif self.state != "typing" and last_action == "typing":
-                    tracing.send_statement("entered", "typing-state")
-                    self.state = "typing"
-        self.root.after(200, self.check_user_state)
+        last_typing_time, last_interacting_time = tracing.get_action_timestamps()
+        elapsed_typing_time = time.time() - last_typing_time if last_typing_time else None
+        elapsed_interacting_time = time.time() - last_interacting_time if last_interacting_time else None
+        inactivity_threshhold = 30
+        new_state = ""
+        if elapsed_typing_time is not None and elapsed_interacting_time is not None:
+            if self.state == "idle":
+                if elapsed_typing_time < inactivity_threshhold:
+                    new_state = "typing"
+                elif elapsed_interacting_time < inactivity_threshhold:
+                    new_state = "interacting"
+            elif self.state == "interacting":
+                if elapsed_typing_time < inactivity_threshhold:
+                    new_state = "typing"
+                elif elapsed_interacting_time > inactivity_threshhold:
+                    new_state = "idle"
+            elif self.state == "typing" and elapsed_typing_time > inactivity_threshhold:
+                if elapsed_interacting_time < 30:
+                    new_state = "interacting"
+        elif elapsed_typing_time is not None:
+            if self.state == "idle" and elapsed_typing_time < inactivity_threshhold:
+                new_state = "typing"
+            elif self.state == "typing" and elapsed_typing_time > inactivity_threshhold:
+                new_state = "idle"
+        elif elapsed_interacting_time is not None:
+            if self.state == "idle" and elapsed_interacting_time < inactivity_threshhold:
+                new_state = "interacting"
+            elif self.state == "interacting" and elapsed_interacting_time > inactivity_threshhold:
+                new_state = "idle"
+
+        if new_state:
+            tracing.send_statement("entered", new_state + "-state")
+            self.state = new_state
+        self.root.after(1000, self.check_user_state)
 
 
     def update_title(self, event=None):

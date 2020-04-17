@@ -328,6 +328,7 @@ class Console:
         if not expr:
             return
         tracing.send_statement("started", "evaluation")
+        tracing.user_is_interacting()
         local_interpreter = False
         if self.interpreter is None:
             self.interpreter = InterpreterProxy(self.app.root, self.app.mode, "<<console>>")
