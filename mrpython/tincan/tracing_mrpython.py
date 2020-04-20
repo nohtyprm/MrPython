@@ -96,7 +96,8 @@ def modify_partner_number(partner_number):
                        {"https://www.lip6.fr/mocah/invalidURI/extensions/old-hash": old_hash,
                         "https://www.lip6.fr/mocah/invalidURI/extensions/new_hash": new_hash})
 
-
+def student_hash_uninitialized():
+    return io.get_student_hash() == "default"
 
 def clear_stack():
     """Clear the stack of statements"""
@@ -305,7 +306,6 @@ def send_statement_execute(report, mode, filename):
 
 def send_statement_evaluate(report, mode, instruction):
     """Create and send a statement at the end of the execution of the students program"""
-
     # Send statements for all errors
     nb_errors = 0
     nb_warnings = 0
@@ -407,6 +407,10 @@ verbs = {
         id="http://activitystrea.ms/schema/1.0/insert", display=LanguageMap({'en-US': 'inserted'})),
     "entered": Verb(
         id="https://www.lip6.fr/mocah/invalidURI/verbs/entered", display=LanguageMap({'en-US': 'entered'})),
+    "undid": Verb(
+        id="https://www.lip6.fr/mocah/invalidURI/verbs/undid", display=LanguageMap({'en-US': 'undid'})),
+    "redid": Verb(
+        id="https://www.lip6.fr/mocah/invalidURI/verbs/redid", display=LanguageMap({'en-US': 'redid'})),
     }
 
 activities = {
@@ -469,6 +473,10 @@ activities = {
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/instruction",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'a programming instruction'}))),
+    "sequence": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/sequence",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'a sequence of instructions'}))),
     "scrollbar": Activity(
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/scrollbar",
         definition=ActivityDefinition(

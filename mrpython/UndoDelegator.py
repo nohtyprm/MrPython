@@ -21,9 +21,11 @@ class UndoDelegator(Delegator):
 
     max_undo = 1000
 
-    def __init__(self):
+    def __init__(self, text = None):
         Delegator.__init__(self)
         self.reset_undo()
+        self.text = text  # PyEditor, make tracing behaviour consistent with undo/redo
+
 
     def setdelegate(self, delegate):
         if self.delegate is not None:
@@ -140,6 +142,10 @@ class UndoDelegator(Delegator):
             self.bell()
             return "break"
         cmd = self.undolist[self.pointer - 1]
+        if self.text is not None:
+            tracing.send_statement("undid", "sequence",
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/secuence-list:": str(cmd)})
+            self.text.reset_send_instruction()
         cmd.undo(self.delegate)
         self.pointer = self.pointer - 1
         self.can_merge = False
@@ -151,6 +157,10 @@ class UndoDelegator(Delegator):
             self.bell()
             return "break"
         cmd = self.undolist[self.pointer]
+        if self.text is not None:
+            tracing.send_statement("redid", "sequence",
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/secuence-list:": str(cmd)})
+            self.text.reset_send_instruction()
         cmd.redo(self.delegate)
         self.pointer = self.pointer + 1
         self.can_merge = False
@@ -224,9 +234,6 @@ class InsertCommand(Command):
 
     def redo(self, text):
         text.mark_set('insert', self.index1)
-        tracing.send_statement("inserted", "text",
-                               {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.chars,
-                                "https://www.lip6.fr/mocah/invalidURI/extensions/index": self.index1})
         text.insert(self.index1, self.chars, self.tags)
         self.set_marks(text, self.marks_after)
         text.see('insert')
@@ -234,10 +241,6 @@ class InsertCommand(Command):
 
     def undo(self, text):
         text.mark_set('insert', self.index1)
-        tracing.send_statement("deleted", "text",
-                               {"https://www.lip6.fr/mocah/invalidURI/extensions/text": text.get(self.index1, self.index2),
-                                "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": self.index1,
-                                "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": self.index2})
         text.delete(self.index1, self.index2)
         self.set_marks(text, self.marks_before)
         text.see('insert')
@@ -294,19 +297,12 @@ class DeleteCommand(Command):
     def redo(self, text):
         text.mark_set('insert', self.index1)
         text.delete(self.index1, self.index2)
-        tracing.send_statement("deleted", "text",
-                               {"https://www.lip6.fr/mocah/invalidURI/extensions/text": text.get(self.index1, self.index2),
-                                "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": self.index1,
-                                "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": self.index2})
         self.set_marks(text, self.marks_after)
         text.see('insert')
         ##sys.__stderr__.write("redo: %s\n" % self)
 
     def undo(self, text):
         text.mark_set('insert', self.index1)
-        tracing.send_statement("inserted", "text",
-                               {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.chars,
-                                "https://www.lip6.fr/mocah/invalidURI/extensions/index": self.index1})
         text.insert(self.index1, self.chars)
         self.set_marks(text, self.marks_before)
         text.see('insert')

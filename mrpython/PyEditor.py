@@ -83,7 +83,7 @@ class PyEditor(HighlightingText):
         # Making the initial values larger slows things down more often.
         self.num_context_lines = 50, 500, 5000000
         self.per = per = self.Percolator(self)
-        self.undo = undo = self.UndoDelegator()
+        self.undo = undo = self.UndoDelegator(self)
         per.insertfilter(undo)
 
         self.undo_block_start = undo.undo_block_start
@@ -797,6 +797,11 @@ class PyEditor(HighlightingText):
             # Reset
             self.old_line = self.get_current_line()
             self.old_instruction = self.get_current_instruction()
+
+    def reset_send_instruction(self):
+        self.old_line = -1
+        self.old_instruction = None
+
 
     def send_keyword(self, end_word):
         """We send a keyword when the tag 'KEYWORD' is in the tags of end_word.

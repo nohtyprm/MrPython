@@ -251,7 +251,10 @@ class Console:
 
         self.write(report.header, tags=(tag))
         #self.write("\n")
-        
+        if tracing.student_hash_uninitialized():
+            self.write("WARNING: Student number is not initialized.\n"
+                       "Please type in the first line your student number in the format # number\n"
+                       "or # number1 number2 if you work with a partner\n", tags='warning')
         has_convention_error = False
         
         for error in report.convention_errors:
