@@ -144,7 +144,7 @@ class UndoDelegator(Delegator):
         cmd = self.undolist[self.pointer - 1]
         if self.text is not None:
             tracing.send_statement("undid", "sequence",
-                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/secuence-list:": str(cmd)})
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/sequence-list:": str(cmd)})
             self.text.reset_send_instruction()
         cmd.undo(self.delegate)
         self.pointer = self.pointer - 1
@@ -159,7 +159,7 @@ class UndoDelegator(Delegator):
         cmd = self.undolist[self.pointer]
         if self.text is not None:
             tracing.send_statement("redid", "sequence",
-                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/secuence-list:": str(cmd)})
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/sequence-list:": str(cmd)})
             self.text.reset_send_instruction()
         cmd.redo(self.delegate)
         self.pointer = self.pointer + 1

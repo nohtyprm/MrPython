@@ -113,12 +113,13 @@ class ReadOnlyText(Text):
         self.redirector = WidgetRedirector(self)
         self.insert = self.redirector.register("insert", lambda *args, **kw: "break")
         self.delete = self.redirector.register("delete", lambda *args, **kw: "break")
-        self.bind("<Control-c>", self.copy_event)
+        self.bind("<<copy>>", self.copy_event)
 
     def copy_event(self,event):
         first = self.index("sel.first")
         last = self.index("sel.last")
-        tracing.send_statement("copied", "output-console",
+        if first != "" and last != "":
+            tracing.send_statement("copied", "output-console",
                                {"https://www.lip6.fr/mocah/invalidURI/extensions/copied-text": self.get(first,last)})
 class Console:
     """

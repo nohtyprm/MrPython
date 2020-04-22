@@ -254,7 +254,7 @@ def send_statement_execute(report, mode, filename):
         else:
             instruction = "None"
         extensions = add_extensions_error(error, "convention", filename, instruction)
-        send_statement("had", activity, activity_extensions=extensions)
+        send_statement("received", activity, activity_extensions=extensions)
 
     for error in report.compilation_errors:
         if error.severity == "error":
@@ -270,7 +270,7 @@ def send_statement_execute(report, mode, filename):
         else:
             instruction = "None"
         extensions = add_extensions_error(error, "compilation", filename, instruction)
-        send_statement("had", activity, activity_extensions=extensions)
+        send_statement("received", activity, activity_extensions=extensions)
 
     for error in report.execution_errors:
         if error.severity == "error":
@@ -286,7 +286,7 @@ def send_statement_execute(report, mode, filename):
         else:
             instruction = "None"
         extensions = add_extensions_error(error, "execution", filename, instruction)
-        send_statement("had", "execution-error", activity_extensions=extensions)
+        send_statement("received", "execution-error", activity_extensions=extensions)
 
     #  Send final statement: Execution passed or failed
     if nb_errors == 0:
@@ -319,7 +319,7 @@ def send_statement_evaluate(report, mode, instruction):
         else:
             continue
         extensions = add_extensions_error(error, "convention", instruction=instruction)
-        send_statement("had", activity, activity_extensions=extensions)
+        send_statement("received", activity, activity_extensions=extensions)
 
     for error in report.compilation_errors:
         if error.severity == "error":
@@ -331,7 +331,7 @@ def send_statement_evaluate(report, mode, instruction):
         else:
             continue
         extensions = add_extensions_error(error, "compilation", instruction=instruction)
-        send_statement("had", activity, activity_extensions=extensions)
+        send_statement("received", activity, activity_extensions=extensions)
 
     for error in report.execution_errors:
         if error.severity == "error":
@@ -343,7 +343,7 @@ def send_statement_evaluate(report, mode, instruction):
         else:
             continue
         extensions = add_extensions_error(error, "execution", instruction=instruction)
-        send_statement("had", activity, activity_extensions=extensions)
+        send_statement("received", activity, activity_extensions=extensions)
 
 
     #  Send final statement: Evaluation passed or failed
@@ -391,16 +391,14 @@ verbs = {
         id="http://adlnet.gov/expapi/verbs/failed", display=LanguageMap({'en-US': 'failed'})),
     "terminated": Verb(
         id="http://activitystrea.ms/schema/1.0/terminate", display=LanguageMap({'en-US': 'terminated'})),
-    "had": Verb(
-        id="https://www.lip6.fr/mocah/invalidURI/verbs/had", display=LanguageMap({'en-US': 'had'})),
+    "received": Verb(
+        id="http://activitystrea.ms/schema/1.0/receive", display=LanguageMap({'en-US': 'received'})),
     "copied": Verb(
         id="https://www.lip6.fr/mocah/invalidURI/verbs/copied", display=LanguageMap({'en-US': 'copied'})),
     "typed": Verb(
         id="https://www.lip6.fr/mocah/invalidURI/verbs/typed", display=LanguageMap({'en-US': 'typed'})),
     "modified": Verb(
         id="https://www.lip6.fr/mocah/invalidURI/verbs/modified", display=LanguageMap({'en-US': 'modified'})),
-    "moved": Verb(
-        id="https://www.lip6.fr/mocah/invalidURI/verbs/moved", display=LanguageMap({'en-US': 'moved'})),
     "deleted": Verb(
         id="http://activitystrea.ms/schema/1.0/delete", display=LanguageMap({'en-US': 'deleted'})),
     "inserted": Verb(
@@ -413,6 +411,7 @@ verbs = {
         id="https://www.lip6.fr/mocah/invalidURI/verbs/redid", display=LanguageMap({'en-US': 'redid'})),
     }
 
+print(verbs.keys())
 activities = {
     "application": Activity(
         id="http://activitystrea.ms/schema/1.0/application",

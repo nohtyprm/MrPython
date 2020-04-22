@@ -125,7 +125,7 @@ class PyEditor(HighlightingText):
         self.sy = None
 
         # Used for tracing keywords. Check send_keyword for more information.
-        self.state = "browsing"  # browsing or typing
+        self.typed_char = False # User previously typed a character
 
 
     def apply_bindings(self,keydefs=None):
@@ -527,6 +527,7 @@ class PyEditor(HighlightingText):
 
     def smart_backspace_event(self, event):
         tracing.user_is_typing()
+        self.typed_char = False
         first, last = self.get_selection_indices()
         if first and last:
             self.send_deletion(first, last)
@@ -580,10 +581,10 @@ class PyEditor(HighlightingText):
     def newline_and_indent_event(self, event):
         tracing.user_is_typing()
         # Trace last word if it's a keyword
-        if self.state == "typing":
+        if self.typed_char:
             cursor = self.index("insert")
             self.send_keyword(cursor)
-            self.state = "browsing"
+            self.typed_char = False
 
         # Change the hash identifier if the user typed his student number in the form #1234567 [+ optional partner]
         cursor = self.index("insert")
@@ -805,13 +806,10 @@ class PyEditor(HighlightingText):
 
     def send_keyword(self, end_word):
         """We send a keyword when the tag 'KEYWORD' is in the tags of end_word.
+        end_word : the character of the last word
 
-        self.state = "typing" when a key has been pressed (keyrelease)
-        self.state = "browsing" when the cursor has been moved (with the arrows or with a mouse click)
-        , when backspace is pressed or when user inputs a newline.
-
-        This function is called when self.state = "typing" and:
-        -a user types a separator character (keyrelease_event). end_word is the character of the last word.
+        This function is called when self.typed_char is True and:
+        -a user types a non alphanum character (keypress_event). end_word is the character of the last word.
         -a user types a newline (newline_and_indent_event).
         end_word is the character of the previous instruction's last character.
         -the cursor has been moved (prev_move_cursor_event and move_cursor_event)
@@ -821,9 +819,11 @@ class PyEditor(HighlightingText):
         like 'define' or 'assert'.
         In these cases, the user typed the keywords 'def' or 'as' but we don't want to trace these.
 
-        self.state is used to prevent sending the same keyword multiple times and
+        self.typed_char is used to prevent sending the same keyword multiple times and
         to only trace the keywords the user effectively typed.
         """
+        if end_word == "1.0": # Bug with select all
+            return
         tags = self.tag_names(end_word)
         if 'KEYWORD' in self.tag_names(end_word + "-1c"):
             index1, index2 = self.tag_prevrange('KEYWORD', end_word)
@@ -839,9 +839,9 @@ class PyEditor(HighlightingText):
                                 "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last})
 
     def prev_move_cursor_event(self,event):
-        if self.state == "typing":
+        if self.typed_char:
             self.send_keyword(self.index("insert"))
-        self.state = "browsing"
+            self.typed_char = False
 
 
     def move_cursor_event(self,event):
@@ -849,9 +849,11 @@ class PyEditor(HighlightingText):
 
 
     def insert_event(self,event):
-        tracing.send_statement("inserted", "text",
-                               {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.clipboard_get(),
-                                "https://www.lip6.fr/mocah/invalidURI/extensions/index": self.index("insert")})
+        pasted_text = self.clipboard_get()
+        if pasted_text != "":
+            tracing.send_statement("inserted", "text",
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.clipboard_get(),
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/index": self.index("insert")})
 
     def copied_event(self,event):
         first, last = self.get_selection_indices()
@@ -863,17 +865,18 @@ class PyEditor(HighlightingText):
     def keypress_event(self,event):
         tracing.user_is_typing()
 
+        keypress_is_char = len(event.char) == 1
+        keypress_is_separator = keypress_is_char and event.char.isalnum() is False
+        if self.typed_char and (keypress_is_separator or event.keysym == "space"):
+            self.send_keyword(self.index("insert"))
+
+        if not self.typed_char:
+            self.typed_char = keypress_is_char
+
+
     def keyrelease_event(self,event):
         self.save_send_instruction()
-        # Check if previous word was a python Keyword
-        char_separator = [":", ";", "[", "]", "*", "+", "-", "(", ")", "{", "}", "!", "=", "\"", "\'"]
-        if self.state == "typing" and (event.char in char_separator or event.keysym == "space"):
-            cursor = self.index("insert")
-            end_word = cursor + "-1c"
-            self.send_keyword(end_word)
-        self.state = "typing"
-        if event.keysym == "BackSpace":
-            self.state = "browsing"
+
 
     def set_notabs_indentwidth(self):
         "Update the indentwidth if changed and not using tabs in this window"
