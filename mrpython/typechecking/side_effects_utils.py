@@ -23,7 +23,7 @@ else:
     except ImportError:
         from prog_ast import *
         from type_ast import *
-
+        
 class AliasRef:
     def __init__(self, ref, nb_def, index_in = None, index_out = None):
         self.ref = ref
