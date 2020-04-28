@@ -99,6 +99,7 @@ class Program:
                 assert_ast = TestCase(node)
                 self.test_cases.append(assert_ast)
             elif isinstance(node, ast.Assign) or isinstance(node, ast.AnnAssign):
+                #print(str(dir(node)))
                 assign_ast = Assign(node)
                 self.global_vars.append(assign_ast)
 
@@ -208,13 +209,13 @@ class Assign:
         self.ast = node
 
         if isinstance(node, ast.AnnAssign):
+            print("node is instance of annasign")
             self.type_annotation = self.ast.annotation
-
-            # print(type(self.ast.annotation))
+            #L'annotation est mal récupérée ici
+.            self.target = build_lhs_destruct(self.ast.target)
+            import pdb; pdb.set_trace()
+            #print(type(self.ast.annotation))
             # for i in self.ast.annotation.slice.value.elts:
-            #     print(type(i))
-            #     print(type(i.id))
-            #     print(i.id)
 
             """
             ```
@@ -232,6 +233,7 @@ class Assign:
 
         else:
             self.target = build_lhs_destruct(self.ast.targets[0])
+            print("node is not a instance of annasign")
 
         self.expr = parse_expression(self.ast.value)
 
@@ -886,4 +888,4 @@ if __name__ == "__main__":
         filename = "../../examples/revstr.py"
 
     prog1.build_from_file(filename)
-    print(astpp.dump(prog1.ast))
+    #print(astpp.dump(prog1.ast))

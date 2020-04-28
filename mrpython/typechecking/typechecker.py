@@ -393,9 +393,9 @@ variable name and T its type, or (None, msg, err_cat) with an informational mess
 def fetch_assign_mypy_types(ctx, assign_target, strict=False):
     # if strict: # TODO
     #     return None
-
-    var_name = assign_target.id
-    decl_type = TypeConverter(assign_target.annotation)
+    var_name = assign_target.var_name
+    import pdb; pdb.set_trace()
+    decl_type = type_converter(assign_target.ast)
     declared_types = dict()
 
     if var_name == "_":
@@ -577,9 +577,11 @@ def type_check_Assign(assign, ctx, global_scope = False):
     # La deuxième func_type_converter([annotation_args1, annotation_args2, ...], annotation_type)
     # ou plutot passer en parametre juste la fonction et extraire ses args et son return a l'intérieur
     # elle renvoit un type fonctionnel (type des fonctions dans typeAST) c'est donc un function type
-    if hasattr(assign.target, "annotation"):
-        declared_types = fetch_assign_mypy_types(ctx, assign.target, True if assign.target.arity() == 1 else False)
+    if hasattr(assign, "type_annotation"):
+        print("Bonjour, nous sommes dans le nouveau")
+        declared_types = fetch_assign_mypy_types(ctx, assign.target, True if assign.taregt.arity() == 1 else False)
     else:
+        print("Bonjour, nous passons dans l'ancien fetch assign")
         declared_types = fetch_assign_declaration_types(ctx, assign.target, True if assign.target.arity() == 1 else False)
 
     if declared_types is None:
@@ -3142,5 +3144,5 @@ class CallNotNoneWarning(TypeError):
 
 if __name__ == '__main__':
 
-    ctx = typecheck_from_file("../../examples/revstr.py")
+    ctx = typecheck_from_file("../../mrpython/aa_pstl/aire_mixte.py")
     print(repr(ctx))

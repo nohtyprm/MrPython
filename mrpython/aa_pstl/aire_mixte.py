@@ -1,5 +1,5 @@
 import math
-import typing
+#import typing
 
 #def aire_triangle(a : float, b : float, c : float) -> float:
 def aire_triangle(a,b,c):
