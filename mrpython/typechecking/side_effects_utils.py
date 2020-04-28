@@ -17,9 +17,13 @@ if __name__ == "__main__":
     from typechecker import *
     
 else:
-    from .prog_ast import *
-    from .type_ast import *
-    
+    try:
+        from .prog_ast import *
+        from .type_ast import *
+    except ImportError:
+        from prog_ast import *
+        from type_ast import *
+
 
 class AliasRef:
     def __init__(self, ref, nb_def, index_in = None, index_out = None):
