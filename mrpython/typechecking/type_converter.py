@@ -5,18 +5,23 @@ except ImportError:
 
 def type_converter(annotation):
     if hasattr(annotation, "id"):
+        print("cet attribut a une annotation id")
         if annotation.id == "int":
             return IntType(annotation)
         elif annotation.id == "bool":
             return BoolType(annotation)
         elif annotation.id == "str":
             return StrType(annotation)
+        elif annotation.id == "float":
+            print("progast marche")
+            return FloatType(annotation)
     elif hasattr(annotation, "slice"):
         types = []
         for i in annotation.slice.value.elts:
             types.append(type_converter(i))
         return TupleType(types)
     else:
+        print("annotation mal instanciée")
         # return "UnsupportedNode"
         return None
 

@@ -15,11 +15,14 @@ if __name__ == "__main__":
     from prog_ast import *
     from type_ast import *
     from typechecker import *
-    
+
 else:
-    from .prog_ast import *
-    from .type_ast import *
-    
+    try:
+        from .prog_ast import *
+        from .type_ast import *
+    except ImportError:
+        from prog_ast import *
+        from type_ast import *
 
 class AliasRef:
     def __init__(self, ref, nb_def, index_in = None, index_out = None):
@@ -57,13 +60,13 @@ class AliasRef:
             repr_index_out = "[" + "".join(self.index_out) + "]"
         if self.index_in:
             repr_index_in = "[" + "".join(self.index_in) + "]"
-            
+
         return  repr_index_out + str(self.ref) + str(self.nb_def) + repr_index_in
 
     def is_protected(self, ctx):
         return (self.ref in ctx.protected) and not self.index_out
 
-    
+
     def simplify(self):
         if self.index_out and self.index_out[0] != ".":
             if self.index_in[len(self.index_in)-1] == self.index_out[0]:
@@ -73,8 +76,8 @@ class AliasRef:
             else:
                 return None
         return self
-    
-    
+
+
 def alias_expr (expr, ctx):
     return set()
 Expr.alias = alias_expr
@@ -102,7 +105,7 @@ def get_all_alias_ctx(ctx, var):
         tmp = alias.simplify()
         if tmp:
             final_res.add(tmp)
-            
+
     return final_res
 
 
@@ -184,13 +187,13 @@ def concat_deque(deq1, deq2):
     for e in deq2:
         ndeque.append(e)
     return ndeque
-    
+
 #########################
 
 def side_effect_ECall(call, ctx):
     is_side_effect = False
     protected_var = set()
-        
+
     if call.fun_name == "append":
         ctx.in_call = True
         aliases_extended = call.receiver.alias(ctx)
@@ -199,7 +202,7 @@ def side_effect_ECall(call, ctx):
 
 
         #variables potentially impacted
-        
+
         for alias in aliases_extended:
             if alias.is_protected(ctx):
                 is_side_effect = True
@@ -216,7 +219,7 @@ def side_effect_ECall(call, ctx):
                     alias_index_in =  concat_deque(alias_rec.index_in, alias_arg.index_out)
                     alias_index_in.appendleft(".")
                     tmp.add(AliasRef(alias_arg.ref, ctx.var_def[alias_arg.ref], copy_deque(alias_arg.index_in), alias_index_in))
-                    
+
                 ctx.add_alias(alias_rec.ref, tmp)
 
     elif  call.fun_name == "add":
@@ -228,7 +231,7 @@ def side_effect_ECall(call, ctx):
             if alias.is_protected(ctx):
                 is_side_effect = True
                 protected_var.add(alias.ref)
-            
+
     return (is_side_effect, protected_var)
 
 
@@ -248,7 +251,7 @@ def linearize(ctx, lhs_expr, aliases):
                 tmp.access(str(i))
                 alias_elem.add(tmp)
             linearize(ctx, lhs_expr.elements[i], alias_elem)
-                            
+
 
 def assign_extended(ctx, working_var, working_expr, suffix):
     if isinstance(working_var, LHSVar):
@@ -258,7 +261,7 @@ def assign_extended(ctx, working_var, working_expr, suffix):
             for s in suffix:
                 a.access(s)
         ctx.add_alias(working_var.var_name, aliases)
-        
+
     if isinstance(working_var, LHSTuple):
         if (not isinstance(working_expr, ETuple)):
             aliases = working_expr.alias(ctx)
@@ -266,7 +269,7 @@ def assign_extended(ctx, working_var, working_expr, suffix):
         else:
             for i in range(len(working_var.elements)):
                 assign_extended(ctx, working_var.elements[i], working_expr.elements[i], suffix)
-        
+
 def side_effect_Assign(assign, ctx):
     assign_extended(ctx, assign.target, assign.expr, "")
 
@@ -276,5 +279,3 @@ def side_effect_For(efor, ctx):
     assign_extended(ctx,efor.target, efor.iter, ".")
 
 For.side_effect = side_effect_For
-
-
