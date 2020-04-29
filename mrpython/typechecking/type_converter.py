@@ -5,7 +5,6 @@ except ImportError:
 
 def type_converter(annotation):
     if hasattr(annotation, "id"):
-        print("cet attribut a une annotation id")
         if annotation.id == "int":
             return IntType(annotation)
         elif annotation.id == "bool":
@@ -13,7 +12,6 @@ def type_converter(annotation):
         elif annotation.id == "str":
             return StrType(annotation)
         elif annotation.id == "float":
-            print("progast marche")
             return FloatType(annotation)
     elif hasattr(annotation, "slice"):
         types = []

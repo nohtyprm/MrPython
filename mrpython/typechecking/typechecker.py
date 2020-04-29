@@ -390,26 +390,25 @@ variable name and T its type, or (None, msg, err_cat) with an informational mess
 
     return (var_name, decl_type.content, "")
 
-def fetch_assign_mypy_types(ctx, assign_target, strict=False):
+def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
     # if strict: # TODO
     #     return None
     var_name = assign_target.var_name
-    import pdb; pdb.set_trace()
-    decl_type = type_converter(assign_target.ast)
+    decl_type = type_converter(annotation)
     declared_types = dict()
-
+    #import pdb; pdb.set_trace()
     if var_name == "_":
         ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("The special variable '_' cannot be declared")))
         return None
 
     udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
+
     if udecl_type is None:
         ctx.add_type_error(UnknownTypeAliasError(decl_type, unknown_alias, lineno, assign_target.ast.col_offset))
         return None
     else:
+        #import pdb; pdb.set_trace()
         declared_types[var_name] = udecl_type
-
-    declared_type[var_name] = decl_type
 
     return declared_types
 
@@ -578,10 +577,10 @@ def type_check_Assign(assign, ctx, global_scope = False):
     # ou plutot passer en parametre juste la fonction et extraire ses args et son return a l'intérieur
     # elle renvoit un type fonctionnel (type des fonctions dans typeAST) c'est donc un function type
     if hasattr(assign, "type_annotation"):
-        print("Bonjour, nous sommes dans le nouveau")
-        declared_types = fetch_assign_mypy_types(ctx, assign.target, True if assign.taregt.arity() == 1 else False)
+        print("Passage dans le fetch_assign_mypy_type\n ")
+        declared_types = fetch_assign_mypy_types(ctx, assign.target,assign.type_annotation, True if assign.target.arity() == 1 else False)
     else:
-        print("Bonjour, nous passons dans l'ancien fetch assign")
+        print("Passage dans le fetch_assign_declaration_type\n ")
         declared_types = fetch_assign_declaration_types(ctx, assign.target, True if assign.target.arity() == 1 else False)
 
     if declared_types is None:
