@@ -52,7 +52,7 @@ def init_id():
         os_username = getpass.getuser()
         if os_username.isnumeric() and len(os_username) == 7:
             student_number = int(os_username)
-            modify_student_number(str(student_number), "username-OS")
+            modify_student_number(str(student_number), "OS-input")
             return
         io.modify_student_hash("default", "default-input")
 
@@ -411,7 +411,6 @@ verbs = {
         id="https://www.lip6.fr/mocah/invalidURI/verbs/redid", display=LanguageMap({'en-US': 'redid'})),
     }
 
-print(verbs.keys())
 activities = {
     "application": Activity(
         id="http://activitystrea.ms/schema/1.0/application",
@@ -476,10 +475,6 @@ activities = {
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/sequence",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'a sequence of instructions'}))),
-    "scrollbar": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/scrollbar",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a scrollbar'}))),
     "text": Activity(
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/text",
         definition=ActivityDefinition(
@@ -489,7 +484,7 @@ activities = {
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'a typing state'}))),
     "interacting-state": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/interacting-sttate",
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/interacting-state",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'an interacting state'}))),
     "idle-state": Activity(

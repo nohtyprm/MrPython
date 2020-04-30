@@ -783,14 +783,13 @@ class PyEditor(HighlightingText):
             not_both_empty = (self.old_instruction != "" and not self.old_instruction.isspace())
             not_both_empty = not_both_empty or (new_instruction != "" and not new_instruction.isspace())
             if not_both_empty and new_instruction != self.old_instruction:
-                filename = self.short_title()
                 name_function = self.get_previous_function(self.old_line)
                 tracing.send_statement("modified", "instruction",
                                        {"https://www.lip6.fr/mocah/invalidURI/extensions/old-instruction": self.old_instruction,
                                         "https://www.lip6.fr/mocah/invalidURI/extensions/new-instruction": new_instruction,
                                         "https://www.lip6.fr/mocah/invalidURI/extensions/line-number": self.old_line,
-                                        "https://www.lip6.fr/mocah/invalidURI/extensions/filename": filename,
-                                        "https://www.lip6.fr/mocah/invalidURI/extensions/name_function": name_function,
+                                        "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title(),
+                                        "https://www.lip6.fr/mocah/invalidURI/extensions/function_context": name_function,
                                         }
                                        )
                 #print("line {} - old instruction: {}".format(self.old_line, self.old_instruction))
@@ -829,14 +828,16 @@ class PyEditor(HighlightingText):
             index1, index2 = self.tag_prevrange('KEYWORD', end_word)
             keyword = self.get(index1, index2)
             tracing.send_statement("typed", "keyword",
-                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/keyword-typed": keyword})
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/keyword-typed": keyword,
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title()})
             #print("Keyword typed: " + keyword)
 
     def send_deletion(self, first, last):
         tracing.send_statement("deleted", "text",
                                {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.get(first, last),
                                 "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": first,
-                                "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last})
+                                "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last,
+                                "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title()})
 
     def prev_move_cursor_event(self,event):
         if self.typed_char:
@@ -853,14 +854,16 @@ class PyEditor(HighlightingText):
         if pasted_text != "":
             tracing.send_statement("inserted", "text",
                                    {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.clipboard_get(),
-                                    "https://www.lip6.fr/mocah/invalidURI/extensions/index": self.index("insert")})
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/index": self.index("insert"),
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title()})
 
     def copied_event(self,event):
         first, last = self.get_selection_indices()
         if first and last:
             text = self.get(first,last)
             tracing.send_statement("copied", "text",
-                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/text": text})
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/text": text,
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title()})
 
     def keypress_event(self,event):
         tracing.user_is_typing()

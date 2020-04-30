@@ -59,7 +59,7 @@ class CloseableNotebook(ttk.Notebook):
         """Called when the button is released over the close button"""
         # Code for tracing changed tabs
         self.new_tab = self.select()
-        if not self.instate(['pressed']) and self.old_tab != self.new_tab:
+        if not self.instate(['pressed']) and self.old_tab != self.new_tab and self.old_tab != "":
             old_tab_filename = self.get_filename(self.old_tab)
             new_tab_filename = self.get_filename(self.new_tab)
             tracing.send_statement("switched", "file",

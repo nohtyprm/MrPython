@@ -143,8 +143,10 @@ class UndoDelegator(Delegator):
             return "break"
         cmd = self.undolist[self.pointer - 1]
         if self.text is not None:
+            filename = self.text.short_title()
             tracing.send_statement("undid", "sequence",
-                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/sequence-list:": str(cmd)})
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/sequence-list": str(cmd),
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": filename})
             self.text.reset_send_instruction()
         cmd.undo(self.delegate)
         self.pointer = self.pointer - 1
@@ -158,8 +160,10 @@ class UndoDelegator(Delegator):
             return "break"
         cmd = self.undolist[self.pointer]
         if self.text is not None:
+            filename = self.text.short_title()
             tracing.send_statement("redid", "sequence",
-                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/sequence-list:": str(cmd)})
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/sequence-list": str(cmd),
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": filename})
             self.text.reset_send_instruction()
         cmd.redo(self.delegate)
         self.pointer = self.pointer + 1
