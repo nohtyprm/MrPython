@@ -50,7 +50,7 @@ def init_id():
     if student_hash == "not-initialized":
         new_hash = None
         os_username = getpass.getuser()
-        if os_username.isnumeric() and len(os_username) == 7:
+        if os_username.isdigit():
             student_number = int(os_username)
             modify_student_number(str(student_number), "OS-input")
             return
@@ -144,13 +144,14 @@ def send_statement_lrs(statement):
 
 def send_statement(verb, activity, activity_extensions=None):
     """Send a statement with the verb and activity keys and the context extensions"""
+    if not tracing_active:
+        return
     def thread_function(statement):
         pass
         # Send statement and receive HTTP response
         if not send_statement_lrs(statement):
             io.add_statement(statement)
     #Create the statement from the actor, verb, object and potentially the context
-    send_to_LRS = False
     if verb not in verbs:
         print("Tracing: Missing verb key {}".format(verb))
         return
@@ -191,8 +192,8 @@ def send_statement(verb, activity, activity_extensions=None):
 def send_statement_open_app():
     global time_opened
     time_opened = time.time()
-    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/machine-id": io.get_machine_id()}
+    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session": session,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/machine": io.get_machine_id()}
     send_statement("opened", "application", {})
 
 
@@ -211,7 +212,10 @@ def send_statement_close_app():
 
 
 def add_extensions_error(error, error_category, filename = None, instruction = None):
-    groups = error_groups[error.class_name]
+    try:
+        groups = error_groups[error.class_name]
+    except KeyError:
+        groups = "No first group"
     if "&" in groups:
         first_group, second_group = groups.split("&")
     else:
@@ -491,10 +495,15 @@ activities = {
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/idle-state",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'an idle state'}))),
+
     }
 
+with open(os.path.join(os.path.dirname(__file__), "tracing_config.json"))as file:
+    config = json.load(file)
+    tracing_active = config["tracing_active"]
+    send_to_LRS = config["send_to_LRS"]
+    error_groups = config["error_groups"]
 
 last_typing_timestamp = None
 last_interacting_timestamp = None
-with open(os.path.join(os.path.dirname(__file__), "tracing_error_groups.json"))as file:
-    error_groups = json.load(file)
+

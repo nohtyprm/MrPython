@@ -121,6 +121,7 @@ class PyEditor(HighlightingText):
         # Tracing: send programing instruction
         self.old_line = -1  # Number of the line. -1: default, no line saved
         self.old_instruction = None # String of the instruction typed
+        self.old_tags = []
 
         self.sy = None
 
@@ -744,6 +745,15 @@ class PyEditor(HighlightingText):
     def get_current_instruction(self):
         return self.get("insert linestart", "insert lineend")
 
+    def get_current_tags(self, line_number):
+        tags_to_check = ["STRING", "COMMENT"]
+        current_tags = []
+        cursor = self.index("insert")
+        for tag_name in tags_to_check:
+            if self.is_tag_in_line(tag_name, line_number):
+                current_tags.append(tag_name)
+        return current_tags
+
     def get_number_of_lines(self):
         end = self.index("end-1c")
         line = end.split('.')[0]
@@ -765,6 +775,13 @@ class PyEditor(HighlightingText):
                 return function_name
             line_number -= 1
         return "no function defined"
+
+    def is_tag_in_line(self, tag_name, line_number):
+        index1 = str(line_number) + ".0 linestart"
+        index2 = str(line_number) + ".0 lineend"
+        if tag_name == "STRING" and "STRING" in self.tag_names(str(line_number)+".0"):
+            return True # For multi-lines string, we can't use tag_nextrange
+        return len(self.tag_nextrange(tag_name, index1, index2)) == 2  # Check if tag is present in the line
 
     def save_send_instruction(self):
         """
@@ -797,6 +814,7 @@ class PyEditor(HighlightingText):
             # Reset
             self.old_line = self.get_current_line()
             self.old_instruction = self.get_current_instruction()
+            self.old_tags = self.get_current_tags(self.old_line)
 
     def reset_send_instruction(self):
         self.old_line = -1
@@ -827,9 +845,12 @@ class PyEditor(HighlightingText):
         if 'KEYWORD' in self.tag_names(end_word + "-1c"):
             index1, index2 = self.tag_prevrange('KEYWORD', end_word)
             keyword = self.get(index1, index2)
+            line_number = self.index("insert").split(".")[0]
             tracing.send_statement("typed", "keyword",
                                    {"https://www.lip6.fr/mocah/invalidURI/extensions/keyword-typed": keyword,
-                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title()})
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title(),
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/line-number": line_number
+                                    })
             #print("Keyword typed: " + keyword)
 
     def send_deletion(self, first, last):
@@ -863,7 +884,11 @@ class PyEditor(HighlightingText):
             text = self.get(first,last)
             tracing.send_statement("copied", "text",
                                    {"https://www.lip6.fr/mocah/invalidURI/extensions/text": text,
-                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title()})
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title(),
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": first,
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last,
+                                    })
+            
 
     def keypress_event(self,event):
         tracing.user_is_typing()
