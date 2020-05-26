@@ -47,9 +47,12 @@ class TypingContext:
         self.partial_function = None
         self.dead_variables = set()
         self.parent_stack = None
+        self.parent_decl_stack = None
         self.local_env = None
+        self.declared_env = None
         self.call_type_env = [] # stack of type environments when calling generic functions
         self.local_env = {}  # will have global variables
+        self.declared_env={} #Will receive type declaration only
 
         self.in_call = False
         self.protected = set()
@@ -94,6 +97,10 @@ class TypingContext:
         if not self.parent_stack:
             self.parent_stack = []
         self.parent_stack.append((parent_node, parent_local_env))
+        parent_local_declare = {var_name : var_info for (var_name, var_info) in self.declared_env.items() }
+        if not self.parent_decl_stack:
+            self.parent_decl_stack = []
+        self.parent_decl_stack.append((parent_node, parent_local_declare))
 
     def pop_parent(self):
         if not self.parent_stack:
@@ -108,6 +115,18 @@ class TypingContext:
                 # self.dead_variables.add(var)
 
         self.local_env = parent_local_env
+        if not self.parent_decl_stack:
+            raise ValueError("Cannot pop from empty parent declaration stack (please report)")
+
+        # all variables defined within the parent are now disallowed
+        _, parent_local_declare = self.parent_decl_stack.pop()
+        for var in self.declared_env:
+            if var not in parent_local_declare:
+                pass
+                # XXX: barendregt convention too strong ?
+                # self.dead_variables.add(var)
+
+        self.declared_env = parent_local_declare
 
     def fetch_nominal_type(self, base_type):
         # TODO : follow metavar instantiations
@@ -249,26 +268,39 @@ def type_check_Program(prog):
     for (fun_name, fun_def) in prog.functions.items():
         #print("function: "+ fun_name)
         #print(fun_def.docstring)
-        signature = function_type_parser(fun_def.docstring)
-        #print(repr(signature))
-        if signature.iserror:
-            ctx.add_type_error(SignatureParseError(fun_name, fun_def, signature))
-        else: # HACK: trailing non-whistespace characters at the end of the signature
-            #parsed = fun_def.docstring[0:signature.end_pos.offset:]
-            #print("parsed = '{}'".format(parsed))
-            remaining = fun_def.docstring[signature.end_pos.offset:]
-            #print("remaining = '{}'".format(remaining))
-            if not fun_def.docstring[signature.end_pos.offset-1].isspace() and remaining and not remaining[0].isspace():
-                ctx.add_type_error(SignatureTrailingError(fun_name, fun_def, remaining))
-                # XXX: Not fatal ?
+        #signature = function_type_parser(fun_def.docstring)
+        #import pdb; pdb.set_trace()
+        if hasattr(fun_def.returns,"id"):
+            fun_type = fun_converter(fun_def)
+            if fun_type is None:
+                # position is a little bit ad-hoc
+                ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno+ 1, fun_def.ast.col_offset + 7))
+                return ctx
             else:
-                fun_type, unknown_alias = signature.content.unalias(ctx.type_defs)
-                if fun_type is None:
-                    # position is a little bit ad-hoc
-                    ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno+ 1, fun_def.ast.col_offset + 7))
-                    return ctx
+                ctx.register_function(fun_name, fun_type, fun_def)
+        else:
+
+            #import pdb; pdb.set_trace()
+            #print(repr(signature))
+            if signature.iserror:
+                ctx.add_type_error(SignatureParseError(fun_name, fun_def, signature))
+            else: # HACK: trailing non-whistespace characters at the end of the signature
+                #parsed = fun_def.docstring[0:signature.end_pos.offset:]
+                #print("parsed = '{}'".format(parsed))
+                remaining = fun_def.docstring[signature.end_pos.offset:]
+                #print("remaining = '{}'".format(remaining))
+                if not fun_def.docstring[signature.end_pos.offset-1].isspace() and remaining and not remaining[0].isspace():
+                    ctx.add_type_error(SignatureTrailingError(fun_name, fun_def, remaining))
+                    # XXX: Not fatal ?
                 else:
-                    ctx.register_function(fun_name, fun_type, fun_def)
+                    fun_type, unknown_alias = signature.content.unalias(ctx.type_defs)
+                    #import pdb; pdb.set_trace()
+                    if fun_type is None:
+                        # position is a little bit ad-hoc
+                        ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno+ 1, fun_def.ast.col_offset + 7))
+                        return ctx
+                    else:
+                        ctx.register_function(fun_name, fun_type, fun_def)
 
     # fourth step : type-check each function
     for (fun_name, fun_def) in ctx.functions.items():
@@ -294,8 +326,8 @@ def type_check_Program(prog):
 Program.type_check = type_check_Program
 
 def type_check_FunctionDef(func_def, ctx):
+    #Ici modifier : Func type converter
 
-    #Ici modifier : Fuc type converter
     signature = ctx.global_env[func_def.name]
     #print("signature = ", repr(signature))
 
@@ -308,15 +340,14 @@ def type_check_FunctionDef(func_def, ctx):
     # Step 1: check function arity
     if len(func_def.parameters) != len(signature.param_types):
         ctx.add_type_error(FunctionArityError(func_def, signature))
+        #import pdb; pdb.set_trace()
         # this is of course a fatal error
         return
-
     # Step 2 : fill the parameter environment, and expected return type
     ctx.register_parameters(func_def.parameters, signature.param_types)
     #print(ctx.param_env)
     ctx.register_return_type(signature.ret_type)
     ctx.register_function_def(func_def, signature.partial)
-
 
     # Step 3 : type-check body
     ctx.nb_returns = 0  # counting the number of returns encountered
@@ -396,7 +427,6 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
     var_name = assign_target.var_name
     decl_type = type_converter(annotation)
     declared_types = dict()
-    #import pdb; pdb.set_trace()
     if var_name == "_":
         ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("The special variable '_' cannot be declared")))
         return None
@@ -412,25 +442,38 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
 
     return declared_types
 
-        #TODO :
-        # faire une variante de cette fonction qui prenne en param le type mypy et qui call le type converter
-        # genre fetch_assign_mypy_type
-        # le bool = mode stricte : si y'a plusieurs variables on autorise à ne pas préciser le type
-        # la fc verifie que tous les types sont bien déclarés et construit la table avec
+def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
+    var_name = assign_target.var_name
+    decl_type, idk = ctx.declared_env[var_name]
+    declared_types = dict()
+    #Les autres vérifications ont déjà été faites par le typechecking de la déclaration
+    udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
 
-        # parse_annotation_type() -> fonction degueu qui parse les annotations en commentaire à ne pas toucher
+    if udecl_type is None:
+        ctx.add_type_error(UnknownTypeAliasError(decl_type, unknown_alias, lineno, assign_target.ast.col_offset))
+        return None
+    else:
+        declared_types[var_name] = udecl_type
 
-        # ensuite ici on teste si on a l'annotation et en fonction on appelle la nouvelle ou la vieille version de fetch assign
+    return declared_types
 
 
+def fetch_declared_mypy_types(ctx, declaration_target, annotation, strict = False):
+    var_name = declaration_target.var_name
+    decl_type = type_converter(annotation)
+    declared_types = dict()
+    if var_name == "_":
+        ctx.add_type_error(DeclarationError(ctx.function_def, declaration_target, 'var-name', lineno, tr("The special variable '_' cannot be declared")))
+        return None
+    udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
 
-        # point d'entree du typer : type_checkty_program
+    if udecl_type is None:
+        ctx.add_type_error(UnknownTypeAliasError(decl_type, unknown_alias, lineno, declaration_target.ast.col_offset))
+        return None
+    else:
+        declared_types[var_name] = udecl_type
 
-        #typecheck function def -> pour les annotations de fonction (!!)
-
-        # La deuxième func_type_converter([annotation_args1, annotation_args2, ...], annotation_type)
-        # ou plutot passer en parametre juste la fonction et extraire ses args et son return a l'intérieur
-        # elle renvoit un type fonctionnel (type des fonctions dans typeAST) c'est donc un function type
+    return declared_types
 
 
 def fetch_assign_declaration_types(ctx, assign_target, strict=False):
@@ -518,10 +561,51 @@ def linearize_tuple_type(working_var, working_type, declared_types, ctx, expr, s
 
     return True
 
+def type_check_DeclareVar(declareVar, ctx, global_scope = False):
+
+    mono_assign = False
+    for var in declareVar.target.variables():       #Normalement on a la même chose
+        if var.var_name in ctx.dead_variables:
+            ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
+            return False
+
+        # check that the variable is not a parameter
+        if ctx.param_env and var.var_name in ctx.param_env:
+            ctx.add_type_error(ParameterInAssignmentError(var.var_name, var))
+            return False
+
+        if var.var_name in ctx.local_env:       #Impossible car il s'agit d'un déclaration de type
+            ctx.add_type_error(ForbiddenMultiAssign(var))
+            return False
+
+    declared_types = fetch_declared_mypy_types(ctx, declareVar.target, declareVar.type_annotation, False)
+    if declared_types is None:
+        declared_types = dict()
+    strict = False
+    if declareVar.target.arity() == 1:
+        strict = True
+    #ici gérer l'entrée dans le contexte
+    working_var = declareVar.target
+    if strict:
+        if working_var.var_name in declared_types:
+            var_type = declared_types[working_var.var_name]
+            ctx.declared_env[working_var.var_name] = (var_type, ctx.fetch_scope_mode())
+            #import pdb; pdb.set_trace()
+            return True
+        else:
+            return False
+    else:
+        ctx.declared_env[working_var.var_name] = (working_type, ctx.fetch_scope_mode())
+        #import pdb; pdb.set_trace()
+        return True
+
+DeclareVar.type_check = type_check_DeclareVar
+
 def type_check_Assign(assign, ctx, global_scope = False):
 
     # first let's see if the variables are dead
     mono_assign = False # is this an actual assignment (and not an initialization ?)
+    declaration = False # does the variable had already been declared?
     for var in assign.target.variables():
 
         # check that the variable is not "dead"  (out of scope)
@@ -543,6 +627,8 @@ def type_check_Assign(assign, ctx, global_scope = False):
                 return False
             else:
                 mono_assign = True
+        if var.var_name in ctx.declared_env:
+            declaration = True
 
     if mono_assign:
         expr_type = assign.expr.type_infer(ctx)
@@ -557,31 +643,17 @@ def type_check_Assign(assign, ctx, global_scope = False):
 
     # next fetch the declared types  (only required for mono-variables)
 
-    #TODO :
-    # faire une variante de cette fonction qui prenne en param le type mypy et qui call le type converter
-    # genre fetch_assign_mypy_type
-    # le bool = mode stricte : si y'a plusieurs variables on autorise à ne pas préciser le type
-    # la fc verifie que tous les types sont bien déclarés et construit la table avec
+    if declaration:
+        print("Assignation d'un type déclaré un peu plus haut")
+        declared_types = fetch_assign_declared_mypy_types(ctx, assign.target,True if assign.target.arity() == 1 else False )
 
-    # parse_annotation_type() -> fonction degueu qui parse les annotations en commentaire à ne pas toucher
-
-    # ensuite ici on teste si on a l'annotation et en fonction on appelle la nouvelle ou la vieille version de fetch assign
-
-
-
-    # point d'entree du typer : type_checkty_program
-
-    #typecheck function def -> pour les annotations de fonction (!!)
-
-    # La deuxième func_type_converter([annotation_args1, annotation_args2, ...], annotation_type)
-    # ou plutot passer en parametre juste la fonction et extraire ses args et son return a l'intérieur
-    # elle renvoit un type fonctionnel (type des fonctions dans typeAST) c'est donc un function type
-    if hasattr(assign, "type_annotation"):
-        print("Passage dans le fetch_assign_mypy_type\n ")
-        declared_types = fetch_assign_mypy_types(ctx, assign.target,assign.type_annotation, True if assign.target.arity() == 1 else False)
     else:
-        print("Passage dans le fetch_assign_declaration_type\n ")
-        declared_types = fetch_assign_declaration_types(ctx, assign.target, True if assign.target.arity() == 1 else False)
+        if hasattr(assign, "type_annotation"):
+            print("Passage dans le fetch_assign_mypy_type\n ")
+            declared_types = fetch_assign_mypy_types(ctx, assign.target,assign.type_annotation, True if assign.target.arity() == 1 else False)
+        else:
+            print("Passage dans le fetch_assign_declaration_type\n ")
+            declared_types = fetch_assign_declaration_types(ctx, assign.target, True if assign.target.arity() == 1 else False)
 
     if declared_types is None:
         declared_types = dict()
@@ -710,7 +782,6 @@ def type_check_Return(ret, ctx):
     if not ctx.return_type.type_compare(ctx, ret.expr, expr_type, raise_error=False):
         ctx.add_type_error(WrongReturnTypeError(ctx.function_def, ctx.return_type, expr_type, ret))
         return False
-
     return True
 
 Return.type_check = type_check_Return
@@ -861,6 +932,10 @@ def type_check_With(ewith, ctx):
     return True
 
 With.type_check = type_check_With
+
+def ContainerDeclaration_type_check(cdecl, ctx):
+    return True
+ContainerDeclaration.type_check = ContainerDeclaration_type_check
 
 def ContainerAssign_type_check(cassign, ctx):
     container_type = cassign.container_expr.type_infer(ctx)
@@ -3143,5 +3218,5 @@ class CallNotNoneWarning(TypeError):
 
 if __name__ == '__main__':
 
-    ctx = typecheck_from_file("../../mrpython/aa_pstl/aire_mixte.py")
+    ctx = typecheck_from_file("../../mrpython/aa_pstl/aire_apres.py")
     print(repr(ctx))
