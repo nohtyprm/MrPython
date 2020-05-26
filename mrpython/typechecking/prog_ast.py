@@ -104,7 +104,6 @@ class Program:
                 self.global_vars.append(assign_ast)
 
                 if hasattr(assign_ast, "type_annotation"):
-                    # print(dir(assign_ast.type_annotation))
                     print(str(type(type_converter(assign_ast.type_annotation))) + "\n")
             else:
                 # print("Unsupported instruction: " + node)
@@ -209,13 +208,8 @@ class Assign:
         self.ast = node
 
         if isinstance(node, ast.AnnAssign):
-            print("node is instance of annasign")
             self.type_annotation = self.ast.annotation
-            #L'annotation est mal récupérée ici
-.            self.target = build_lhs_destruct(self.ast.target)
-            import pdb; pdb.set_trace()
-            #print(type(self.ast.annotation))
-            # for i in self.ast.annotation.slice.value.elts:
+            self.target = build_lhs_destruct(self.ast.target)
 
             """
             ```
@@ -233,7 +227,6 @@ class Assign:
 
         else:
             self.target = build_lhs_destruct(self.ast.targets[0])
-            print("node is not a instance of annasign")
 
         self.expr = parse_expression(self.ast.value)
 
