@@ -85,18 +85,15 @@ class Program:
         self.ast = modast
 
         for node in modast.body:
-            print("Passage dans un node " + str(type(node)) + "\n")
-            #import pdb; pdb.set_trace()
+            #print(str(dir(node)))
             if isinstance(node, ast.Import):
                 imp_ast = Import(node)
                 self.imports[imp_ast.name] = imp_ast
             elif isinstance(node, ast.FunctionDef):
-                #print(str(dir(node)))
                 fun_ast = FunctionDef(node)
                 if fun_ast.python101ready:
                     self.functions[fun_ast.name] = fun_ast
                 else:
-                    #import pdb; pdb.set_trace()
                     self.other_top_defs.append(UnsupportedNode(node))
             elif isinstance(node, ast.Assert):
                 assert_ast = TestCase(node)
@@ -107,9 +104,6 @@ class Program:
             elif isinstance(node, ast.Assign) or isinstance(node, ast.AnnAssign):
                 assign_ast = Assign(node)
                 self.global_vars.append(assign_ast)
-
-                if hasattr(assign_ast, "type_annotation"):
-                    print(str(type(type_converter(assign_ast.type_annotation))) + "\n")
             else:
                 # print("Unsupported instruction: " + node)
                 self.other_top_defs.append(UnsupportedNode(node))
@@ -129,28 +123,22 @@ class Import:
 class FunctionDef:
     def __init__(self, node):
 
+        self.typee = False #If the arguments and the return is typed
         self.ast = node
         self.name = self.ast.name
-        #print(astpp.dump(self.ast))
-        if hasattr(node.returns,"id"):
-            print("On récupère bien une fonction de définition typée")
-            #self.parameters = []
-            #for arg_obj in self.ast.args.args:
-                #print(arg_obj.annotation.id)
-                #self.parameters.append(arg_obj.arg)
-            #print(self.parameters[0])
-            #print(self.ast.returns.id)
-            #print(self.ast.name)
-        else:
-            print("On ne récupère pas de définition de fonction typée")
-
         self.python101ready = True
+
+        if hasattr(node.returns,"id"):
+            self.typee = True
 
         self.param_types = []
         self.parameters = []
         for arg_obj in self.ast.args.args:
             self.parameters.append(arg_obj.arg)
-            self.param_types.append(arg_obj.annotation)
+
+        if self.typee:
+            for arg_obj in self.ast.args.args:
+                self.param_types.append(arg_obj.annotation)
 
         first_instr = self.ast.body[0]
         next_instr_index = 0
@@ -163,7 +151,6 @@ class FunctionDef:
 
         self.body = []
         for inner_node in self.ast.body[next_instr_index:]:
-            #print(astpp.dump(inner_node))
             self.body.append(parse_instruction(inner_node))
         self.returns=self.ast.returns
 
@@ -226,28 +213,15 @@ def build_lhs_destruct(node):
 
 class Assign:
     def __init__(self, node):
+
         self.ast = node
 
         if isinstance(node, ast.AnnAssign):
             self.type_annotation = self.ast.annotation
             self.target = build_lhs_destruct(self.ast.target)
             if self.ast.value is None:
-
-                print("erreur")
-
-            """
-            ```
-            TODO :
-            V -> dans assign on ajoute un node type_annotation qui vaut self.node.ast.annotation
-            V -> nouveau fichier type_converter.py -> fonction type_converter
-               (une sorte de visiteur sur le prog ast mais uniquement les noeuds qui concernent une annotation)
-            -> +tard dans le typer on appelera type_converter qui prendra en entrée une annotation, qui check qu'on comprend l'annotation
-               et qui renvoit soit le type construit correspondant soit une erreur
-               (ça se fait là où l'on appelle assign)
-            -> on teste si le node a une annotation, si oui notre système, sinon le truc déjà en place
-            -> on passe la pepe annotation en paramètre du constructeur du type ast
-            ```
-            """
+                #should not occur
+                print("Construction d'une mauvaise assignation")
 
         else:
             self.target = build_lhs_destruct(self.ast.targets[0])
@@ -258,10 +232,7 @@ class DeclareVar:
     def __init__(self, node):
         self.ast = node
         self.type_annotation = self.ast.annotation
-        #import pdb; pdb.set_trace()
         self.target = build_lhs_destruct(self.ast.target)
-        #print(astpp.dump(node))
-        #self.expr = parse_expression(self.ast.value)
 
 class ContainerAssign:
     def __init__(self, target, expr):

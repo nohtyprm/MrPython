@@ -3,7 +3,7 @@ try:
 except ImportError:
     from type_ast import *
 
-def type_converter(annotation):
+def type_converter(annotation, ctx):
     if hasattr(annotation, "id"):
         if annotation.id == "int":
             return IntType(annotation)
@@ -19,15 +19,14 @@ def type_converter(annotation):
             types.append(type_converter(i))
         return TupleType(types)
     else:
-        print("annotation mal instanciée\n")
-        # return "UnsupportedNode"
+        ctx.add_type_error(TypeDefParseError(0,annotation))
         return None
 
-def fun_converter(fun_def):
+def fun_converter(fun_def, ctx):
     param_types = []
     for par in fun_def.param_types:
-        param_types.append(type_converter(par))
-    ret_type = type_converter(fun_def.returns)
+        param_types.append(type_converter(par,ctx))
+    ret_type = type_converter(fun_def.returns,ctx)
 
     return FunctionType(param_types,ret_type,False,1)
 

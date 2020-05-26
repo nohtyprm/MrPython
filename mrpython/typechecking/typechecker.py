@@ -103,30 +103,39 @@ class TypingContext:
         self.parent_decl_stack.append((parent_node, parent_local_declare))
 
     def pop_parent(self):
-        if not self.parent_stack:
-            raise ValueError("Cannot pop from empty parent stack (please report)")
 
-        # all variables defined within the parent are now disallowed
-        _, parent_local_env = self.parent_stack.pop()
-        for var in self.local_env:
-            if var not in parent_local_env:
-                pass
-                # XXX: barendregt convention too strong ?
-                # self.dead_variables.add(var)
-
-        self.local_env = parent_local_env
         if not self.parent_decl_stack:
             raise ValueError("Cannot pop from empty parent declaration stack (please report)")
 
-        # all variables defined within the parent are now disallowed
         _, parent_local_declare = self.parent_decl_stack.pop()
         for var in self.declared_env:
             if var not in parent_local_declare:
                 pass
                 # XXX: barendregt convention too strong ?
                 # self.dead_variables.add(var)
+                if var not in self.local_env:
+                    pass
 
         self.declared_env = parent_local_declare
+
+        if not self.parent_stack:
+            raise ValueError("Cannot pop from empty parent stack (please report)")
+
+        # all variables defined within the parent are now disallowed
+
+        _, parent_local_env = self.parent_stack.pop()
+        for (var_name, var_info) in self.local_env.items():
+            if (var_name, var_info) not in parent_local_env.items():
+                if var_name in self.declared_env :
+                    parent_local_env[var_name]=var_info
+                else:
+                    pass
+                # XXX: barendregt convention too strong ?
+                # self.dead_variables.add(var)
+
+        self.local_env = parent_local_env
+
+        # all variables defined within the parent are now disallowed
 
     def fetch_nominal_type(self, base_type):
         # TODO : follow metavar instantiations
@@ -266,12 +275,8 @@ def type_check_Program(prog):
 
     # third step : process each function to fill the global environment
     for (fun_name, fun_def) in prog.functions.items():
-        #print("function: "+ fun_name)
-        #print(fun_def.docstring)
-        #signature = function_type_parser(fun_def.docstring)
-        #import pdb; pdb.set_trace()
         if hasattr(fun_def.returns,"id"):
-            fun_type = fun_converter(fun_def)
+            fun_type = fun_converter(fun_def,ctx)
             if fun_type is None:
                 # position is a little bit ad-hoc
                 ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno+ 1, fun_def.ast.col_offset + 7))
@@ -279,9 +284,9 @@ def type_check_Program(prog):
             else:
                 ctx.register_function(fun_name, fun_type, fun_def)
         else:
-
-            #import pdb; pdb.set_trace()
             #print(repr(signature))
+            #print(fun_def.docstring)
+            signature = function_type_parser(fun_def.docstring)
             if signature.iserror:
                 ctx.add_type_error(SignatureParseError(fun_name, fun_def, signature))
             else: # HACK: trailing non-whistespace characters at the end of the signature
@@ -294,7 +299,6 @@ def type_check_Program(prog):
                     # XXX: Not fatal ?
                 else:
                     fun_type, unknown_alias = signature.content.unalias(ctx.type_defs)
-                    #import pdb; pdb.set_trace()
                     if fun_type is None:
                         # position is a little bit ad-hoc
                         ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno+ 1, fun_def.ast.col_offset + 7))
@@ -422,13 +426,16 @@ variable name and T its type, or (None, msg, err_cat) with an informational mess
     return (var_name, decl_type.content, "")
 
 def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
-    # if strict: # TODO
-    #     return None
+
     var_name = assign_target.var_name
-    decl_type = type_converter(annotation)
+    decl_type = type_converter(annotation,ctx)
     declared_types = dict()
+
     if var_name == "_":
         ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("The special variable '_' cannot be declared")))
+        return None
+
+    if decl_type is None:
         return None
 
     udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
@@ -437,7 +444,6 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
         ctx.add_type_error(UnknownTypeAliasError(decl_type, unknown_alias, lineno, assign_target.ast.col_offset))
         return None
     else:
-        #import pdb; pdb.set_trace()
         declared_types[var_name] = udecl_type
 
     return declared_types
@@ -446,7 +452,10 @@ def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
     var_name = assign_target.var_name
     decl_type, idk = ctx.declared_env[var_name]
     declared_types = dict()
-    #Les autres vérifications ont déjà été faites par le typechecking de la déclaration
+
+    if decl_type is None:
+        return None
+
     udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
 
     if udecl_type is None:
@@ -460,11 +469,15 @@ def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
 
 def fetch_declared_mypy_types(ctx, declaration_target, annotation, strict = False):
     var_name = declaration_target.var_name
-    decl_type = type_converter(annotation)
+    decl_type = type_converter(annotation,ctx)
     declared_types = dict()
     if var_name == "_":
         ctx.add_type_error(DeclarationError(ctx.function_def, declaration_target, 'var-name', lineno, tr("The special variable '_' cannot be declared")))
         return None
+
+    if decl_type is None:
+        return None
+
     udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
 
     if udecl_type is None:
@@ -564,7 +577,7 @@ def linearize_tuple_type(working_var, working_type, declared_types, ctx, expr, s
 def type_check_DeclareVar(declareVar, ctx, global_scope = False):
 
     mono_assign = False
-    for var in declareVar.target.variables():       #Normalement on a la même chose
+    for var in declareVar.target.variables():
         if var.var_name in ctx.dead_variables:
             ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
             return False
@@ -574,7 +587,7 @@ def type_check_DeclareVar(declareVar, ctx, global_scope = False):
             ctx.add_type_error(ParameterInAssignmentError(var.var_name, var))
             return False
 
-        if var.var_name in ctx.local_env:       #Impossible car il s'agit d'un déclaration de type
+        if var.var_name in ctx.local_env:
             ctx.add_type_error(ForbiddenMultiAssign(var))
             return False
 
@@ -584,19 +597,17 @@ def type_check_DeclareVar(declareVar, ctx, global_scope = False):
     strict = False
     if declareVar.target.arity() == 1:
         strict = True
-    #ici gérer l'entrée dans le contexte
+
     working_var = declareVar.target
     if strict:
         if working_var.var_name in declared_types:
             var_type = declared_types[working_var.var_name]
             ctx.declared_env[working_var.var_name] = (var_type, ctx.fetch_scope_mode())
-            #import pdb; pdb.set_trace()
             return True
         else:
             return False
     else:
         ctx.declared_env[working_var.var_name] = (working_type, ctx.fetch_scope_mode())
-        #import pdb; pdb.set_trace()
         return True
 
 DeclareVar.type_check = type_check_DeclareVar
@@ -627,6 +638,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
                 return False
             else:
                 mono_assign = True
+        #see if the variables already had benn declared
         if var.var_name in ctx.declared_env:
             declaration = True
 
@@ -644,15 +656,15 @@ def type_check_Assign(assign, ctx, global_scope = False):
     # next fetch the declared types  (only required for mono-variables)
 
     if declaration:
-        print("Assignation d'un type déclaré un peu plus haut")
+        # Assignation of variables that have already benn declared
         declared_types = fetch_assign_declared_mypy_types(ctx, assign.target,True if assign.target.arity() == 1 else False )
 
     else:
         if hasattr(assign, "type_annotation"):
-            print("Passage dans le fetch_assign_mypy_type\n ")
+            # AnnAssign
             declared_types = fetch_assign_mypy_types(ctx, assign.target,assign.type_annotation, True if assign.target.arity() == 1 else False)
         else:
-            print("Passage dans le fetch_assign_declaration_type\n ")
+            # Classical assignement
             declared_types = fetch_assign_declaration_types(ctx, assign.target, True if assign.target.arity() == 1 else False)
 
     if declared_types is None:
@@ -2386,6 +2398,21 @@ class AssertionInFunctionWarning(TypeError):
     def is_fatal(self):
         return False
 
+class NotUsedDeclarationWarning(TypeError):
+    def __init__(self, var_name, var_type):
+        self.var_name = var_name
+        self.var_type = var_type
+
+    def fail_string(self):
+        return "NotUsedDeclarationWarning[{}]@{}:{}".format(self.var_name, self.var_type)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Using issue"), 0, 0
+                                    , details=tr("this construction is not available in Python101 (try expert mode for standard Python)"))
+
+    def is_fatal(self):
+        return False
+
 class FunctionArityError(TypeError):
     def __init__(self, func_def, signature):
         self.func_def = func_def
@@ -3218,5 +3245,12 @@ class CallNotNoneWarning(TypeError):
 
 if __name__ == '__main__':
 
-    ctx = typecheck_from_file("../../mrpython/aa_pstl/aire_apres.py")
+    import sys
+    prog1 = Program()
+    if len(sys.argv) > 1:
+        filename = sys.argv[1]
+    else:
+        filename = "../../mrpython/aa_pstl/declaration.py"
+
+    ctx = typecheck_from_file(filename)
     print(repr(ctx))
