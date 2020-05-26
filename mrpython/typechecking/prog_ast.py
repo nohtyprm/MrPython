@@ -86,20 +86,25 @@ class Program:
 
         for node in modast.body:
             print("Passage dans un node " + str(type(node)) + "\n")
+            #import pdb; pdb.set_trace()
             if isinstance(node, ast.Import):
                 imp_ast = Import(node)
                 self.imports[imp_ast.name] = imp_ast
             elif isinstance(node, ast.FunctionDef):
+                #print(str(dir(node)))
                 fun_ast = FunctionDef(node)
                 if fun_ast.python101ready:
                     self.functions[fun_ast.name] = fun_ast
                 else:
+                    #import pdb; pdb.set_trace()
                     self.other_top_defs.append(UnsupportedNode(node))
             elif isinstance(node, ast.Assert):
                 assert_ast = TestCase(node)
                 self.test_cases.append(assert_ast)
+            elif isinstance(node, ast.AnnAssign) and node.value is None:
+                DeclareVar_ast = DeclareVar(node)
+                self.global_vars.append(DeclareVar_ast)
             elif isinstance(node, ast.Assign) or isinstance(node, ast.AnnAssign):
-                #print(str(dir(node)))
                 assign_ast = Assign(node)
                 self.global_vars.append(assign_ast)
 
@@ -123,28 +128,44 @@ class Import:
 
 class FunctionDef:
     def __init__(self, node):
+
         self.ast = node
         self.name = self.ast.name
         #print(astpp.dump(self.ast))
+        if hasattr(node.returns,"id"):
+            print("On récupère bien une fonction de définition typée")
+            #self.parameters = []
+            #for arg_obj in self.ast.args.args:
+                #print(arg_obj.annotation.id)
+                #self.parameters.append(arg_obj.arg)
+            #print(self.parameters[0])
+            #print(self.ast.returns.id)
+            #print(self.ast.name)
+        else:
+            print("On ne récupère pas de définition de fonction typée")
+
         self.python101ready = True
 
+        self.param_types = []
         self.parameters = []
         for arg_obj in self.ast.args.args:
             self.parameters.append(arg_obj.arg)
+            self.param_types.append(arg_obj.annotation)
 
         first_instr = self.ast.body[0]
         next_instr_index = 0
         if isinstance(first_instr, ast.Expr) and isinstance(first_instr.value, ast.Str):
             self.docstring = first_instr.value.s
             next_instr_index = 1
-            #print(self.docstring)
+            print(self.docstring)
         else:
-            self.python101ready = False
+            self.python101ready = True
 
         self.body = []
         for inner_node in self.ast.body[next_instr_index:]:
             #print(astpp.dump(inner_node))
             self.body.append(parse_instruction(inner_node))
+        self.returns=self.ast.returns
 
 
 class TestCase:
@@ -210,6 +231,9 @@ class Assign:
         if isinstance(node, ast.AnnAssign):
             self.type_annotation = self.ast.annotation
             self.target = build_lhs_destruct(self.ast.target)
+            if self.ast.value is None:
+
+                print("erreur")
 
             """
             ```
@@ -230,21 +254,38 @@ class Assign:
 
         self.expr = parse_expression(self.ast.value)
 
+class DeclareVar:
+    def __init__(self, node):
+        self.ast = node
+        self.type_annotation = self.ast.annotation
+        #import pdb; pdb.set_trace()
+        self.target = build_lhs_destruct(self.ast.target)
+        #print(astpp.dump(node))
+        #self.expr = parse_expression(self.ast.value)
+
 class ContainerAssign:
     def __init__(self, target, expr):
         self.container_expr = parse_expression(target.value)
         self.container_index = parse_expression(target.slice.value)
         self.assign_expr = parse_expression(expr)
 
+class ContainerDeclaration:
+    def __init__(self, target):
+        self.id = "bonjour"
+
 def parse_assign(node):
 
-    if isinstance(node, ast.AnnAssign):
-        if node.target and isinstance(node.target, ast.Subscript):
-            return ContainerAssign(node.target, node.value)
+    if isinstance(node, ast.AnnAssign) and node.value is None:
+        return DeclareVar(node)
     else:
-    # dictionary (container) assignment
-        if node.targets and isinstance(node.targets[0], ast.Subscript):
-            return ContainerAssign(node.targets[0], node.value)
+
+        if isinstance(node, ast.AnnAssign):
+            if node.target and isinstance(node.target, ast.Subscript):
+                return ContainerAssign(node.target, node.value)
+        else:
+            # dictionary (container) assignment
+            if node.targets and isinstance(node.targets[0], ast.Subscript):
+                return ContainerAssign(node.targets[0], node.value)
 
     # other form of assigment
     assign = Assign(node)
