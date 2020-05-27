@@ -108,13 +108,12 @@ class TypingContext:
             raise ValueError("Cannot pop from empty parent declaration stack (please report)")
 
         _, parent_local_declare = self.parent_decl_stack.pop()
-        for var in self.declared_env:
-            if var not in parent_local_declare:
-                pass
+        for (var_name, var_info) in self.declared_env.items():
+            if (var_name, var_info) not in parent_local_declare.items():
                 # XXX: barendregt convention too strong ?
                 # self.dead_variables.add(var)
-                if var not in self.local_env:
-                    pass
+                if (var_name, var_info) not in self.local_env.items():
+                    self.add_type_error(NotUsedDeclarationWarning(var_name,var_info))
 
         self.declared_env = parent_local_declare
 
@@ -436,6 +435,8 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
         return None
 
     if decl_type is None:
+        print("Decl_type is none")
+        ctx.add_type_error(TypeDefParseError(0, annotation.id))
         return None
 
     udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
@@ -2408,7 +2409,7 @@ class NotUsedDeclarationWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr("Using issue"), 0, 0
-                                    , details=tr("this construction is not available in Python101 (try expert mode for standard Python)"))
+                                    , details=tr("Warning you've initialzed and not used the variable: '{}'").format(self.var_name))
 
     def is_fatal(self):
         return False
