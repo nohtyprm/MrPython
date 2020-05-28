@@ -66,5 +66,17 @@
   "NameError": "Syntaxe",
   "ZeroDivisionError": "Semantique",
   "AssertionError": "Tests",
-  "OtherExecutionError": "Autre"}
+  "OtherExecutionError": "Autre"},
+  "exercises_functions": {
+    "aire_disque": {
+      "theme-number": "1",
+      "exercise-number": "1",
+      "question-number": "1"
+    },
+    "excursion": {
+      "theme-number": "1",
+      "exercise-number": "2",
+      "question-number": "1"
+    }
+  }
 }

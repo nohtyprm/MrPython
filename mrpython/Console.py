@@ -401,7 +401,6 @@ or # number1 number2 if you work with a partner\n"""
         """ Run the program in the current editor : execute, print results """
         # Reset the output first
         self.reset_output()
-        tracing.send_statement("started", "execution")
         # A new PyInterpreter is created each time code is run
         # It is then kept for other actions, like evaluation
         if self.interpreter is not None:

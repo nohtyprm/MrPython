@@ -503,6 +503,7 @@ with open(os.path.join(os.path.dirname(__file__), "tracing_config.json"))as file
     tracing_active = config["tracing_active"]
     send_to_LRS = config["send_to_LRS"]
     error_groups = config["error_groups"]
+    function_names = config["exercises_functions"]
 
 last_typing_timestamp = None
 last_interacting_timestamp = None

@@ -147,7 +147,7 @@ class UndoDelegator(Delegator):
             tracing.send_statement("undid", "sequence",
                                    {"https://www.lip6.fr/mocah/invalidURI/extensions/sequence-list": str(cmd),
                                     "https://www.lip6.fr/mocah/invalidURI/extensions/filename": filename})
-            self.text.reset_send_instruction()
+            self.text.reset_line()
         cmd.undo(self.delegate)
         self.pointer = self.pointer - 1
         self.can_merge = False
@@ -164,7 +164,7 @@ class UndoDelegator(Delegator):
             tracing.send_statement("redid", "sequence",
                                    {"https://www.lip6.fr/mocah/invalidURI/extensions/sequence-list": str(cmd),
                                     "https://www.lip6.fr/mocah/invalidURI/extensions/filename": filename})
-            self.text.reset_send_instruction()
+            self.text.reset_line()
         cmd.redo(self.delegate)
         self.pointer = self.pointer + 1
         self.can_merge = False
