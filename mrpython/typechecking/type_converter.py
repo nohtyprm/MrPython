@@ -15,7 +15,6 @@ def type_converter(annotation, ctx):
         elif annotation.id == "float":
             return FloatType(annotation)
         else:
-            #ctx.add_type_error(TypeDefParseError(0, annotation))
             return None
     elif hasattr(annotation, "slice"):
         types = []

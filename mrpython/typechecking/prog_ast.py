@@ -123,7 +123,7 @@ class Import:
 class FunctionDef:
     def __init__(self, node):
 
-        self.typee = False #If the arguments and the return is typed
+        self.typee = False #If the arguments and the return type are typed
         self.ast = node
         self.name = self.ast.name
         self.python101ready = True
@@ -147,7 +147,8 @@ class FunctionDef:
             next_instr_index = 1
             print(self.docstring)
         else:
-            self.python101ready = True
+            if not self.typee:
+                self.python101ready = False
 
         self.body = []
         for inner_node in self.ast.body[next_instr_index:]:
@@ -219,9 +220,6 @@ class Assign:
         if isinstance(node, ast.AnnAssign):
             self.type_annotation = self.ast.annotation
             self.target = build_lhs_destruct(self.ast.target)
-            if self.ast.value is None:
-                #should not occur
-                print("Construction d'une mauvaise assignation")
 
         else:
             self.target = build_lhs_destruct(self.ast.targets[0])

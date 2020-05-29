@@ -426,6 +426,7 @@ variable name and T its type, or (None, msg, err_cat) with an informational mess
 
 def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
 
+    lineno = assign_target.ast.lineno
     var_name = assign_target.var_name
     decl_type = type_converter(annotation,ctx)
     declared_types = dict()
@@ -435,8 +436,7 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
         return None
 
     if decl_type is None:
-        print("Decl_type is none")
-        ctx.add_type_error(TypeDefParseError(0, annotation.id))
+        ctx.add_type_error(TypeDefParseError(lineno, annotation.id))
         return None
 
     udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
@@ -450,11 +450,13 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
     return declared_types
 
 def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
+    lineno = assign_target.ast.lineno
     var_name = assign_target.var_name
     decl_type, idk = ctx.declared_env[var_name]
     declared_types = dict()
 
     if decl_type is None:
+        ctx.add_type_error(TypeDefParseError(lineno, annotation.id))
         return None
 
     udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
@@ -469,6 +471,7 @@ def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
 
 
 def fetch_declared_mypy_types(ctx, declaration_target, annotation, strict = False):
+    lineno = declaration_target.ast.lineno
     var_name = declaration_target.var_name
     decl_type = type_converter(annotation,ctx)
     declared_types = dict()
@@ -477,6 +480,7 @@ def fetch_declared_mypy_types(ctx, declaration_target, annotation, strict = Fals
         return None
 
     if decl_type is None:
+        ctx.add_type_error(TypeDefParseError(lineno, annotation.id))
         return None
 
     udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
@@ -618,6 +622,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
     # first let's see if the variables are dead
     mono_assign = False # is this an actual assignment (and not an initialization ?)
     declaration = False # does the variable had already been declared?
+    lineno = assign.ast.lineno
     for var in assign.target.variables():
 
         # check that the variable is not "dead"  (out of scope)
@@ -657,6 +662,8 @@ def type_check_Assign(assign, ctx, global_scope = False):
     # next fetch the declared types  (only required for mono-variables)
 
     if declaration:
+        if hasattr(assign, "type_annotation"):
+            ctx.add_type_error( DuplicateMultiAssignError(lineno,var.var_name))
         # Assignation of variables that have already benn declared
         declared_types = fetch_assign_declared_mypy_types(ctx, assign.target,True if assign.target.arity() == 1 else False )
 
@@ -3251,7 +3258,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         filename = sys.argv[1]
     else:
-        filename = "../../mrpython/aa_pstl/declaration.py"
+        filename = "../../mrpython/aa_pstl/aire_apres2.py"
 
     ctx = typecheck_from_file(filename)
     print(repr(ctx))
