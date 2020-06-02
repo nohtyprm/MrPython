@@ -4,6 +4,7 @@ import tincan.tracing_io as io
 import copy
 import time, datetime
 import json
+import re
 from tincan import (
     RemoteLRS,
     Statement,
@@ -96,6 +97,82 @@ def modify_partner_number(partner_number):
                        {"https://www.lip6.fr/mocah/invalidURI/extensions/old-hash": old_hash,
                         "https://www.lip6.fr/mocah/invalidURI/extensions/new_hash": new_hash})
 
+
+def check_modified_student_number(list_numbers):
+    # Change the hash identifier if the user typed his student number in the form #1234567 [+ optional partner]
+    if len(list_numbers) >= 2 and list_numbers[0] == "#":
+        list_numbers = list_numbers[1:]  # Remove the #
+        list_numbers.strip()
+        list_numbers = list_numbers.split()
+        if len(list_numbers) == 1:
+            student_number = list_numbers[0]
+            if student_number.isdigit():
+                modify_student_number(student_number, "user-input")
+        elif len(list_numbers) == 2:
+            student_number = list_numbers[0]
+            partner_number = list_numbers[1]
+            if student_number.isdigit() and partner_number.isdigit():
+                modify_student_number(student_number, "user-input")
+                modify_partner_number(partner_number)
+
+
+def is_function_definition(instruction):
+    pattern = re.compile(r'\s*def\s+(\w+)\(', re.IGNORECASE)
+    match = pattern.search(instruction)
+    if match:
+        function_name = match.group(1)
+        return function_name
+    return None
+
+def is_exercise_declaration(instruction):
+    pattern = re.compile(r'\s*#\s*ex\D*(\d+)\D+(\d+)', re.IGNORECASE)
+
+    match = pattern.search(instruction)
+    if match:
+        theme_number = match.group(1)
+        exercise_number = match.group(2)
+        return int(theme_number), int(exercise_number)
+    return None
+
+
+def incoherence_found(function_name, theme_number, exercise_number):
+    if function_name in function_names_context:
+        context_theme_number = function_names_context[function_name]["theme-number"]
+        context_exercise_number = function_names_context[function_name]["exercise-number"]
+        if theme_number != context_theme_number or exercise_number != context_exercise_number:
+            return context_theme_number, context_exercise_number
+    return None
+
+
+def check_incoherence_function_exercise(source):
+    import logging
+    theme_number = 0
+    exercise_number = 0
+    for instruction in source:
+        maybe_exercise_declaration = is_exercise_declaration(instruction)
+        maybe_function_def = is_function_definition(instruction)
+        if maybe_exercise_declaration is not None:
+            theme_number, exercise_number = maybe_exercise_declaration
+        elif maybe_function_def is not None:
+            function_name = maybe_function_def
+            maybe_incoherence = incoherence_found(function_name, theme_number, exercise_number)
+            if maybe_incoherence is not None:
+                expected_theme, expected_exercise = maybe_incoherence
+                if theme_number == 0 and exercise_number == 0:
+                    error_message = "{} has been defined.\n" \
+                                    "We expected declaration #Exercise{}.{} before but\n" \
+                                    "we couldn't find it".format(function_name, expected_theme, expected_exercise)
+                else:
+                    error_message = "{} has been defined.\n" \
+                                    "We expected declaration #Exercise{}.{} before it but\n" \
+                                    "you declared #Exercise{}.{}" \
+                                    "".format(function_name, expected_theme, expected_exercise,
+                                              theme_number, exercise_number)
+                return error_message
+    return None
+
+
+
 def student_hash_uninitialized():
     return io.get_student_hash() == "default"
 
@@ -141,6 +218,7 @@ def send_statement_lrs(statement):
         print("Tracing: Statement request has been sent properly to the LRS, Statement ID is {}".format(
             response.data))
         return True
+
 
 def send_statement(verb, activity, activity_extensions=None):
     """Send a statement with the verb and activity keys and the context extensions"""
@@ -471,10 +549,10 @@ activities = {
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/keyword",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'a keyword'}))),
-    "instruction": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/instruction",
+    "line": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/line",
         definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a programming instruction'}))),
+            name=LanguageMap({'en-US': 'a programming line'}))),
     "sequence": Activity(
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/sequence",
         definition=ActivityDefinition(
@@ -503,8 +581,7 @@ with open(os.path.join(os.path.dirname(__file__), "tracing_config.json"))as file
     tracing_active = config["tracing_active"]
     send_to_LRS = config["send_to_LRS"]
     error_groups = config["error_groups"]
-    function_names = config["exercises_functions"]
+    function_names_context = config["exercises_functions"]
 
 last_typing_timestamp = None
 last_interacting_timestamp = None
-

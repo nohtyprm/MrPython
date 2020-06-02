@@ -595,11 +595,6 @@ class PyEditor(HighlightingText):
             self.send_keyword(cursor)
             self.typed_char = False
 
-        # Change the hash identifier if the user typed his student number in the form #1234567 [+ optional partner]
-        # in the first line
-        self.check_modified_student_number()
-
-
         first, last = self.get_selection_indices()
         self.undo_block_start()
         try:
@@ -702,7 +697,7 @@ class PyEditor(HighlightingText):
         finally:
             self.see("insert")
             self.undo_block_stop()
-            self.send_update_changed_line()
+            self.send_update_changed_line(newline=True)
 
     def smart_indent_event(self, event):
         tracing.user_is_typing()
@@ -811,7 +806,7 @@ class PyEditor(HighlightingText):
         return head, tail, chars, lines
 
     #
-    # Functions used for tracing
+    # Functions and events used for tracing
     #
     def get_current_line_number(self):
         """Get the line number of the cursor"""
@@ -832,24 +827,6 @@ class PyEditor(HighlightingText):
 
     def is_multi_line_deletion(self, first, last):
         return first.split('.')[0] != last.split('.')[0]
-
-    def check_modified_student_number(self):
-        # Change the hash identifier if the user typed his student number in the form #1234567 [+ optional partner]
-        list_numbers = self.get("1.0 linestart", "1.0 lineend")
-        if len(list_numbers) >= 2 and list_numbers[0] == "#":
-            list_numbers = list_numbers[1:]  # Remove the #
-            list_numbers.strip()
-            list_numbers = list_numbers.split()
-            if len(list_numbers) == 1:
-                student_number = list_numbers[0]
-                if student_number.isdigit():
-                    tracing.modify_student_number(student_number, "user-input")
-            if len(list_numbers) == 2:
-                student_number = list_numbers[0]
-                partner_number = list_numbers[1]
-                if student_number.isdigit() and partner_number.isdigit():
-                    tracing.modify_student_number(student_number, "user-input")
-                    tracing.modify_partner_number(partner_number)
 
     def maybe_get_function_name(self, line_number):
         function_name = ""
@@ -893,18 +870,24 @@ class PyEditor(HighlightingText):
             return True
         return False
 
-    def is_comment_type_declaration(self, comment):
-        pattern = re.compile(r'.*:.*')
+    def is_one_liner_signature(self, instruction):
+        pattern = re.compile(r'("""|\'\'\').*("""|\'\'\')')
+        return pattern.search(instruction) is not None
+
+    def is_comment_maybe_type_declaration(self, comment):
+        pattern = re.compile(r'\w+\s*:.*')
         return pattern.search(comment) is not None
 
     def is_comment_exercise_declaration(self, comment):
-        pattern = re.compile(r'.*(EX|Ex|ex|eX).*\d.*\d')
+        pattern = re.compile(r'ex\D*(\d+)\D+(\d+)', re.IGNORECASE)
         return pattern.search(comment) is not None
 
     def create_line(self, line_number):
         line_instruction = self.get_instruction(line_number)
         if "'''" in line_instruction or '"""' in line_instruction:
-            if self.maybe_get_function_name(line_number-1) != "":
+            if self.is_one_liner_signature(line_instruction):
+                line_type = "signature-oneliner"
+            elif self.maybe_get_function_name(line_number-1) != "":
                 line_type = "signature-begining"
             elif self.is_under_signature(line_number-1):
                 line_type = "signature-ending"
@@ -917,17 +900,19 @@ class PyEditor(HighlightingText):
                 line_type = "multi-string"
         else:
             instruction_comment = line_instruction.split("#", 1)
-            if len(instruction_comment) == 2:
+            comment_tags = self.tag_nextrange("COMMENT", str(line_number) + ".0 linestart",
+                                              str(line_number) + ".0 lineend")
+            if len(instruction_comment) >= 2 and len(comment_tags) != 0:
                 instruction, comment = instruction_comment[0].strip(), instruction_comment[1].strip()
             else:
-                instruction, comment = instruction_comment[0].strip(), "".strip()
+                instruction, comment = instruction_comment[0].strip(), ""
             if instruction and comment:
                 line_type = "instruction_and_comment"
             elif instruction:
                 line_type = "instruction"
             elif comment:
-                if self.is_comment_type_declaration(comment):
-                    line_type = "comment-type"
+                if self.is_comment_maybe_type_declaration(comment):
+                    line_type = "comment-maybe-type"
                 elif self.is_comment_exercise_declaration(comment):
                     line_type = "comment-exercise"
                 else:
@@ -937,7 +922,15 @@ class PyEditor(HighlightingText):
         line = Line(line_number, line_instruction, line_type)
         return line
 
-    def send_update_changed_line(self):
+    def create_changed_line_extensions(self, old_line, new_line):
+        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/line-number": old_line.line_number,
+                      "https://www.lip6.fr/mocah/invalidURI/extensions/old-instruction-type": old_line.type,
+                      "https://www.lip6.fr/mocah/invalidURI/extensions/old-instruction": old_line.instruction,
+                      "https://www.lip6.fr/mocah/invalidURI/extensions/new-instruction-type": new_line.type,
+                      "https://www.lip6.fr/mocah/invalidURI/extensions/new-instruction": new_line.instruction}
+        return extensions
+
+    def send_update_changed_line(self, newline = False):
         if self.old_line is None:
             return
         old_line = self.old_line
@@ -947,11 +940,12 @@ class PyEditor(HighlightingText):
         not_both_empty = (old_line.instruction != "" and not old_line.instruction.isspace())
         not_both_empty = not_both_empty or (new_line.instruction != "" and not new_line.instruction.isspace())
         instruction_has_been_modified = old_line.instruction.strip() != new_line.instruction.strip()
-        if cursor_changed_line and not_both_empty and instruction_has_been_modified:
-            print("old: " + str(old_line))
-            print("new:" + str(new_line))
-            self.old_line = self.create_line(cursor_line_number)
-        elif cursor_changed_line:
+        if newline or cursor_changed_line:
+            if not_both_empty and instruction_has_been_modified:
+                if new_line.line_number == 1:
+                    tracing.check_modified_student_number(new_line.instruction)
+                extensions = self.create_changed_line_extensions(old_line,new_line)
+                tracing.send_statement("modified", "line", extensions)
             self.old_line = self.create_line(cursor_line_number)
 
     def reset_line(self):

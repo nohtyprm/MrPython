@@ -11,6 +11,7 @@ import studentlib.gfx.image
 import studentlib.gfx.img_canvas
 
 from typechecking.typechecker import typecheck_from_ast
+from tincan import tracing_mrpython as tracing
 
 def install_locals(locals):
     #locals = { k:v for (k,v) in locs.items() }
@@ -59,6 +60,19 @@ class StudentRunner:
             compile and execute """
         # Compile the code and get the AST from it, which will be used for all
         # the conventions checkings that need to be done
+        import logging
+        source = self.source.split("\n")
+        if tracing.tracing_active:
+            tracing.check_modified_student_number(source[0])
+            if tracing.student_hash_uninitialized():
+                error_message = ("Student number is not initialized.\n"
+                                 "Please type in the first line your student number in the format:\n"
+                                 "#number or # number1 number2")
+                self.report.add_convention_error("warning", "Uninitialized student number", details=error_message)
+            error_incoherence = tracing.check_incoherence_function_exercise(source)
+            if error_incoherence is not None:
+                self.report.add_convention_error("warning", "Context incoherence", details=error_incoherence)
+
 
         try:
             self.AST = ast.parse(self.source, self.filename)
