@@ -4,7 +4,7 @@ except ImportError:
     from type_ast import *
 
 
-def type_converter(annotation, ctx):
+def type_converter(annotation):
     if hasattr(annotation, "id"):
         if annotation.id == "int":
             return IntType(annotation)
@@ -24,11 +24,11 @@ def type_converter(annotation, ctx):
     else:
         return None
 
-def fun_converter(fun_def, ctx):
+def fun_converter(fun_def):
     param_types = []
     for par in fun_def.param_types:
-        param_types.append(type_converter(par,ctx))
-    ret_type = type_converter(fun_def.returns,ctx)
+        param_types.append(type_converter(par))
+    ret_type = type_converter(fun_def.returns)
 
     return FunctionType(param_types,ret_type,False,1)
 

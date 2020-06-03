@@ -275,7 +275,7 @@ def type_check_Program(prog):
     # third step : process each function to fill the global environment
     for (fun_name, fun_def) in prog.functions.items():
         if hasattr(fun_def.returns,"id"):
-            fun_type = fun_converter(fun_def,ctx)
+            fun_type = fun_converter(fun_def)
             if fun_type is None:
                 # position is a little bit ad-hoc
                 ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno+ 1, fun_def.ast.col_offset + 7))
@@ -427,8 +427,14 @@ variable name and T its type, or (None, msg, err_cat) with an informational mess
 def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
 
     lineno = assign_target.ast.lineno
+
+    var_name1, decl_type1, err_cat1 = parse_declaration_type(ctx, lineno-1)
+    if(var_name1 is not None):
+        ctx.add_type_error(DifferentDeclarationWarning(lineno, var_name1))
+
+
     var_name = assign_target.var_name
-    decl_type = type_converter(annotation,ctx)
+    decl_type = type_converter(annotation)
     declared_types = dict()
 
     if var_name == "_":
@@ -451,6 +457,11 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
 
 def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
     lineno = assign_target.ast.lineno
+
+    var_name1, decl_type1, err_cat1 = parse_declaration_type(ctx, lineno-1)
+    if(var_name1 is not None):
+        ctx.add_type_error(DifferentDeclarationWarning(lineno, var_name1))
+
     var_name = assign_target.var_name
     decl_type, idk = ctx.declared_env[var_name]
     declared_types = dict()
@@ -473,7 +484,7 @@ def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
 def fetch_declared_mypy_types(ctx, declaration_target, annotation, strict = False):
     lineno = declaration_target.ast.lineno
     var_name = declaration_target.var_name
-    decl_type = type_converter(annotation,ctx)
+    decl_type = type_converter(annotation)
     declared_types = dict()
     if var_name == "_":
         ctx.add_type_error(DeclarationError(ctx.function_def, declaration_target, 'var-name', lineno, tr("The special variable '_' cannot be declared")))
@@ -953,9 +964,6 @@ def type_check_With(ewith, ctx):
 
 With.type_check = type_check_With
 
-def ContainerDeclaration_type_check(cdecl, ctx):
-    return True
-ContainerDeclaration.type_check = ContainerDeclaration_type_check
 
 def ContainerAssign_type_check(cassign, ctx):
     container_type = cassign.container_expr.type_infer(ctx)
@@ -2421,6 +2429,21 @@ class NotUsedDeclarationWarning(TypeError):
     def is_fatal(self):
         return False
 
+class DifferentDeclarationWarning(TypeError):
+    def __init__(self,lineno, var_name):
+        self.var_name = var_name
+        self.lineno = lineno
+
+    def fail_string(self):
+        return "DifferentDeclarationWarning[{}]@{}:{}".format(self.var_name, self.var_type)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Declaration problem"), self.lineno, 0
+                                    , details=tr("Warning you've initialzed in 2 differents ways the variable: '{}'").format(self.var_name))
+
+    def is_fatal(self):
+        return False
+
 class FunctionArityError(TypeError):
     def __init__(self, func_def, signature):
         self.func_def = func_def
@@ -3258,7 +3281,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         filename = sys.argv[1]
     else:
-        filename = "../../mrpython/aa_pstl/aire_apres2.py"
+        filename = "../../mrpython/aa_pstl/aire_mixte.py"
 
     ctx = typecheck_from_file(filename)
     print(repr(ctx))

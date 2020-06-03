@@ -14,6 +14,7 @@ def set_translator_locale(locale_key):
 
 TRANSLATOR_DICT = {
     "Import problem" : { 'fr' : "Problème d'import"}
+    , "Warning you've initialzed in 2 differents ways the variable: '{}'" : {'fr' : "Vous avez initailisé de 2 façons différentes la variable : '{}'"}
     , "Warning you've initialzed and not used the variable: '{}'" : {'fr' : "Attention, vous initialisez sans utiliser la variable : '{}'" }
     , "the module '{}' is not supported in Python101" : { 'fr' : "le module '{}' n'est pas disponible en Python101"}
     , "Signature problem" : { 'fr' : "Problème de signature"}

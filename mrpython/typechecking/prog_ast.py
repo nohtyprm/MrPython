@@ -238,9 +238,6 @@ class ContainerAssign:
         self.container_index = parse_expression(target.slice.value)
         self.assign_expr = parse_expression(expr)
 
-class ContainerDeclaration:
-    def __init__(self, target):
-        self.id = "bonjour"
 
 def parse_assign(node):
 
