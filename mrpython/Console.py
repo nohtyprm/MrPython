@@ -120,7 +120,7 @@ class ReadOnlyText(Text):
         last = self.index("sel.last")
         if first != "" and last != "":
             tracing.send_statement("copied", "output-console",
-                               {"https://www.lip6.fr/mocah/invalidURI/extensions/copied-text": self.get(first,last)})
+                               {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.get(first,last)})
 class Console:
     """
     Interactive console of MrPython, consisting of two widgets : output and input

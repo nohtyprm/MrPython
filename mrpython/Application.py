@@ -237,7 +237,7 @@ class Application:
                 self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
                 extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/filename": file_editor.get_file_name()}
                 with open(file_editor.long_title(), "r") as source:
-                    extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filetext"] = source.read()
+                    extensions["https://www.lip6.fr/mocah/invalidURI/extensions/text"] = source.read()
                 tracing.send_statement("opened", "file", extensions)
             #not clean, io should be handled here and should not require creation of PyEditor widget
             else:
@@ -271,7 +271,9 @@ class Application:
                 report.set_footer("\n==================\n")
                 self.running_interpreter_callback(False, report)
             self.running_interpreter_callback = None
-            tracing.send_statement("terminated", "execution")
+            execution_duration = tracing.execution_duration()
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/execution-duration": execution_duration}
+            tracing.send_statement("terminated", "execution", extensions)
             return
 
         # not (yet) running
@@ -285,6 +287,7 @@ class Application:
             #TODO: A remplacer
             # self.editor_list.get_current_editor().save_send_instruction(program_execution=True)
             tracing.send_statement("started", "execution")
+            tracing.save_execution_start()
             file_name = self.editor_list.get_current_editor().long_title()
             self.update_title()
             self.status_bar.update_save_label(file_name)

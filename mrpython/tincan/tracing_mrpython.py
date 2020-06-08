@@ -20,8 +20,6 @@ from tincan import (
 from translate import tr
 
 
-show_statement_details = False
-
 def create_actor():
     student_hash = io.get_student_hash()
     student_id = "https://www.lip6.fr/mocah/invalidURI/student-number:" + student_hash
@@ -75,7 +73,7 @@ def modify_student_number(student_number, student_context):
             verb = "updated"
         send_statement(verb, "student-number",
                        {"https://www.lip6.fr/mocah/invalidURI/extensions/old-hash": old_hash,
-                        "https://www.lip6.fr/mocah/invalidURI/extensions/new_hash": new_hash,
+                        "https://www.lip6.fr/mocah/invalidURI/extensions/new-hash": new_hash,
                         "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": student_context})
 
 
@@ -95,7 +93,7 @@ def modify_partner_number(partner_number):
             verb = "updated"
         send_statement(verb, "partner-number",
                        {"https://www.lip6.fr/mocah/invalidURI/extensions/old-hash": old_hash,
-                        "https://www.lip6.fr/mocah/invalidURI/extensions/new_hash": new_hash})
+                        "https://www.lip6.fr/mocah/invalidURI/extensions/new-hash": new_hash})
 
 
 def check_modified_student_number(list_numbers):
@@ -146,8 +144,8 @@ def incoherence_found(function_name, theme_number, exercise_number):
 
 def check_incoherence_function_exercise(source):
     import logging
-    theme_number = 0
-    exercise_number = 0
+    theme_number = None
+    exercise_number = None
     for instruction in source:
         maybe_exercise_declaration = is_exercise_declaration(instruction)
         maybe_function_def = is_function_definition(instruction)
@@ -158,7 +156,7 @@ def check_incoherence_function_exercise(source):
             maybe_incoherence = incoherence_found(function_name, theme_number, exercise_number)
             if maybe_incoherence is not None:
                 expected_theme, expected_exercise = maybe_incoherence
-                if theme_number == 0 and exercise_number == 0:
+                if theme_number is None and exercise_number is None:
                     error_message = "{} has been defined.\n" \
                                     "We expected declaration #Exercise{}.{} before but\n" \
                                     "we couldn't find it".format(function_name, expected_theme, expected_exercise)
@@ -193,14 +191,23 @@ def user_is_typing():
     global last_typing_timestamp
     last_typing_timestamp = time.time()
 
+
 def user_is_interacting():
     global last_interacting_timestamp
     last_interacting_timestamp = time.time()
 
 
+def save_execution_start():
+    """Keep the timestamp of the last action"""
+    global start_execution_timestamp
+    start_execution_timestamp = time.time()
+
+
 def get_action_timestamps():
     return (last_typing_timestamp, last_interacting_timestamp)
 
+def execution_duration():
+    return time.time() - start_execution_timestamp
 
 def send_statement_lrs(statement):
     try:
@@ -220,8 +227,9 @@ def send_statement_lrs(statement):
         return True
 
 
-def send_statement(verb, activity, activity_extensions=None):
+def send_statement(verb_key, activity_key, activity_extensions=None):
     """Send a statement with the verb and activity keys and the context extensions"""
+    global statement_number
     if not tracing_active:
         return
     def thread_function(statement):
@@ -230,36 +238,41 @@ def send_statement(verb, activity, activity_extensions=None):
         if not send_statement_lrs(statement):
             io.add_statement(statement)
     #Create the statement from the actor, verb, object and potentially the context
-    if verb not in verbs:
-        print("Tracing: Missing verb key {}".format(verb))
+    if verb_key not in verbs:
+        print("Tracing: Missing verb key {}".format(verb_key))
         return
-    if activity not in activities:
-        print("Tracing: Missing activity key {}".format(activity))
+    if activity_key not in activities:
+        print("Tracing: Missing activity key {}".format(activity_key))
         return
     if send_to_LRS:
-        print("Tracing: Creating and Sending statement, {} {}".format(verb, activity))
+        print("Tracing: Creating and Sending statement {}, {} {}".format(statement_number, verb_key, activity_key))
     else:
-        print("Tracing: Creating (without sending) statement, {} {}".format(verb, activity))
-    verb = verbs[verb]
-    object = activities[activity]
+        print("Tracing: Creating (without sending) statement {}, {} {}".format(statement_number, verb_key, activity_key))
+    verb = verbs[verb_key]
+    activity = activities[activity_key]
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/machine-id": io.get_machine_id(),
                   "https://www.lip6.fr/mocah/invalidURI/extensions/context": io.get_student_context()}
     context = Context(extensions=extensions)
 
     if activity_extensions:
-        object = copy.deepcopy(object)
-        object.definition.extensions = activity_extensions
+        activity = copy.deepcopy(activity)
+        activity.definition.extensions = activity_extensions
 
     statement = Statement(
         actor=actor,
         verb=verb,
-        object=object,
+        object=activity,
         context=context,
         timestamp=datetime.datetime.now()
     )
-    if show_statement_details:
-        for k, v in json.loads(statement.to_json()).items():
-            print(k,v)
+    if debug_log:
+        data = json.loads(statement.to_json())
+        with open(debug_filepath, "a") as f:
+            f.write("STATEMENT " + str(statement_number) + "\n")
+            json.dump(data, f, indent=2)
+            f.write("\n")
+    statement_number += 1
     # Send the statement from another thread
     if send_to_LRS:
         x = threading.Thread(target=thread_function, args=(statement,))
@@ -269,10 +282,12 @@ def send_statement(verb, activity, activity_extensions=None):
 
 def send_statement_open_app():
     global time_opened
+    if debug_log:
+        file = open(debug_filepath, "w")  # Erase previous content
+        file.close()
+        print("Debug log enabled: All statements are kept in " + debug_filepath)
     time_opened = time.time()
-    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session": session,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/machine": io.get_machine_id()}
-    send_statement("opened", "application", {})
+    send_statement("opened", "application")
 
 
 def send_statement_close_app():
@@ -284,8 +299,8 @@ def send_statement_close_app():
     if s < 10:
         s = "0" + str(s)
     elapsed_time = "{}:{}:{}".format(h, m, s)
-    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/elapsed_time": elapsed_time}
+    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session": session,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/elapsed-time": elapsed_time}
     send_statement("closed", "application")
 
 
@@ -380,9 +395,9 @@ def send_statement_execute(report, mode, filename):
                   "https://www.lip6.fr/mocah/invalidURI/extensions/nb-errors": nb_errors,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/nb-warnings": nb_warnings}
     if not (report.has_compilation_error() or report.has_execution_error()) and mode == tr("student") and report.nb_defined_funs > 0:
-        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/number-asserts"] = report.nb_passed_tests
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/nb-asserts"] = report.nb_passed_tests
     else:
-        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/number-asserts"] = "unchecked"
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/nb-asserts"] = "unchecked"
     send_statement(verb, "execution", activity_extensions=extensions)
 
 
@@ -453,10 +468,6 @@ verbs = {
         id="http://activitystrea.ms/schema/1.0/open", display=LanguageMap({'en-US': 'opened'})),
     "closed": Verb(
         id="http://activitystrea.ms/schema/1.0/close", display=LanguageMap({'en-US': 'closed'})),
-    "initialized": Verb(
-        id="http://activitystrea.ms/schema/1.0/initialized", display=LanguageMap({'en-US': 'initialized'})),
-    "updated": Verb(
-        id="http://activitystrea.ms/schema/1.0/update", display=LanguageMap({'en-US': 'updated'})),
     "created": Verb(
         id="http://activitystrea.ms/schema/1.0/create", display=LanguageMap({'en-US': 'created'})),
     "saved": Verb(
@@ -475,8 +486,6 @@ verbs = {
         id="http://activitystrea.ms/schema/1.0/terminate", display=LanguageMap({'en-US': 'terminated'})),
     "received": Verb(
         id="http://activitystrea.ms/schema/1.0/receive", display=LanguageMap({'en-US': 'received'})),
-    "copied": Verb(
-        id="https://www.lip6.fr/mocah/invalidURI/verbs/copied", display=LanguageMap({'en-US': 'copied'})),
     "typed": Verb(
         id="https://www.lip6.fr/mocah/invalidURI/verbs/typed", display=LanguageMap({'en-US': 'typed'})),
     "modified": Verb(
@@ -485,12 +494,18 @@ verbs = {
         id="http://activitystrea.ms/schema/1.0/delete", display=LanguageMap({'en-US': 'deleted'})),
     "inserted": Verb(
         id="http://activitystrea.ms/schema/1.0/insert", display=LanguageMap({'en-US': 'inserted'})),
-    "entered": Verb(
-        id="https://www.lip6.fr/mocah/invalidURI/verbs/entered", display=LanguageMap({'en-US': 'entered'})),
+    "copied": Verb(
+        id="https://www.lip6.fr/mocah/invalidURI/verbs/copied", display=LanguageMap({'en-US': 'copied'})),
     "undid": Verb(
         id="https://www.lip6.fr/mocah/invalidURI/verbs/undid", display=LanguageMap({'en-US': 'undid'})),
     "redid": Verb(
         id="https://www.lip6.fr/mocah/invalidURI/verbs/redid", display=LanguageMap({'en-US': 'redid'})),
+    "initialized": Verb(
+        id="http://activitystrea.ms/schema/1.0/initialized", display=LanguageMap({'en-US': 'initialized'})),
+    "updated": Verb(
+        id="http://activitystrea.ms/schema/1.0/update", display=LanguageMap({'en-US': 'updated'})),
+    "entered": Verb(
+        id="https://www.lip6.fr/mocah/invalidURI/verbs/entered", display=LanguageMap({'en-US': 'entered'})),
     }
 
 activities = {
@@ -515,6 +530,10 @@ activities = {
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'the programming mode'}),
             description=LanguageMap({'en-US': 'student/expert mode in MrPython'}))),
+    "output-console": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/output-console",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'the output console of MrPython'}))),
     "execution": Activity(
             id="https://www.lip6.fr/mocah/invalidURI/activity-types/execution",
             definition=ActivityDefinition(
@@ -541,18 +560,14 @@ activities = {
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/evaluation-warning",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'an evaluation warning'}))),
-    "output-console": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/output-console",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'the output console of MrPython'}))),
     "keyword": Activity(
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/keyword",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'a keyword'}))),
-    "line": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/line",
+    "instruction": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/instruction",
         definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a programming line'}))),
+            name=LanguageMap({'en-US': 'a programming instruction'}))),
     "sequence": Activity(
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/sequence",
         definition=ActivityDefinition(
@@ -579,9 +594,15 @@ activities = {
 with open(os.path.join(os.path.dirname(__file__), "tracing_config.json"))as file:
     config = json.load(file)
     tracing_active = config["tracing_active"]
-    send_to_LRS = config["send_to_LRS"]
+    send_to_LRS = config["send-to-LRS"]
+    debug_log = config["debug-log-statements"]
+    debug_statements = []
+    debug_filepath = os.path.join(os.path.dirname(__file__), "tracing_debug_statements.txt")
     error_groups = config["error_groups"]
     function_names_context = config["exercises_functions"]
-
+statement_number = 1
 last_typing_timestamp = None
 last_interacting_timestamp = None
+
+start_execution_timestamp = None
+

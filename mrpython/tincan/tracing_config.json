@@ -1,6 +1,7 @@
 {
   "tracing_active": true,
-  "send_to_LRS": false,
+  "debug-log-statements": true,
+  "send-to-LRS": false,
   "error_groups": {"AssertionInFunctionWarning": "Semantique&Python101",
   "ForbiddenMultiAssign": "Syntaxe&Python101",
   "ContainerAssignTypeError": "Semantique&Python101",

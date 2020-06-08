@@ -143,7 +143,7 @@ class PyEditor(HighlightingText):
         self.bind("<<smart-indent>>",self.smart_indent_event)
 
         self.bind('<KeyPress>', self.keypress_event)
-        self.bind("<<paste>>", self.insert_event)
+        self.bind("<<paste>>", self.paste_event)
         self.bind("<<copy>>", self.copied_event)
         self.bind("<<prev-move-cursor>>", self.prev_move_cursor_event)
         self.bind("<<move-cursor>>", self.move_cursor_event)
@@ -539,8 +539,6 @@ class PyEditor(HighlightingText):
         first, last = self.get_selection_indices()
         if first and last:
             self.send_deletion(first, last)
-            if self.is_multi_line_deletion(first, last):
-                self.reset_line()
             self.delete(first, last)
             self.mark_set("insert", first)
             return "break"
@@ -600,8 +598,6 @@ class PyEditor(HighlightingText):
         try:
             if first and last:
                 self.send_deletion(first, last)
-                if self.is_multi_line_deletion(first, last):
-                    self.reset_line()
                 self.delete(first, last)
                 self.mark_set("insert", first)
             line = self.get("insert linestart", "insert")
@@ -708,8 +704,6 @@ class PyEditor(HighlightingText):
                 if index2line(first) != index2line(last):
                     return self.indent_region_event(event)
                 self.send_deletion(first, last)
-                if self.is_multi_line_deletion(first, last):
-                    self.reset_line()
                 self.delete(first, last)
                 self.mark_set("insert", first)
             prefix = self.get("insert linestart", "insert")
@@ -850,6 +844,52 @@ class PyEditor(HighlightingText):
             line_number -= 1
         return "no function defined"
 
+    def add_context(self, extensions, line_number):
+        i = line_number
+        function_name = ""
+        incoherence_found = False
+        theme_number = None
+        exercise_number = None
+        if re.compile(r'\w+\s*=',).match(self.get_instruction(line_number)) is not None:
+            function_name = "global var: no function defined"
+        while i >= 1:
+            instruction = self.get_instruction(i)
+            maybe_exercise_declaration = self.is_exercise_declaration(instruction)
+            maybe_function_def = self.is_function_definition(instruction)
+            if maybe_exercise_declaration is not None:
+                theme_number, exercise_number = maybe_exercise_declaration
+                incoherence_found = tracing.incoherence_found(function_name, theme_number, exercise_number) is not None
+                break
+            elif not function_name and maybe_function_def is not None:
+                function_name = maybe_function_def
+            i -= 1
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filename"] = self.short_title()
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/line-number/function-name"] = function_name
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/line-number/line-number"] = line_number
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/line-number/theme-number-declared"] = theme_number
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/line-number/" \
+                   "exercise-number-declared"] = exercise_number
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/line-number/" \
+                   "incoherence-between-exercise-function"] = incoherence_found
+
+    def is_function_definition(self,instruction):
+        pattern = re.compile(r'\s*def\s+(\w+)\(', re.IGNORECASE)
+        match = pattern.search(instruction)
+        if match:
+            function_name = match.group(1)
+            return function_name
+        return None
+
+    def is_exercise_declaration(self,instruction):
+        pattern = re.compile(r'\s*#\s*ex\D*(\d+)\D+(\d+)', re.IGNORECASE)
+
+        match = pattern.search(instruction)
+        if match:
+            theme_number = match.group(1)
+            exercise_number = match.group(2)
+            return int(theme_number), int(exercise_number)
+        return None
+
     def is_under_signature(self, line_number):
         while line_number > 1:
             instruction = self.get_instruction(line_number)
@@ -888,7 +928,7 @@ class PyEditor(HighlightingText):
             if self.is_one_liner_signature(line_instruction):
                 line_type = "signature-oneliner"
             elif self.maybe_get_function_name(line_number-1) != "":
-                line_type = "signature-begining"
+                line_type = "signature-beginning"
             elif self.is_under_signature(line_number-1):
                 line_type = "signature-ending"
             else:
@@ -940,13 +980,17 @@ class PyEditor(HighlightingText):
         not_both_empty = (old_line.instruction != "" and not old_line.instruction.isspace())
         not_both_empty = not_both_empty or (new_line.instruction != "" and not new_line.instruction.isspace())
         instruction_has_been_modified = old_line.instruction.strip() != new_line.instruction.strip()
-        if newline or cursor_changed_line:
+        if cursor_changed_line:
             if not_both_empty and instruction_has_been_modified:
                 if new_line.line_number == 1:
                     tracing.check_modified_student_number(new_line.instruction)
                 extensions = self.create_changed_line_extensions(old_line,new_line)
-                tracing.send_statement("modified", "line", extensions)
-            self.old_line = self.create_line(cursor_line_number)
+                self.add_context(extensions, old_line.line_number)
+                tracing.send_statement("modified", "instruction", extensions)
+            if newline:
+                self.old_line = Line(cursor_line_number, "", "empty")
+            else:
+                self.old_line = self.create_line(cursor_line_number)
 
     def reset_line(self):
         self.old_line = None
@@ -975,20 +1019,21 @@ class PyEditor(HighlightingText):
         if 'KEYWORD' in self.tag_names(end_word + "-1c"):
             index1, index2 = self.tag_prevrange('KEYWORD', end_word)
             keyword = self.get(index1, index2)
-            line_number = self.index("insert").split(".")[0]
-            tracing.send_statement("typed", "keyword",
-                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/keyword-typed": keyword,
-                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title(),
-                                    "https://www.lip6.fr/mocah/invalidURI/extensions/line-number": line_number
-                                    })
+            line_number = self.get_current_line_number()
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/keyword-typed": keyword,
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title()}
+            self.add_context(extensions, line_number)
+            tracing.send_statement("typed", "keyword", extensions)
             # print("Keyword typed: " + keyword)
 
     def send_deletion(self, first, last):
-        tracing.send_statement("deleted", "text",
-                               {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.get(first, last),
-                                "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": first,
-                                "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last,
-                                "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title()})
+        if self.is_multi_line_deletion(first, last):
+            self.reset_line()
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.get(first, last),
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": first,
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last}
+            self.add_context(extensions, int(first.split('.')[0]))
+            tracing.send_statement("deleted", "text", extensions)
 
     def prev_move_cursor_event(self, event):
         if self.typed_char:
@@ -998,35 +1043,37 @@ class PyEditor(HighlightingText):
     def move_cursor_event(self, event):
         self.send_update_changed_line()
 
-    def insert_event(self, event):
+    def paste_event(self, event):
         pasted_text = self.clipboard_get()
+        insert_index = self.index("insert")
         if pasted_text != "":
-            tracing.send_statement("inserted", "text",
-                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.clipboard_get(),
-                                    "https://www.lip6.fr/mocah/invalidURI/extensions/index": self.index("insert"),
-                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title()})
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/text": pasted_text,
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/index": insert_index}
+            self.add_context(extensions, int(insert_index.split('.')[0]))
+            tracing.send_statement("inserted", "text", extensions)
 
     def copied_event(self, event):
         first, last = self.get_selection_indices()
         if first and last:
-            text = self.get(first, last)
-            tracing.send_statement("copied", "text",
-                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/text": text,
-                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title(),
-                                    "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": first,
-                                    "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last,
-                                    })
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.get(first, last),
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": first,
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last}
+            self.add_context(extensions, int(first.split('.')[0]))
+            tracing.send_statement("copied", "text", extensions)
 
     def keypress_event(self, event):
         tracing.user_is_typing()
 
-        keypress_is_char = len(event.char) == 1
+        keypress_is_char = len(event.char) >= 1
         keypress_is_separator = keypress_is_char and event.char.isalnum() is False
+        first, last = self.get_selection_indices()
         if self.typed_char and (keypress_is_separator or event.keysym == "space"):
-            self.send_keyword(self.index("insert"))
-
-        if not self.typed_char:
+                self.send_keyword(self.index("insert"))
+        else:
             self.typed_char = keypress_is_char
+
+        if keypress_is_char and first and last:
+            self.send_deletion(first, last)
 
         if self.old_line is None:
             self.old_line = self.create_line(self.get_current_line_number())
