@@ -59,7 +59,7 @@ def make_timedelta(value):
             )
             raise ValueError(msg)
         """
-        raise ValueError("String date not allowed")
+        raise ValueError("Please setup string with datetime.strptime")
 
     try:
         if isinstance(value, datetime.timedelta):
@@ -203,9 +203,12 @@ def _make_datetime(value):
     """
 
     if isinstance(value, str):
-        """
+
         try:
-            return aniso8601.parse_datetime(value)
+            statement_time = datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ")
+            statement_time = statement_time.replace(tzinfo=datetime.timezone.utc)
+            return statement_time
+            #return aniso8601.parse_datetime(value)
         except Exception as e:
             raise ValueError(
                 "Conversion to datetime.datetime failed. Could not "
@@ -214,11 +217,10 @@ def _make_datetime(value):
                 "%s" %
                 (
                     repr(value),
-                    e.message,
+                    e,
                 )
             )
-        """
-        raise ValueError("String date not allowed")
+
 
     try:
         if isinstance(value, datetime.datetime):
@@ -237,7 +239,7 @@ def _make_datetime(value):
         elif isinstance(value, (tuple, list)):
             return tuple_to_datetime(value)
         else:
-            raise ValueError("Not allowed")
+            return datetime.datetime.utcfromtimestamp(value).replace(tzinfo=datetime.timezone.utc)
             #return datetime.datetime.utcfromtimestamp(value).replace(tzinfo=utc)
     except Exception as e:
         msg = (
@@ -247,7 +249,7 @@ def _make_datetime(value):
             (
                 value.__class__.__name__,
                 repr(value),
-                e.message,
+                e,
             )
         )
         raise TypeError(msg) if isinstance(e, TypeError) else ValueError(msg)
@@ -255,7 +257,8 @@ def _make_datetime(value):
 
 def jsonify_datetime(value):
     assert isinstance(value, datetime.datetime)
-    return value.isoformat()
+    return value.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+    #return value.isoformat()
 
 
 def tuple_to_datetime(value):
@@ -276,7 +279,7 @@ def tuple_to_datetime(value):
                 "%s" % (
                     repr(tzinfo),
                     repr(value),
-                    e.message,
+                    e,
                 )
             )
     else:

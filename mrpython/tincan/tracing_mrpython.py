@@ -259,12 +259,14 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
         activity = copy.deepcopy(activity)
         activity.definition.extensions = activity_extensions
 
+    statement_time = datetime.datetime.utcnow()
+    statement_time = statement_time.replace(tzinfo=datetime.timezone.utc)
     statement = Statement(
         actor=actor,
         verb=verb,
         object=activity,
         context=context,
-        timestamp=datetime.datetime.now()
+        timestamp=statement_time
     )
     if debug_log:
         data = json.loads(statement.to_json())
