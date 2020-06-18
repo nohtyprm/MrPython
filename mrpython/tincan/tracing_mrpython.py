@@ -1,6 +1,5 @@
 import threading, os, tokenize
 import hashlib, uuid, getpass
-import tincan.tracing_io as io
 import copy
 import time, datetime
 import json
@@ -16,18 +15,19 @@ from tincan import (
     LanguageMap,
     ActivityDefinition,
     lrs_properties,
+    tracing_config as config,
+    tracing_io as io
 )
 from translate import tr
 
 
 def create_actor():
-    student_hash = io.get_student_hash()
     student_id = "https://www.lip6.fr/mocah/invalidURI/student-number:" + student_hash
-    partner_hash = io.get_partner_hash()
     partner_id = "https://www.lip6.fr/mocah/invalidURI/partner-number:" + partner_hash
     StudentAgent = Agent(openid=student_id, name="student")
     PartnerAgent = Agent(openid=partner_id, name="partner")
     AgentGroup = Group(member=[StudentAgent, PartnerAgent], name=student_hash + "||" + partner_hash)
+    print(student_hash, partner_hash)
     return AgentGroup
 
 
@@ -37,86 +37,90 @@ def update_actor():
 
 
 def init_id():
-    """if the student number hash isn't initialized, we use the student number in the OS username.
-    If the OS username is a 7 digit integer, we hash it and keep it.
-    Otherwise we keep the default.
     """
-    if io.get_machine_id() == "not-initialized":
-        machine_id = str(uuid.getnode())
-        io.modify_machine_id(machine_id)
+    If the OS username is a digit integer, we hash it and use it to identify the user in the statements.
+    We also identify the computer used with the hashed MAC Address
+    :return:
+    """
+    machine_id = str(uuid.getnode())
+    student_hash = "default"
+    partner_hash = "default"
+    input_type = "default-input"
+    os_username = getpass.getuser()
+    if os_username.isdigit():
+        m = hashlib.sha1(str.encode(os_username))
+        student_hash = m.hexdigest()[:10]
+        input_type = "OS-input"
+        send_statement("initialized", "student-number",
+                       {"https://www.lip6.fr/mocah/invalidURI/extensions/old-hash": "default",
+                        "https://www.lip6.fr/mocah/invalidURI/extensions/new-hash": student_hash,
+                        "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": input_type})
+    return machine_id, student_hash, partner_hash, input_type
 
-    student_hash = io.get_student_hash()
-    if student_hash == "not-initialized":
-        new_hash = None
-        os_username = getpass.getuser()
-        if os_username.isdigit():
-            student_number = int(os_username)
-            modify_student_number(str(student_number), "OS-input")
-            return
-        io.modify_student_hash("default", "default-input")
 
-
-def modify_student_number(student_number, student_context):
+def modify_student_number(student_number):
     """o
     :param student_number: str
     :param student_context: str
     """
-    old_hash = io.get_student_hash()
+    global student_hash, input_type
+    old_hash = student_hash
     m = hashlib.sha1(str.encode(student_number))
     new_hash = m.hexdigest()[:10]
     if old_hash != new_hash:
-        io.modify_student_hash(new_hash, student_context)
+        student_hash = new_hash
+        input_type = "user-input"
         update_actor()
-        if old_hash == "default" or old_hash == "not-initialized":
+        if old_hash == "default":
             verb = "initialized"
         else:
             verb = "updated"
         send_statement(verb, "student-number",
                        {"https://www.lip6.fr/mocah/invalidURI/extensions/old-hash": old_hash,
                         "https://www.lip6.fr/mocah/invalidURI/extensions/new-hash": new_hash,
-                        "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": student_context})
+                        "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": input_type})
 
 
 def modify_partner_number(partner_number):
     """
     :param partner_number: str
     """
-    old_hash = io.get_partner_hash()
+    global partner_hash, input_type
+    old_hash = partner_hash
     m = hashlib.sha1(str.encode(partner_number))
     new_hash = m.hexdigest()[:10]
     if old_hash != new_hash:
-        io.modify_partner_hash(new_hash)
+        partner_hash = new_hash
+        input_type = "user-input"
         update_actor()
-        if old_hash == "not-initialized":
+        if old_hash == "default":
             verb = "initialized"
         else:
             verb = "updated"
         send_statement(verb, "partner-number",
                        {"https://www.lip6.fr/mocah/invalidURI/extensions/old-hash": old_hash,
-                        "https://www.lip6.fr/mocah/invalidURI/extensions/new-hash": new_hash})
+                        "https://www.lip6.fr/mocah/invalidURI/extensions/new-hash": new_hash,
+                        "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": input_type})
 
 
 def check_modified_student_number(list_numbers):
-    # Change the hash identifier if the user typed his student number in the form #1234567 [+ optional partner]
-    if len(list_numbers) >= 2 and list_numbers[0] == "#":
-        list_numbers = list_numbers[1:]  # Remove the #
-        list_numbers.strip()
-        list_numbers = list_numbers.split()
-        if len(list_numbers) == 1:
-            student_number = list_numbers[0]
-            if student_number.isdigit():
-                modify_student_number(student_number, "user-input")
-        elif len(list_numbers) == 2:
-            student_number = list_numbers[0]
-            partner_number = list_numbers[1]
-            if student_number.isdigit() and partner_number.isdigit():
-                modify_student_number(student_number, "user-input")
-                modify_partner_number(partner_number)
+    """
+    Change the hash identifier if the user type one (or two) integers in the form # student_number [partner_number]
+    Called in PyEditor and StudentRunner to check the first line of the editor
+    """
+    pattern = re.compile(r'\s*#\s*(\d+)(\s+\d*)?', re.IGNORECASE)
+    match = pattern.search(list_numbers)
+    if match:
+        student_number = match.group(1)
+        partner_number = match.group(2)
+        modify_student_number(student_number)
+        if partner_number:
+            modify_partner_number(partner_number)
 
 
 def is_function_definition(instruction):
     pattern = re.compile(r'\s*def\s+(\w+)\(', re.IGNORECASE)
-    match = pattern.search(instruction)
+    match = pattern.match(instruction)
     if match:
         function_name = match.group(1)
         return function_name
@@ -125,7 +129,7 @@ def is_function_definition(instruction):
 def is_exercise_declaration(instruction):
     pattern = re.compile(r'\s*#\s*ex\D*(\d+)\D+(\d+)', re.IGNORECASE)
 
-    match = pattern.search(instruction)
+    match = pattern.match(instruction)
     if match:
         theme_number = match.group(1)
         exercise_number = match.group(2)
@@ -143,7 +147,6 @@ def incoherence_found(function_name, theme_number, exercise_number):
 
 
 def check_incoherence_function_exercise(source):
-    import logging
     theme_number = None
     exercise_number = None
     for instruction in source:
@@ -172,7 +175,7 @@ def check_incoherence_function_exercise(source):
 
 
 def student_hash_uninitialized():
-    return io.get_student_hash() == "default"
+    return student_hash == "default"
 
 def clear_stack():
     """Clear the stack of statements"""
@@ -251,8 +254,8 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
     verb = verbs[verb_key]
     activity = activities[activity_key]
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/machine-id": io.get_machine_id(),
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/context": io.get_student_context()}
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/machine-id": machine_id,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": input_type}
     context = Context(extensions=extensions)
 
     if activity_extensions:
@@ -283,7 +286,16 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
 
 
 def send_statement_open_app():
-    global time_opened
+    global time_opened, session
+    # Initialize session
+    if not os.path.isfile(session_filepath):
+        session = str(uuid.uuid4())[:10]
+        with open(session_filepath, "w") as f:
+            f.write(session)
+    else:
+        with open(session_filepath, "r") as f:
+            session = f.read()
+    #Initialize debug
     if debug_log:
         file = open(debug_filepath, "w")  # Erase previous content
         file.close()
@@ -303,7 +315,8 @@ def send_statement_close_app():
     elapsed_time = "{}:{}:{}".format(h, m, s)
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session": session,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/elapsed-time": elapsed_time}
-    send_statement("closed", "application")
+    send_statement("closed", "application", extensions)
+    os.remove(session_filepath)
 
 
 def add_extensions_error(error, error_category, filename = None, instruction = None):
@@ -457,154 +470,30 @@ def send_statement_evaluate(report, mode, instruction):
     send_statement(verb, "evaluation", activity_extensions=extensions)
 
 
-lrs = RemoteLRS(
-    version=lrs_properties.version,
-    endpoint=lrs_properties.endpoint,
-    username=lrs_properties.username,
-    password=lrs_properties.password)
-init_id()
-actor = create_actor()
-session = str(uuid.uuid4())[:10]
-verbs = {
-    "opened": Verb(
-        id="http://activitystrea.ms/schema/1.0/open", display=LanguageMap({'en-US': 'opened'})),
-    "closed": Verb(
-        id="http://activitystrea.ms/schema/1.0/close", display=LanguageMap({'en-US': 'closed'})),
-    "created": Verb(
-        id="http://activitystrea.ms/schema/1.0/create", display=LanguageMap({'en-US': 'created'})),
-    "saved": Verb(
-        id="http://activitystrea.ms/schema/1.0/save", display=LanguageMap({'en-US': 'saved'})),
-    "saved-as": Verb(
-        id="https://www.lip6.fr/mocah/invalidURI/verbs/save-as", display=LanguageMap({'en-US': 'saved as'})),
-    "switched": Verb(
-        id="https://www.lip6.fr/mocah/invalidURI/verbs/switched", display=LanguageMap({'en-US': 'switched'})),
-    "started": Verb(
-        id="http://activitystrea.ms/schema/1.0/start", display=LanguageMap({'en-US': 'started'})),
-    "passed": Verb(
-        id="http://adlnet.gov/expapi/verbs/passed", display=LanguageMap({'en-US': 'passed'})),
-    "failed": Verb(
-        id="http://adlnet.gov/expapi/verbs/failed", display=LanguageMap({'en-US': 'failed'})),
-    "terminated": Verb(
-        id="http://activitystrea.ms/schema/1.0/terminate", display=LanguageMap({'en-US': 'terminated'})),
-    "received": Verb(
-        id="http://activitystrea.ms/schema/1.0/receive", display=LanguageMap({'en-US': 'received'})),
-    "typed": Verb(
-        id="https://www.lip6.fr/mocah/invalidURI/verbs/typed", display=LanguageMap({'en-US': 'typed'})),
-    "modified": Verb(
-        id="https://www.lip6.fr/mocah/invalidURI/verbs/modified", display=LanguageMap({'en-US': 'modified'})),
-    "deleted": Verb(
-        id="http://activitystrea.ms/schema/1.0/delete", display=LanguageMap({'en-US': 'deleted'})),
-    "inserted": Verb(
-        id="http://activitystrea.ms/schema/1.0/insert", display=LanguageMap({'en-US': 'inserted'})),
-    "copied": Verb(
-        id="https://www.lip6.fr/mocah/invalidURI/verbs/copied", display=LanguageMap({'en-US': 'copied'})),
-    "undid": Verb(
-        id="https://www.lip6.fr/mocah/invalidURI/verbs/undid", display=LanguageMap({'en-US': 'undid'})),
-    "redid": Verb(
-        id="https://www.lip6.fr/mocah/invalidURI/verbs/redid", display=LanguageMap({'en-US': 'redid'})),
-    "initialized": Verb(
-        id="http://activitystrea.ms/schema/1.0/initialized", display=LanguageMap({'en-US': 'initialized'})),
-    "updated": Verb(
-        id="http://activitystrea.ms/schema/1.0/update", display=LanguageMap({'en-US': 'updated'})),
-    "entered": Verb(
-        id="https://www.lip6.fr/mocah/invalidURI/verbs/entered", display=LanguageMap({'en-US': 'entered'})),
-    }
+statement_number = 1 # for debug
 
-activities = {
-    "application": Activity(
-        id="http://activitystrea.ms/schema/1.0/application",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'the MrPython application'}))),
-    "student-number": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/student-number",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'his/her student number'}))),
-    "partner-number": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/partner-number",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'his/her partners student number'}))),
-    "file": Activity(
-        id="http://activitystrea.ms/schema/1.0/file",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'the student\'s editor file'}))),
-    "mode": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/mode",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'the programming mode'}),
-            description=LanguageMap({'en-US': 'student/expert mode in MrPython'}))),
-    "output-console": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/output-console",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'the output console of MrPython'}))),
-    "execution": Activity(
-            id="https://www.lip6.fr/mocah/invalidURI/activity-types/execution",
-            definition=ActivityDefinition(
-                name=LanguageMap({'en-US': 'a programming execution'}),
-                description=LanguageMap({'en-US': 'execution of the student\'s editor'}))),
-    "evaluation": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/interpretation",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a programming evaluation'}),
-            description=LanguageMap({'en-US': 'interpretation made by the MrPython interpretor'}))),
-    "execution-error": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/execution-error",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'an execution error'}))),
-    "execution-warning": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/execution-warning",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'an execution warning'}))),
-    "evaluation-error": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/evaluation-error",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'an evaluation error'}))),
-    "evaluation-warning": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/evaluation-warning",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'an evaluation warning'}))),
-    "keyword": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/keyword",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a keyword'}))),
-    "instruction": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/instruction",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a programming instruction'}))),
-    "sequence": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/sequence",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a sequence of instructions'}))),
-    "text": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/text",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'some text'}))),
-    "typing-state": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/typing-state",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'a typing state'}))),
-    "interacting-state": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/interacting-state",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'an interacting state'}))),
-    "idle-state": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/idle-state",
-        definition=ActivityDefinition(
-            name=LanguageMap({'en-US': 'an idle state'}))),
-
-    }
-
-with open(os.path.join(os.path.dirname(__file__), "tracing_config.json"))as file:
-    config = json.load(file)
-    tracing_active = config["tracing_active"]
-    send_to_LRS = config["send-to-LRS"]
-    debug_log = config["debug-log-statements"]
-    debug_statements = []
-    debug_filepath = os.path.join(os.path.dirname(__file__), "tracing_debug_statements.txt")
-    error_groups = config["error_groups"]
-    function_names_context = config["exercises_functions"]
-statement_number = 1
+# global variables used to keep tracing information
+machine_id, student_hash, partner_hash, input_type = init_id()
+session = None  # Initialized in send_statement_open_app()
+tracing_active = config.tracing_active
+send_to_LRS = config.send_to_LRS
+debug_log = config.debug_log
+debug_filepath = config.debug_filepath
+error_groups = config.error_groups
+function_names_context = config.function_names_context
 last_typing_timestamp = None
 last_interacting_timestamp = None
-
 start_execution_timestamp = None
+
+# xAPI setup
+lrs = RemoteLRS(
+    version=config.lrs_version,
+    endpoint=config.lrs_endpoint,
+    username=config.lrs_username,
+    password=config.lrs_password)
+actor = create_actor()
+verbs = config.verbs
+activities = config.activities
+
+session_filepath = config.session_filepath
 

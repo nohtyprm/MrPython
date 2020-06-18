@@ -62,6 +62,8 @@ class StudentRunner:
         # the conventions checkings that need to be done
         import logging
         source = self.source.split("\n")
+        #TODO: Changestudent number tracing
+        '''
         if tracing.tracing_active:
             tracing.check_modified_student_number(source[0])
             if tracing.student_hash_uninitialized():
@@ -72,7 +74,7 @@ class StudentRunner:
             error_incoherence = tracing.check_incoherence_function_exercise(source)
             if error_incoherence is not None:
                 self.report.add_convention_error("warning", "Context incoherence", details=error_incoherence)
-
+        '''
 
         try:
             self.AST = ast.parse(self.source, self.filename)
