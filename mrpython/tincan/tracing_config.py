@@ -9,9 +9,9 @@ import os
 
 # MrPython behaviour and filepaths
 
-tracing_active = True
-send_to_LRS = True and tracing_active
-debug_log = True and tracing_active
+tracing_active = True  # Create the statements
+send_to_LRS = True and tracing_active  # Send the created statements to the LRS
+debug_log = True and tracing_active  # Keep a record of all statements produced in debug_filepath
 backup_filepath =  os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_backup.json')
 debug_filepath = os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_debug.txt')
 session_filepath = os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_session.txt')

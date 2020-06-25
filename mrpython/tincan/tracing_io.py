@@ -7,10 +7,11 @@ import json
 import os
 
 backup_filepath = config.backup_filepath
+session_filepath = config.session_filepath
 if not os.path.isfile(backup_filepath):
-    with open(backup_filepath, "w") as f:
+    with open(backup_filepath, "w") as backup_file:
         data = {"statements": []}
-        json.dump(data, f, indent=2)
+        json.dump(data, backup_file, indent=2)
 
 def add_statement(statement):
     """Add a statement to the stack"""
@@ -43,3 +44,20 @@ def remove_statement():
         f.truncate(0)
         f.seek(0)
         json.dump(data, f, indent=2)
+
+
+def session_file_exists():
+    return os.path.isfile(session_filepath)
+
+def get_session_info():
+    with open(session_filepath, "r") as f:
+        session_data = json.load(f)
+    session = session_data["id-session"]
+    active_time = session_data["active-timestamp"]
+    return session, active_time
+
+
+def write_session_info(session, active_time):
+    session_data = {"id-session": session, "active-timestamp": active_time}
+    with open(session_filepath, "w") as f:
+        json.dump(session_data, f)

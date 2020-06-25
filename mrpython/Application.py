@@ -63,6 +63,7 @@ class Application:
         self.running_interpreter_callback = None
 
         self.root.after(1000, self.check_user_state)
+        self.root.after(5000, self.update_active_timestamp)
         self.state = "idle"  # 3 states: idle, interacting or typing
 
         tracing.clear_stack()
@@ -176,6 +177,11 @@ class Application:
             tracing.send_statement("entered", new_state + "-state")
             self.state = new_state
         self.root.after(1000, self.check_user_state)
+
+
+    def update_active_timestamp(self):
+        tracing.update_active_timestamp()
+        self.root.after(5000, self.update_active_timestamp)
 
 
     def update_title(self, event=None):

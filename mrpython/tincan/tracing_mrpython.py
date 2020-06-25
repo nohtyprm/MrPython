@@ -27,7 +27,7 @@ def create_actor():
     StudentAgent = Agent(openid=student_id, name="student")
     PartnerAgent = Agent(openid=partner_id, name="partner")
     AgentGroup = Group(member=[StudentAgent, PartnerAgent], name=student_hash + "||" + partner_hash)
-    print(student_hash, partner_hash)
+    # print(student_hash, partner_hash)
     return AgentGroup
 
 
@@ -209,8 +209,13 @@ def save_execution_start():
 def get_action_timestamps():
     return (last_typing_timestamp, last_interacting_timestamp)
 
+
 def execution_duration():
     return time.time() - start_execution_timestamp
+
+
+def update_active_timestamp():
+    io.write_session_info(session, datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"))
 
 def send_statement_lrs(statement):
     try:
@@ -253,6 +258,7 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
         print("Tracing: Creating (without sending) statement {}, {} {}".format(statement_number, verb_key, activity_key))
     verb = verbs[verb_key]
     activity = activities[activity_key]
+    print(session)
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/machine-id": machine_id,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": input_type}
@@ -287,14 +293,21 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
 
 def send_statement_open_app():
     global time_opened, session
-    # Initialize session
-    if not os.path.isfile(session_filepath):
-        session = str(uuid.uuid4())[:10]
-        with open(session_filepath, "w") as f:
-            f.write(session)
+    write_session_file = False
+
+    if io.session_file_exists():
+        session, active_time = io.get_session_info()
+        active_time = datetime.datetime.strptime(active_time, "%Y-%m-%dT%H:%M:%S")
+        elapsed_time = datetime.datetime.now() - active_time
+        if elapsed_time > datetime.timedelta(minutes=30):
+            write_session_file = True
     else:
-        with open(session_filepath, "r") as f:
-            session = f.read()
+        write_session_file = True
+    if write_session_file:
+        session = str(uuid.uuid1(clock_seq=int(time.time() * 1e9)))
+        active_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        io.write_session_info(session, active_time)
+
     #Initialize debug
     if debug_log:
         file = open(debug_filepath, "w")  # Erase previous content
@@ -313,10 +326,8 @@ def send_statement_close_app():
     if s < 10:
         s = "0" + str(s)
     elapsed_time = "{}:{}:{}".format(h, m, s)
-    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session": session,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/elapsed-time": elapsed_time}
+    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/elapsed-time": elapsed_time}
     send_statement("closed", "application", extensions)
-    os.remove(session_filepath)
 
 
 def add_extensions_error(error, error_category, filename = None, instruction = None):
