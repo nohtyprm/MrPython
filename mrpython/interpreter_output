@@ -1,25 +1,8 @@
-Passage dans un node <class '_ast.Import'>
-
-Passage dans un node <class '_ast.FunctionDef'>
-
-On récupère bien une fonction de définition typée
-Précondition : (a>0) and (b>0) and (c>0)
-    Précondition : les côtés a, b et c définissent bien un triangle.
-
-    retourne l'aire du triangle dont les côtés sont de 
-             longueurs a, b, et c.
-
-p
-<typechecking.prog_ast.EDiv object at 0x000002ABCB885940>
-Passage dans un node <class '_ast.Assert'>
-
-Passage dans un node <class '_ast.Assert'>
-
-Passage dans un node <class '_ast.Assert'>
-
-Passage dans un node <class '_ast.Assert'>
-
-function: aire_triangle
-On s'occupe ici d'une définition de fonction typée
-Passage dans le fetch_assign_mypy_type
- 
+Retourne la valeur de a*x^3 + b*x^2 + c*x + d
+    
+Retourne la valeur de a*x^3 + b*x^2 + c*x + d
+    
+Retourne la valeur de a*x^4 + b*x^2 + c
+    
+Retourne la valeur de a*x^4 + b*x^2 + c
+    

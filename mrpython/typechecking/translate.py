@@ -14,6 +14,8 @@ def set_translator_locale(locale_key):
 
 TRANSLATOR_DICT = {
     "Import problem" : { 'fr' : "Problème d'import"}
+    , "Warning you've initialzed in 2 differents ways the variable: '{}'" : {'fr' : "Vous avez initailisé de 2 façons différentes la variable : '{}'"}
+    , "Warning you've initialzed and not used the variable: '{}'" : {'fr' : "Attention, vous initialisez sans utiliser la variable : '{}'" }
     , "the module '{}' is not supported in Python101" : { 'fr' : "le module '{}' n'est pas disponible en Python101"}
     , "Signature problem" : { 'fr' : "Problème de signature"}
     , "I don't understand the signature of function '{}'" : { 'fr' : "je ne comprends pas la signature de la fonction '{}'"}
@@ -44,7 +46,7 @@ TRANSLATOR_DICT = {
     , "The two operands of the comparision should have the same type: '{}' vs. '{}'" : { 'fr' : "Les deux opérandes de la comparaison devraient être du même type: '{}' vs. '{}'"}
     , "Comparison issue" : { 'fr' : "Problème de comparaison"}
     , "The two operands of the comparison are only \"weakly\" compatibles: '{}' vs. '{}'" : { 'fr' : "Les types des deux opérandes de la comparaison ne sont qu'\"approximativement\" compatibles : '{}' vs. '{}'"}
-    
+
     , "Bad variable" : { 'fr' : "Problème de variable"}
     , "Bad indexing" : { 'fr' : "Problème d'indexation" }
     , "One can only index a sequence or a dictionnary, not a '{}'" : { 'fr' : "On ne peut indexer qu'une séquence ou un dictionnaire, pas un '{}'" }

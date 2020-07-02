@@ -3,6 +3,7 @@ try:
 except ImportError:
     from type_ast import *
 
+
 def type_converter(annotation):
     if hasattr(annotation, "id"):
         if annotation.id == "int":
@@ -13,14 +14,14 @@ def type_converter(annotation):
             return StrType(annotation)
         elif annotation.id == "float":
             return FloatType(annotation)
+        else:
+            return None
     elif hasattr(annotation, "slice"):
         types = []
         for i in annotation.slice.value.elts:
             types.append(type_converter(i))
         return TupleType(types)
     else:
-        print("annotation mal instanciée\n")
-        # return "UnsupportedNode"
         return None
 
 def fun_converter(fun_def):
