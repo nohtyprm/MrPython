@@ -145,7 +145,7 @@ class FunctionDef:
         if isinstance(first_instr, ast.Expr) and isinstance(first_instr.value, ast.Str):
             self.docstring = first_instr.value.s
             next_instr_index = 1
-            print(self.docstring)
+            #print(self.docstring)
         else:
             if not self.typee:
                 self.python101ready = False
@@ -184,7 +184,7 @@ class LHSTuple:
     def __init__(self, node, elements):
         self.ast = node
         self.elements = elements
-        print(dir(node))
+        #print(dir(node))
 
     def variables(self):
         vs = []
