@@ -126,6 +126,8 @@ TRANSLATOR_DICT = {
     , "Not a variable type declaration : it is a type alias." : { 'fr' : "ce n'est pas une déclaration de variable mais une déclaration d'alias de type."}
     , "Empty tuple" : { 'fr' : "N-uplet vide"}
     , "Python 101 does not allow empty tuples, only in expert mode" : { 'fr' : "les n-uplets vides (0-uplets ?) ne sont pas autorisés en Python101."}
+    , "Missing return type" : { 'fr' : "Type de retour manquant" }
+    , "I don't find the return type for function: {}" : { 'fr' : "Je ne trouve pas de type de retour pour la fonction : {}" }
 }
 
 def tr(msg):

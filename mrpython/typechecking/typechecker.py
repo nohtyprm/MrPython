@@ -103,7 +103,6 @@ class TypingContext:
         self.parent_decl_stack.append((parent_node, parent_local_declare))
 
     def pop_parent(self):
-
         if not self.parent_decl_stack:
             raise ValueError("Cannot pop from empty parent declaration stack (please report)")
 
@@ -274,36 +273,43 @@ def type_check_Program(prog):
 
     # third step : process each function to fill the global environment
     for (fun_name, fun_def) in prog.functions.items():
-        if hasattr(fun_def.returns,"id"):
-            fun_type = fun_converter(fun_def)
-            if fun_type is None:
-                # position is a little bit ad-hoc
-                ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno+ 1, fun_def.ast.col_offset + 7))
-                return ctx
-            else:
-                ctx.register_function(fun_name, fun_type, fun_def)
+        if not hasattr(fun_def.returns,"id"):
+            ctx.add_type_error(MissingReturnTypeError(fun_def, fun_def.ast.lineno, fun_def.ast.col_offset))
+            return ctx
+
+        fun_type_ast = fun_type_converter(fun_def)
+        fun_type, unknown_alias = fun_type_ast.unalias(ctx.type_defs)
+        if fun_type is None:
+            ctx.add_type_error(UnknownTypeAliasError(fun_type_ast, unknown_alias, fun_def.ast.lineno, fun_def.ast.col_offset))
+            return ctx
         else:
-            #print(repr(signature))
-            #print(fun_def.docstring)
-            signature = function_type_parser(fun_def.docstring)
-            if signature.iserror:
-                ctx.add_type_error(SignatureParseError(fun_name, fun_def, signature))
-            else: # HACK: trailing non-whistespace characters at the end of the signature
-                #parsed = fun_def.docstring[0:signature.end_pos.offset:]
-                #print("parsed = '{}'".format(parsed))
-                remaining = fun_def.docstring[signature.end_pos.offset:]
-                #print("remaining = '{}'".format(remaining))
-                if not fun_def.docstring[signature.end_pos.offset-1].isspace() and remaining and not remaining[0].isspace():
-                    ctx.add_type_error(SignatureTrailingError(fun_name, fun_def, remaining))
-                    # XXX: Not fatal ?
-                else:
-                    fun_type, unknown_alias = signature.content.unalias(ctx.type_defs)
-                    if fun_type is None:
-                        # position is a little bit ad-hoc
-                        ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno+ 1, fun_def.ast.col_offset + 7))
-                        return ctx
-                    else:
-                        ctx.register_function(fun_name, fun_type, fun_def)
+            ctx.register_function(fun_name, fun_type, fun_def)
+
+
+
+        ### XXX : old code for annotations
+        # else:
+        #     #print(repr(signature))
+        #     #print(fun_def.docstring)
+        #     signature = function_type_parser(fun_def.docstring)
+        #     if signature.iserror:
+        #         ctx.add_type_error(SignatureParseError(fun_name, fun_def, signature))
+        #     else: # HACK: trailing non-whistespace characters at the end of the signature
+        #         #parsed = fun_def.docstring[0:signature.end_pos.offset:]
+        #         #print("parsed = '{}'".format(parsed))
+        #         remaining = fun_def.docstring[signature.end_pos.offset:]
+        #         #print("remaining = '{}'".format(remaining))
+        #         if not fun_def.docstring[signature.end_pos.offset-1].isspace() and remaining and not remaining[0].isspace():
+        #             ctx.add_type_error(SignatureTrailingError(fun_name, fun_def, remaining))
+        #             # XXX: Not fatal ?
+        #         else:
+        #             fun_type, unknown_alias = signature.content.unalias(ctx.type_defs)
+        #             if fun_type is None:
+        #                 # position is a little bit ad-hoc
+        #                 ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno+ 1, fun_def.ast.col_offset + 7))
+        #                 return ctx
+        #             else:
+        #                 ctx.register_function(fun_name, fun_type, fun_def)
 
     # fourth step : type-check each function
     for (fun_name, fun_def) in ctx.functions.items():
@@ -629,6 +635,7 @@ def type_check_DeclareVar(declareVar, ctx, global_scope = False):
 DeclareVar.type_check = type_check_DeclareVar
 
 def type_check_Assign(assign, ctx, global_scope = False):
+    import pdb ; pdb.set_trace()
 
     # first let's see if the variables are dead
     mono_assign = False # is this an actual assignment (and not an initialization ?)
@@ -3039,6 +3046,22 @@ class UnknownTypeAliasError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Type name error"), self.lineno, self.col_offset
                                     , tr("I don't find any definition for the type: {}").format(self.unknown_alias))
+
+class MissingReturnTypeError(TypeError):
+    def __init__(self, fun_def, lineno, col_offset):
+        self.fun_def = fun_def
+        self.lineno = lineno
+        self.col_offset = col_offset
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "MissingReturnTypeError[{}]@{}:{}".format(self.fun_def.name, self.lineno, self.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Missing return type"), self.lineno, self.col_offset
+                                    , tr("I don't find the return type for function: {}").format(self.fun_def.name))
 
 class ExprAsInstrWarning(TypeError):
     def __init__(self, enode):

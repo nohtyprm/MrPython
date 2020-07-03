@@ -1,8 +1,8 @@
-##!FAIL: UnsupportedImportError[maths]@3:0
+##!FAIL: MissingReturnTypeError[aire_triangle]@5:0
 
-import maths
+import math
 
-def aire_triangle(a : float, b : float, c : float) -> float:
+def aire_triangle(a : float, b : float, c : float):
     """Précondition : (a>0) and (b>0) and (c>0)
     Précondition : les côtés a, b et c définissent bien un triangle.
 

@@ -15,7 +15,7 @@ def type_converter(annotation):
         elif annotation.id == "float":
             return FloatType(annotation)
         else:
-            return None
+            return TypeAlias(annotation.id, annotation)
     elif hasattr(annotation, "slice"):
         types = []
         for i in annotation.slice.value.elts:
@@ -24,7 +24,7 @@ def type_converter(annotation):
     else:
         return None
 
-def fun_converter(fun_def):
+def fun_type_converter(fun_def):
     param_types = []
     for par in fun_def.param_types:
         param_types.append(type_converter(par))

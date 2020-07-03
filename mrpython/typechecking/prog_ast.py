@@ -123,22 +123,17 @@ class Import:
 class FunctionDef:
     def __init__(self, node):
 
-        self.typee = False #If the arguments and the return type are typed
         self.ast = node
         self.name = self.ast.name
         self.python101ready = True
-
-        if hasattr(node.returns,"id"):
-            self.typee = True
 
         self.param_types = []
         self.parameters = []
         for arg_obj in self.ast.args.args:
             self.parameters.append(arg_obj.arg)
 
-        if self.typee:
-            for arg_obj in self.ast.args.args:
-                self.param_types.append(arg_obj.annotation)
+        for arg_obj in self.ast.args.args:
+            self.param_types.append(arg_obj.annotation)
 
         first_instr = self.ast.body[0]
         next_instr_index = 0
@@ -147,13 +142,14 @@ class FunctionDef:
             next_instr_index = 1
             #print(self.docstring)
         else:
-            if not self.typee:
-                self.python101ready = False
+            # nothing to do ?
+            pass
 
         self.body = []
         for inner_node in self.ast.body[next_instr_index:]:
             self.body.append(parse_instruction(inner_node))
-        self.returns=self.ast.returns
+
+        self.returns = self.ast.returns
 
 
 class TestCase:
