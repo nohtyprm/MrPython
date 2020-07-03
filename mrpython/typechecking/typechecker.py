@@ -112,7 +112,7 @@ class TypingContext:
                 # XXX: barendregt convention too strong ?
                 # self.dead_variables.add(var)
                 if (var_name, var_info) not in self.local_env.items():
-                    self.add_type_error(NotUsedDeclarationWarning(var_name,var_info))
+                    self.add_type_error(NotUsedDeclarationWarning(self.function_def, var_name,var_info))
 
         self.declared_env = parent_local_declare
 
@@ -270,6 +270,7 @@ def type_check_Program(prog):
                 ctx.local_env['math.e'] = (type_expression_parser('float').content, "global")
         else:
             ctx.add_type_error(UnsupportedImportError(import_name, prog.imports[import_name]))
+            return ctx
 
     # third step : process each function to fill the global environment
     for (fun_name, fun_def) in prog.functions.items():
@@ -284,8 +285,6 @@ def type_check_Program(prog):
             return ctx
         else:
             ctx.register_function(fun_name, fun_type, fun_def)
-
-
 
         ### XXX : old code for annotations
         # else:
@@ -349,7 +348,6 @@ def type_check_FunctionDef(func_def, ctx):
     # Step 1: check function arity
     if len(func_def.parameters) != len(signature.param_types):
         ctx.add_type_error(FunctionArityError(func_def, signature))
-        #import pdb; pdb.set_trace()
         # this is of course a fatal error
         return
     # Step 2 : fill the parameter environment, and expected return type
@@ -359,12 +357,16 @@ def type_check_FunctionDef(func_def, ctx):
     ctx.register_function_def(func_def, signature.partial)
 
     # Step 3 : type-check body
+
+    ctx.push_parent(func_def)
+
     ctx.nb_returns = 0  # counting the number of returns encountered
     for instr in func_def.body:
         if isinstance(instr, UnsupportedNode):
             ctx.add_type_error(UnsupportedNodeError(instr))
             # we abort the type-checking of this function
             ctx.nb_returns = 0
+            ctx.pop_parent()
             ctx.unregister_function_def()
             return
 
@@ -372,12 +374,14 @@ def type_check_FunctionDef(func_def, ctx):
         instr.type_check(ctx)
         if ctx.fatal_error:
             ctx.nb_returns = 0
+            ctx.pop_parent()
             ctx.unregister_function_def()
             return
 
     if ctx.nb_returns == 0 and not isinstance(signature.ret_type, NoneTypeType):
         ctx.add_type_error(NoReturnInFunctionError(func_def))
 
+    ctx.pop_parent()
     ctx.unregister_function_def()
 
 FunctionDef.type_check = type_check_FunctionDef
@@ -437,6 +441,7 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
     var_name1, decl_type1, err_cat1 = parse_declaration_type(ctx, lineno-1)
     if(var_name1 is not None):
         ctx.add_type_error(DifferentDeclarationWarning(lineno, var_name1))
+        return None
 
 
     var_name = assign_target.var_name
@@ -635,8 +640,6 @@ def type_check_DeclareVar(declareVar, ctx, global_scope = False):
 DeclareVar.type_check = type_check_DeclareVar
 
 def type_check_Assign(assign, ctx, global_scope = False):
-    import pdb ; pdb.set_trace()
-
     # first let's see if the variables are dead
     mono_assign = False # is this an actual assignment (and not an initialization ?)
     declaration = False # does the variable had already been declared?
@@ -685,16 +688,16 @@ def type_check_Assign(assign, ctx, global_scope = False):
         # Assignation of variables that have already benn declared
         declared_types = fetch_assign_declared_mypy_types(ctx, assign.target,True if assign.target.arity() == 1 else False )
 
-    else:
-        if hasattr(assign, "type_annotation"):
-            # AnnAssign
-            declared_types = fetch_assign_mypy_types(ctx, assign.target,assign.type_annotation, True if assign.target.arity() == 1 else False)
-        else:
-            # Classical assignement
-            declared_types = fetch_assign_declaration_types(ctx, assign.target, True if assign.target.arity() == 1 else False)
+    else: # ne priori declaration
+        if not hasattr(assign, "type_annotation"):
+            ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'missing', lineno, tr("Missing variable declaration for variable: {}").format(var.var_name)))
+            return False
+
+        declared_types = fetch_assign_mypy_types(ctx, assign.target,assign.type_annotation, True if assign.target.arity() == 1 else False)
 
     if declared_types is None:
-        declared_types = dict()
+        # XXX: was not an error => declared_types = dict()
+        return False
 
     # next infer type of initialization expression
     expr_type = assign.expr.type_infer(ctx)
@@ -2422,16 +2425,17 @@ class AssertionInFunctionWarning(TypeError):
         return False
 
 class NotUsedDeclarationWarning(TypeError):
-    def __init__(self, var_name, var_type):
+    def __init__(self, fun_def, var_name, var_type):
+        self.fun_def = fun_def
         self.var_name = var_name
         self.var_type = var_type
 
     def fail_string(self):
-        return "NotUsedDeclarationWarning[{}]@{}:{}".format(self.var_name, self.var_type)
+        return "NotUsedDeclarationWarning[{}]@{}:{}".format(self.var_name, self.fun_def.ast.lineno, self.fun_def.ast.col_offset)
 
     def report(self, report):
-        report.add_convention_error('warning', tr("Using issue"), 0, 0
-                                    , details=tr("Warning you've initialzed and not used the variable: '{}'").format(self.var_name))
+        report.add_convention_error('warning', tr("Unused variable"), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
+                                    , details=tr("The variable '{}' is declared but not used").format(self.var_name))
 
     def is_fatal(self):
         return False
@@ -2566,7 +2570,7 @@ class DeclarationError(TypeError):
                                                    , self.node.ast.col_offset)
 
     def is_fatal(self):
-        return False
+        return True
 
     def report(self, report):
         col_offset = self.node.ast.col_offset

@@ -1,4 +1,4 @@
-##!FAIL: DeclarationError[missing]@13:4
+##!FAIL: NotUsedDeclarationWarning[q]@5:0
 
 import math
 
@@ -10,7 +10,7 @@ def aire_triangle(a : float, b : float, c : float) -> float:
              longueurs a, b, et c."""
 
     q : float
-    p = (a + b + c) / 2
+    p : float = (a + b + c) / 2
 
     return math.sqrt(p * (p - a) * (p - b) * (p - c))
 

@@ -128,6 +128,9 @@ TRANSLATOR_DICT = {
     , "Python 101 does not allow empty tuples, only in expert mode" : { 'fr' : "les n-uplets vides (0-uplets ?) ne sont pas autorisés en Python101."}
     , "Missing return type" : { 'fr' : "Type de retour manquant" }
     , "I don't find the return type for function: {}" : { 'fr' : "Je ne trouve pas de type de retour pour la fonction : {}" }
+    , "Missing variable declaration for variable: {}" : { 'fr' : "Il manque la déclaration de la variable: {}" }
+    , "Unused variable" : { 'fr' : "Variable inutilisée" }
+    , "The variable '{}' is declared but not used" : { 'fr' : "La variable '{}' est déclarée mais n'est pas utilisée."}
 }
 
 def tr(msg):
