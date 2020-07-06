@@ -111,7 +111,7 @@ class TypingContext:
             if (var_name, _) not in parent_local_declare.items():
                 # XXX: barendregt convention too strong ?
                 # self.dead_variables.add(var)
-                if (var_name, _) not in self.local_env.items():
+                if var_name not in self.local_env:
                     self.add_type_error(NotUsedDeclarationWarning(self.function_def, var_name,var_info))
 
         self.declared_env = parent_local_declare
@@ -339,7 +339,6 @@ Program.type_check = type_check_Program
 
 def type_check_FunctionDef(func_def, ctx):
     #Ici modifier : Func type converter
-
     signature = ctx.global_env[func_def.name]
     #print("signature = ", repr(signature))
 

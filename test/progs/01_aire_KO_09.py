@@ -1,4 +1,4 @@
-##!FAIL: TypeDefParseError[Does not understand the declared type]@12:0
+##!FAIL: TypeExprParseError[Je ne comprends pas le type déclaré.]@12:4
 
 import math
 
