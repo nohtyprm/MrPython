@@ -278,7 +278,11 @@ def type_check_Program(prog):
             ctx.add_type_error(MissingReturnTypeError(fun_def, fun_def.ast.lineno, fun_def.ast.col_offset))
             return ctx
 
-        fun_type_ast = fun_type_converter(fun_def)
+        ok, fun_type_ast = fun_type_converter(fun_def)
+        if not ok:
+            ctx.add_type_error(TypeExprParseError(fun_def.ast.lineno, fun_def.ast.col_offset, fun_type_ast))
+            return ctx
+            
         fun_type, unknown_alias = fun_type_ast.unalias(ctx.type_defs)
         if fun_type is None:
             ctx.add_type_error(UnknownTypeAliasError(fun_type_ast, unknown_alias, fun_def.ast.lineno, fun_def.ast.col_offset))
@@ -445,15 +449,15 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
 
 
     var_name = assign_target.var_name
-    decl_type = type_converter(annotation)
+    ok, decl_type = type_converter(annotation)
+    if not ok:
+        ctx.add_type_error(TypeExprParseError(lineno, assign_target.ast.col_offset, decl_type))
+        return None
+    
     declared_types = dict()
 
     if var_name == "_":
         ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("The special variable '_' cannot be declared")))
-        return None
-
-    if decl_type is None:
-        ctx.add_type_error(TypeDefParseError(lineno, annotation.id))
         return None
 
     udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
@@ -478,7 +482,7 @@ def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
     declared_types = dict()
 
     if decl_type is None:
-        ctx.add_type_error(TypeDefParseError(lineno, annotation.id))
+        ctx.add_type_error(TypeExprParseError(lineno, assign_target.ast.col_offset, annotation.id))
         return None
 
     udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
@@ -495,14 +499,14 @@ def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
 def fetch_declared_mypy_types(ctx, declaration_target, annotation, strict = False):
     lineno = declaration_target.ast.lineno
     var_name = declaration_target.var_name
-    decl_type = type_converter(annotation)
+    ok, decl_type = type_converter(annotation)
+    if not ok:
+        ctx.add_type_error(TypeExprParseError(lineno, declaration_target.ast.col_offset, decl_type))
+        return None
+        
     declared_types = dict()
     if var_name == "_":
         ctx.add_type_error(DeclarationError(ctx.function_def, declaration_target, 'var-name', lineno, tr("The special variable '_' cannot be declared")))
-        return None
-
-    if decl_type is None:
-        ctx.add_type_error(TypeDefParseError(lineno, annotation.id))
         return None
 
     udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
@@ -2374,11 +2378,27 @@ class TypeDefParseError(TypeError):
         return "TypeDefParseError[{}]@{}:{}".format(self.type_name, self.lineno, 0)
 
     def report(self, report):
-        report.add_convention_error('error', tr("Type definition problem"), self.lineno, 0
-                                    , details=tr("I don't understand the definition of type '{}'").format(self.type_name))
+        report.add_convention_error('error', tr("Type expression problem"), self.lineno, 0
+                                    , details="{}".format(self.type_name))
 
     def is_fatal(self):
         return False
+
+class TypeExprParseError(TypeError):
+    def __init__(self, lineno, col_offset, message):
+        self.lineno = lineno
+        self.col_offset = col_offset
+        self.message = message
+
+    def fail_string(self):
+        return "TypeExprParseError[{}]@{}:{}".format(self.message, self.lineno, self.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Type expression problem"), self.lineno, self.col_offset
+                                    , details=self.message)
+
+    def is_fatal(self):
+        return True
 
 class DuplicateTypeDefError(TypeError):
     def __init__(self, lineno, type_name):

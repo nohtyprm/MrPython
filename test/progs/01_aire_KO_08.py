@@ -1,4 +1,4 @@
-##!FAIL: DeclarationError[colon]@13:4
+##!FAIL: UnknownVariableError[p]@12:4
 
 import math
 

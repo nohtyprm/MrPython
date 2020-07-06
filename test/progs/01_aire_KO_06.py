@@ -1,4 +1,4 @@
-##!FAIL: NotUsedDeclarationWarning[q]@5:0
+##!FAIL: NotUsedDeclarationWarning[q]@12:4
 
 import math
 

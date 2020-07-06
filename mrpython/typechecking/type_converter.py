@@ -1,36 +1,45 @@
 try:
     from .type_ast import *
+    from .translate import tr
 except ImportError:
     from type_ast import *
+    from translate import tr
 
 
 def type_converter(annotation):
     if hasattr(annotation, "id"):
         if annotation.id == "int":
-            return IntType(annotation)
+            return (True, IntType(annotation))
         elif annotation.id == "bool":
-            return BoolType(annotation)
+            return (True, BoolType(annotation))
         elif annotation.id == "str":
-            return StrType(annotation)
+            return (True, StrType(annotation))
         elif annotation.id == "float":
-            return FloatType(annotation)
+            return (True, FloatType(annotation))
         else:
-            return TypeAlias(annotation.id, annotation)
+            return (True, TypeAlias(annotation.id, annotation))
     elif hasattr(annotation, "slice"):
         types = []
         for i in annotation.slice.value.elts:
             types.append(type_converter(i))
-        return TupleType(types)
+        return (True, TupleType(types))
     else:
-        return None
+        return (False, tr("Does not understand the declared type."))
 
 def fun_type_converter(fun_def):
     param_types = []
     for par in fun_def.param_types:
-        param_types.append(type_converter(par))
-    ret_type = type_converter(fun_def.returns)
+        ok, ret_type = type_converter(par)
+        if not ok:
+            return (False, tr("Parameter '{}': {}").format(par, ret_type))
 
-    return FunctionType(param_types,ret_type,False,1)
+        param_types.append(ret_type)
+        
+    ok, ret_type = type_converter(fun_def.returns)
+    if not ok:
+        return (False, tr("Return type: {}").format(ret_type))
+
+    return (True, FunctionType(param_types,ret_type,False,1))
 
 if __name__ == "__main__":
     import sys

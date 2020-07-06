@@ -131,6 +131,10 @@ TRANSLATOR_DICT = {
     , "Missing variable declaration for variable: {}" : { 'fr' : "Il manque la déclaration de la variable: {}" }
     , "Unused variable" : { 'fr' : "Variable inutilisée" }
     , "The variable '{}' is declared but not used" : { 'fr' : "La variable '{}' est déclarée mais n'est pas utilisée."}
+    , "Does not understand the declared type." : { 'fr' : "Je ne comprends pas le type déclaré." }
+    , "Parameter '{}': {}" : { 'fr' : "Paramètre '{}' : {}"}
+    , "Return type: {}" : { 'fr' : "Type de retour : {}"}
+    , "Type expression problem" : { 'fr' : "Problème d'expression de type"}
 }
 
 def tr(msg):
