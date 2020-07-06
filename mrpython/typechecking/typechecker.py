@@ -274,7 +274,7 @@ def type_check_Program(prog):
 
     # third step : process each function to fill the global environment
     for (fun_name, fun_def) in prog.functions.items():
-        if not hasattr(fun_def.returns,"id"):
+        if fun_def.returns is None:
             ctx.add_type_error(MissingReturnTypeError(fun_def, fun_def.ast.lineno, fun_def.ast.col_offset))
             return ctx
 

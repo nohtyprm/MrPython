@@ -28,8 +28,8 @@ def type_converter(annotation):
 
 def fun_type_converter(fun_def):
     param_types = []
-    for par in fun_def.param_types:
-        ok, ret_type = type_converter(par)
+    for (par, par_type) in zip(fun_def.parameters, fun_def.param_types):
+        ok, ret_type = type_converter(par_type)
         if not ok:
             return (False, tr("Parameter '{}': {}").format(par, ret_type))
 
