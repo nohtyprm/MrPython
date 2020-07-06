@@ -366,7 +366,7 @@ def type_check_FunctionDef(func_def, ctx):
             ctx.add_type_error(UnsupportedNodeError(instr))
             # we abort the type-checking of this function
             ctx.nb_returns = 0
-            ctx.pop_parent()
+            #ctx.pop_parent()
             ctx.unregister_function_def()
             return
 
@@ -374,7 +374,7 @@ def type_check_FunctionDef(func_def, ctx):
         instr.type_check(ctx)
         if ctx.fatal_error:
             ctx.nb_returns = 0
-            ctx.pop_parent()
+            #ctx.pop_parent()
             ctx.unregister_function_def()
             return
 
