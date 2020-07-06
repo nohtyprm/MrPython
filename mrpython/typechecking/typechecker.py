@@ -108,10 +108,10 @@ class TypingContext:
 
         _, parent_local_declare = self.parent_decl_stack.pop()
         for (var_name, var_info) in self.declared_env.items():
-            if (var_name, var_info) not in parent_local_declare.items():
+            if (var_name, _) not in parent_local_declare.items():
                 # XXX: barendregt convention too strong ?
                 # self.dead_variables.add(var)
-                if (var_name, var_info) not in self.local_env.items():
+                if (var_name, _) not in self.local_env.items():
                     self.add_type_error(NotUsedDeclarationWarning(self.function_def, var_name,var_info))
 
         self.declared_env = parent_local_declare
@@ -629,12 +629,14 @@ def type_check_DeclareVar(declareVar, ctx, global_scope = False):
     if strict:
         if working_var.var_name in declared_types:
             var_type = declared_types[working_var.var_name]
-            ctx.declared_env[working_var.var_name] = (var_type, ctx.fetch_scope_mode())
+            ctx.declared_env[working_var.var_name] = (var_type, { "lineno" : declareVar.ast.lineno
+                                                                  , "col_offset" : declareVar.ast.col_offset})
             return True
         else:
             return False
     else:
-        ctx.declared_env[working_var.var_name] = (working_type, ctx.fetch_scope_mode())
+        ctx.declared_env[working_var.var_name] = (working_type, { "lineno" : declareVar.ast.lineno
+                                                                  , "col_offset" : declareVar.ast.col_offset})
         return True
 
 DeclareVar.type_check = type_check_DeclareVar
@@ -2425,17 +2427,16 @@ class AssertionInFunctionWarning(TypeError):
         return False
 
 class NotUsedDeclarationWarning(TypeError):
-    def __init__(self, fun_def, var_name, var_type):
+    def __init__(self, fun_def, var_name, var_info):
         self.fun_def = fun_def
         self.var_name = var_name
-        self.var_type = var_type
+        self.var_type, self.var_info = var_info
 
     def fail_string(self):
-        return "NotUsedDeclarationWarning[{}]@{}:{}".format(self.var_name, self.fun_def.ast.lineno, self.fun_def.ast.col_offset)
+        return "NotUsedDeclarationWarning[{}]@{}:{}".format(self.var_name, self.var_info['lineno'], self.var_info['col_offset'])
 
     def report(self, report):
-        report.add_convention_error('warning', tr("Unused variable"), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
-                                    , details=tr("The variable '{}' is declared but not used").format(self.var_name))
+        report.add_convention_error('warning', tr("Unused variable"), self.var_info['lineno'], self.var_info['col_offset'], details=tr("The variable '{}' is declared but not used").format(self.var_name))
 
     def is_fatal(self):
         return False
