@@ -5,6 +5,17 @@ except ImportError:
     from type_ast import *
     from translate import tr
 
+def mk_container_type(container_id, element_value, annotation):
+    ok, element_type = type_converter(element_value)
+    if not ok:
+        return (False, element_type)
+
+    if container_id == 'Sequence':
+        return (True, SequenceType(element_type, annotation))
+    elif container_id == 'List':
+        return (True, ListType(element_type, annotation))
+    else:
+        return (False, tr("Unsupported container type: {}").format(container_id))
 
 def type_converter(annotation):
     if hasattr(annotation, "id"):
@@ -18,15 +29,21 @@ def type_converter(annotation):
             return (True, FloatType(annotation))
         elif annotation.id == "Number":
             return (False, tr("the `Number` type is deprecated, use `float` instead"))
+        elif annotation.id in PREDEFINED_TYPE_VARIABLES:
+            return (True, TypeVariable(annotation.id, annotation))
         else:
             return (True, TypeAlias(annotation.id, annotation))
     elif hasattr(annotation, "slice"):
-        types = []
-        for i in annotation.slice.value.elts:
-            types.append(type_converter(i))
-        return (True, TupleType(types))
-    else:
-        return (False, tr("Does not understand the declared type."))
+        if hasattr(annotation.value, "id"):
+            container_id = annotation.value.id
+            return mk_container_type(container_id, annotation.slice.value, annotation)
+        elif hasattr(annotation.slice.value, "elts"):    
+            types = []
+            for i in annotation.slice.value.elts:
+                types.append(type_converter(i))
+            return (True, TupleType(types))
+        else:
+            return (False, tr("Does not understand the declared type."))
 
 def fun_type_converter(fun_def):
     param_types = []
