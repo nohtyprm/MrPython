@@ -1,3 +1,7 @@
+"""
+Main module in charge of tracing.
+Manage the creation and sending of statements,
+"""
 import threading, os, tokenize
 import hashlib, uuid, getpass
 import copy
@@ -14,14 +18,13 @@ from tincan import (
     Group,
     LanguageMap,
     ActivityDefinition,
-    lrs_properties,
     tracing_config as config,
     tracing_io as io
 )
 from translate import tr
 
 
-def create_actor():
+def _create_actor():
     student_id = "https://www.lip6.fr/mocah/invalidURI/student-number:" + student_hash
     partner_id = "https://www.lip6.fr/mocah/invalidURI/partner-number:" + partner_hash
     StudentAgent = Agent(openid=student_id, name="student")
@@ -31,16 +34,15 @@ def create_actor():
     return AgentGroup
 
 
-def update_actor():
+def _update_actor():
     global actor
-    actor = create_actor()
+    actor = _create_actor()
 
 
-def init_id():
+def _init_id():
     """
     If the OS username is a digit integer, we hash it and use it to identify the user in the statements.
     We also identify the computer used with the hashed MAC Address
-    :return:
     """
     machine_id = str(uuid.getnode())
     student_hash = "default"
@@ -58,10 +60,11 @@ def init_id():
     return machine_id, student_hash, partner_hash, input_type
 
 
-def modify_student_number(student_number):
-    """o
+def _modify_student_number(student_number):
+    """
+    Check if hashed student_number is different than the current kept hash.
+    If that's the case, modify the kept hash send a statement
     :param student_number: str
-    :param student_context: str
     """
     global student_hash, input_type
     old_hash = student_hash
@@ -70,7 +73,7 @@ def modify_student_number(student_number):
     if old_hash != new_hash:
         student_hash = new_hash
         input_type = "user-input"
-        update_actor()
+        _update_actor()
         if old_hash == "default":
             verb = "initialized"
         else:
@@ -81,8 +84,10 @@ def modify_student_number(student_number):
                         "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": input_type})
 
 
-def modify_partner_number(partner_number):
+def _modify_partner_number(partner_number):
     """
+    Check if hashed partner_number is different than the current kept hash.
+    If that's the case, modify the kept hash send a statement
     :param partner_number: str
     """
     global partner_hash, input_type
@@ -92,7 +97,7 @@ def modify_partner_number(partner_number):
     if old_hash != new_hash:
         partner_hash = new_hash
         input_type = "user-input"
-        update_actor()
+        _update_actor()
         if old_hash == "default":
             verb = "initialized"
         else:
@@ -105,20 +110,20 @@ def modify_partner_number(partner_number):
 
 def check_modified_student_number(list_numbers):
     """
-    Change the hash identifier if the user type one (or two) integers in the form # student_number [partner_number]
-    Called in PyEditor and StudentRunner to check the first line of the editor
+    Change the hash identifiers if the user typed one (or two) integers in the form # student_number partner_number
+    Called in PyEditor and StudentRunner to check the first line of the editor.
     """
     pattern = re.compile(r'\s*#\s*(\d+)(\s+\d*)?', re.IGNORECASE)
     match = pattern.search(list_numbers)
     if match:
         student_number = match.group(1)
         partner_number = match.group(2)
-        modify_student_number(student_number)
+        _modify_student_number(student_number)
         if partner_number:
-            modify_partner_number(partner_number)
+            _modify_partner_number(partner_number)
 
 
-def is_function_definition(instruction):
+def _is_function_definition(instruction):
     pattern = re.compile(r'\s*def\s+(\w+)\(', re.IGNORECASE)
     match = pattern.match(instruction)
     if match:
@@ -126,9 +131,9 @@ def is_function_definition(instruction):
         return function_name
     return None
 
-def is_exercise_declaration(instruction):
-    pattern = re.compile(r'\s*#\s*ex\D*(\d+)\D+(\d+)', re.IGNORECASE)
 
+def _is_exercise_declaration(instruction):
+    pattern = re.compile(r'\s*#\s*ex\D*(\d+)\D+(\d+)', re.IGNORECASE)
     match = pattern.match(instruction)
     if match:
         theme_number = match.group(1)
@@ -147,11 +152,12 @@ def incoherence_found(function_name, theme_number, exercise_number):
 
 
 def check_incoherence_function_exercise(source):
+    # Check if there is an incoherence in the student's code: Exercise declared != Function name
     theme_number = None
     exercise_number = None
     for instruction in source:
-        maybe_exercise_declaration = is_exercise_declaration(instruction)
-        maybe_function_def = is_function_definition(instruction)
+        maybe_exercise_declaration = _is_exercise_declaration(instruction)
+        maybe_function_def = _is_function_definition(instruction)
         if maybe_exercise_declaration is not None:
             theme_number, exercise_number = maybe_exercise_declaration
         elif maybe_function_def is not None:
@@ -173,16 +179,16 @@ def check_incoherence_function_exercise(source):
     return None
 
 
-
 def student_hash_uninitialized():
     return student_hash == "default"
+
 
 def clear_stack():
     """Clear the stack of statements"""
     statement = io.get_statement()
     while statement:  # While there are statements
         statement = Statement.from_json(statement)
-        if send_statement_lrs(statement):  # If the statement could have been sent to the LRS
+        if _send_statement_lrs(statement):  # If the statement could have been sent to the LRS
             io.remove_statement()
             statement = io.get_statement()
         else:
@@ -196,6 +202,7 @@ def user_is_typing():
 
 
 def user_is_interacting():
+    """Keep the timestamp of the last interaction"""
     global last_interacting_timestamp
     last_interacting_timestamp = time.time()
 
@@ -207,7 +214,7 @@ def save_execution_start():
 
 
 def get_action_timestamps():
-    return (last_typing_timestamp, last_interacting_timestamp)
+    return last_typing_timestamp, last_interacting_timestamp
 
 
 def execution_duration():
@@ -217,7 +224,9 @@ def execution_duration():
 def update_active_timestamp():
     io.write_session_info(session, datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"))
 
-def send_statement_lrs(statement):
+
+def _send_statement_lrs(statement):
+    """Send statement to the LRS"""
     try:
         response = lrs.save_statement(statement)
     except OSError as e:
@@ -237,15 +246,16 @@ def send_statement_lrs(statement):
 
 def send_statement(verb_key, activity_key, activity_extensions=None):
     """Send a statement with the verb and activity keys and the context extensions"""
-    global statement_number
     if not tracing_active:
         return
+
     def thread_function(statement):
-        pass
         # Send statement and receive HTTP response
-        if not send_statement_lrs(statement):
-            io.add_statement(statement)
-    #Create the statement from the actor, verb, object and potentially the context
+        if not _send_statement_lrs(statement):
+            io.add_statement(statement) # Backup the statement if it couldn't been sent
+
+    global statement_number
+    # Create the statement from the actor, the verb and activity keys and potentially the context
     if verb_key not in verbs:
         print("Tracing: Missing verb key {}".format(verb_key))
         return
@@ -258,7 +268,6 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
         print("Tracing: Creating (without sending) statement {}, {} {}".format(statement_number, verb_key, activity_key))
     verb = verbs[verb_key]
     activity = activities[activity_key]
-    print(session)
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/machine-id": machine_id,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": input_type}
@@ -278,11 +287,7 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
         timestamp=statement_time
     )
     if debug_log:
-        data = json.loads(statement.to_json())
-        with open(debug_filepath, "a") as f:
-            f.write("STATEMENT " + str(statement_number) + "\n")
-            json.dump(data, f, indent=2)
-            f.write("\n")
+        io.add_statement_debug(statement, statement_number)
     statement_number += 1
     # Send the statement from another thread
     if send_to_LRS:
@@ -290,8 +295,7 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
         x.start()
 
 
-
-def send_statement_open_app():
+def initialize_tracing():
     global time_opened, session
     write_session_file = False
 
@@ -308,16 +312,16 @@ def send_statement_open_app():
         active_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         io.write_session_info(session, active_time)
 
-    #Initialize debug
+    # Initialize debug
     if debug_log:
-        file = open(debug_filepath, "w")  # Erase previous content
-        file.close()
-        print("Debug log enabled: All statements are kept in " + debug_filepath)
+        io.initialize_debug_file()
     time_opened = time.time()
     send_statement("opened", "application")
 
 
 def send_statement_close_app():
+    if not tracing_active:
+        return
     elapsed_seconds = int(time.time() - time_opened)
     m, s = divmod(elapsed_seconds, 60)
     h, m = divmod(m, 60)
@@ -330,11 +334,13 @@ def send_statement_close_app():
     send_statement("closed", "application", extensions)
 
 
-def add_extensions_error(error, error_category, filename = None, instruction = None):
+def _add_extensions_error(error, error_category, filename = None, instruction = None):
     try:
         groups = error_groups[error.class_name]
+        class_name = error.class_name
     except KeyError:
         groups = "No first group"
+        class_name = "No class name"
     if "&" in groups:
         first_group, second_group = groups.split("&")
     else:
@@ -343,7 +349,7 @@ def add_extensions_error(error, error_category, filename = None, instruction = N
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/severity": error.severity,  # warning or error
                   "https://www.lip6.fr/mocah/invalidURI/extensions/type": error.err_type,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/category": error_category,
-                  "https://www.lip6.fr/mocah/invalidURI/extensions/class": error.class_name,
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/class": class_name,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/message": error.error_details(),
                   "https://www.lip6.fr/mocah/invalidURI/extensions/instruction": instruction,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/line": error.line,
@@ -352,15 +358,19 @@ def add_extensions_error(error, error_category, filename = None, instruction = N
                   }
     if filename:
         extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filename"] = os.path.basename(filename)
+    print(extensions)
     return extensions
 
 
 def send_statement_execute(report, mode, filename):
     """Create and send a statement at the end of the execution of the students program"""
+    if not tracing_active:
+        return
     with tokenize.open(filename) as fp:
         source = fp.read()
         source = source.split('\n')
     # Send statements for all errors
+    manually_terminated = False
     nb_errors = 0
     nb_warnings = 0
     for error in report.convention_errors:
@@ -376,7 +386,7 @@ def send_statement_execute(report, mode, filename):
             instruction = source[error.line-1]
         else:
             instruction = "None"
-        extensions = add_extensions_error(error, "convention", filename, instruction)
+        extensions = _add_extensions_error(error, "convention", filename, instruction)
         send_statement("received", activity, activity_extensions=extensions)
 
     for error in report.compilation_errors:
@@ -392,10 +402,12 @@ def send_statement_execute(report, mode, filename):
             instruction = source[error.line-1]
         else:
             instruction = "None"
-        extensions = add_extensions_error(error, "compilation", filename, instruction)
+        extensions = _add_extensions_error(error, "compilation", filename, instruction)
         send_statement("received", activity, activity_extensions=extensions)
 
     for error in report.execution_errors:
+        if(error.err_type == tr("User interruption")):
+            manually_terminated = True
         if error.severity == "error":
             nb_errors += 1
             activity = "execution-error"
@@ -408,19 +420,27 @@ def send_statement_execute(report, mode, filename):
             instruction = source[error.line-1]
         else:
             instruction = "None"
-        extensions = add_extensions_error(error, "execution", filename, instruction)
+        extensions = _add_extensions_error(error, "execution", filename, instruction)
         send_statement("received", "execution-error", activity_extensions=extensions)
 
     #  Send final statement: Execution passed or failed
     if nb_errors == 0:
         verb = "passed"
+    elif manually_terminated:
+        verb = "terminated"
     else:
         verb = "failed"
+
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": mode,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/filename": os.path.basename(filename),
                   "https://www.lip6.fr/mocah/invalidURI/extensions/nb-errors": nb_errors,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/nb-warnings": nb_warnings}
-    if not (report.has_compilation_error() or report.has_execution_error()) and mode == tr("student") and report.nb_defined_funs > 0:
+    if manually_terminated:
+        t = execution_duration()
+        t = str(round(t, 4)) + " seconds"
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/execution-duration"] = t
+    if not (report.has_compilation_error() or report.has_execution_error()) and mode == tr("student") and \
+            report.nb_defined_funs > 0:
         extensions["https://www.lip6.fr/mocah/invalidURI/extensions/nb-asserts"] = report.nb_passed_tests
     else:
         extensions["https://www.lip6.fr/mocah/invalidURI/extensions/nb-asserts"] = "unchecked"
@@ -429,6 +449,8 @@ def send_statement_execute(report, mode, filename):
 
 def send_statement_evaluate(report, mode, instruction):
     """Create and send a statement at the end of the execution of the students program"""
+    if not tracing_active:
+        return
     # Send statements for all errors
     nb_errors = 0
     nb_warnings = 0
@@ -441,7 +463,7 @@ def send_statement_evaluate(report, mode, instruction):
             activity = "evaluation-warning"
         else:
             continue
-        extensions = add_extensions_error(error, "convention", instruction=instruction)
+        extensions = _add_extensions_error(error, "convention", instruction=instruction)
         send_statement("received", activity, activity_extensions=extensions)
 
     for error in report.compilation_errors:
@@ -453,7 +475,7 @@ def send_statement_evaluate(report, mode, instruction):
             activity = "evaluation-warning"
         else:
             continue
-        extensions = add_extensions_error(error, "compilation", instruction=instruction)
+        extensions = _add_extensions_error(error, "compilation", instruction=instruction)
         send_statement("received", activity, activity_extensions=extensions)
 
     for error in report.execution_errors:
@@ -465,7 +487,7 @@ def send_statement_evaluate(report, mode, instruction):
             activity = "evaluation-warning"
         else:
             continue
-        extensions = add_extensions_error(error, "execution", instruction=instruction)
+        extensions = _add_extensions_error(error, "execution", instruction=instruction)
         send_statement("received", activity, activity_extensions=extensions)
 
 
@@ -481,30 +503,33 @@ def send_statement_evaluate(report, mode, instruction):
     send_statement(verb, "evaluation", activity_extensions=extensions)
 
 
-statement_number = 1 # for debug
-
-# global variables used to keep tracing information
-machine_id, student_hash, partner_hash, input_type = init_id()
-session = None  # Initialized in send_statement_open_app()
+#
+# global variables used during tracing
+#
+statement_number = 1  # for debug and print
+# Identifiers
+machine_id, student_hash, partner_hash, input_type = _init_id()
+session = None  # Initialized in initialize_tracing()
+# Tracing behaviour
 tracing_active = config.tracing_active
 send_to_LRS = config.send_to_LRS
 debug_log = config.debug_log
-debug_filepath = config.debug_filepath
+# Error and function data
 error_groups = config.error_groups
 function_names_context = config.function_names_context
+# Timestamps
 last_typing_timestamp = None
 last_interacting_timestamp = None
 start_execution_timestamp = None
 
-# xAPI setup
+#
+# xAPI and LRS setup
+#
 lrs = RemoteLRS(
     version=config.lrs_version,
     endpoint=config.lrs_endpoint,
     username=config.lrs_username,
     password=config.lrs_password)
-actor = create_actor()
+actor = _create_actor()
 verbs = config.verbs
 activities = config.activities
-
-session_filepath = config.session_filepath
-

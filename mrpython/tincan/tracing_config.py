@@ -1,3 +1,7 @@
+"""
+Contains and modify MrPython behaviour, filepaths for input/output, LRS properties,
+xAPI verbs and activities, error categories and function_names
+"""
 from tincan import (
     Verb,
     Activity,
@@ -15,6 +19,7 @@ debug_log = True and tracing_active  # Keep a record of all statements produced 
 backup_filepath =  os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_backup.json')
 debug_filepath = os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_debug.txt')
 session_filepath = os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_session.txt')
+
 # LRS properties
 
 """
@@ -106,7 +111,7 @@ activities = {
                 name=LanguageMap({'en-US': 'a programming execution'}),
                 description=LanguageMap({'en-US': 'execution of the student\'s editor'}))),
     "evaluation": Activity(
-        id="https://www.lip6.fr/mocah/invalidURI/activity-types/interpretation",
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/evaluation",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'a programming evaluation'}),
             description=LanguageMap({'en-US': 'interpretation made by the MrPython interpretor'}))),
@@ -156,7 +161,7 @@ activities = {
             name=LanguageMap({'en-US': 'an idle state'}))),
     }
 
-# Errors and functions details
+# Errors and functions details. Mapping error class_name -> error category
 
 error_groups = {"AssertionInFunctionWarning": "Semantique&Python101",
                  "ForbiddenMultiAssign": "Syntaxe&Python101",
@@ -223,8 +228,10 @@ error_groups = {"AssertionInFunctionWarning": "Semantique&Python101",
                  "NameError": "Syntaxe",
                  "ZeroDivisionError": "Semantique",
                  "AssertionError": "Tests",
-                 "OtherExecutionError": "Autre"}
+                 "OtherExecutionError": "Autre",
+                 "UserTerminatedError": "Autre"}
 
+# Mapping function name -> theme number, exercise number, question number
 function_names_context = {
     "aire_disque": {
       "theme-number": 1,

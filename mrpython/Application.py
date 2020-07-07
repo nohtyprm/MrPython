@@ -67,7 +67,7 @@ class Application:
         self.state = "idle"  # 3 states: idle, interacting or typing
 
         tracing.clear_stack()
-        tracing.send_statement_open_app()
+        tracing.initialize_tracing()
 
     def run(self):
         """ Run the application """
@@ -273,13 +273,10 @@ class Application:
             if self.running_interpreter_proxy and self.running_interpreter_proxy.process.is_alive():
                 report = RunReport()
                 report.set_header("\n====== STOP ======\n")
-                report.add_execution_error('error', tr('User interruption'))
+                report.add_execution_error('error', tr('User interruption'), class_name='UserTerminatedError')
                 report.set_footer("\n==================\n")
                 self.running_interpreter_callback(False, report)
             self.running_interpreter_callback = None
-            execution_duration = tracing.execution_duration()
-            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/execution-duration": execution_duration}
-            tracing.send_statement("terminated", "execution", extensions)
             return
 
         # not (yet) running
