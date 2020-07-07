@@ -132,6 +132,7 @@ TRANSLATOR_DICT = {
     , "Unused variable" : { 'fr' : "Variable inutilisée" }
     , "The variable '{}' is declared but not used" : { 'fr' : "La variable '{}' est déclarée mais n'est pas utilisée."}
     , "Does not understand the declared type." : { 'fr' : "Je ne comprends pas le type déclaré." }
+    , "Does not understand the declared container type." : { 'fr' : "Je ne comprends pas le type de conteneur déclaré." }
     , "Parameter '{}': {}" : { 'fr' : "Paramètre '{}' : {}"}
     , "Return type: {}" : { 'fr' : "Type de retour : {}"}
     , "Type expression problem" : { 'fr' : "Problème d'expression de type"}

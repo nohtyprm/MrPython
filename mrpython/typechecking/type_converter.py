@@ -20,6 +20,9 @@ def mk_container_type(container_id, element_value, annotation):
         return (False, tr("Unsupported container type: {}").format(container_id))
 
 def type_converter(annotation):
+    # import astpp
+    # print(astpp.dump(annotation))
+
     if hasattr(annotation, "id"):
         if annotation.id == "int":
             return (True, IntType(annotation))
@@ -45,7 +48,9 @@ def type_converter(annotation):
                 types.append(type_converter(i))
             return (True, TupleType(types))
         else:
-            return (False, tr("Does not understand the declared type."))
+            return (False, tr("Does not understand the declared container type."))
+    else:
+        return (False, tr("Does not understand the declared type."))
 
 def fun_type_converter(fun_def):
     param_types = []
