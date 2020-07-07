@@ -14,6 +14,8 @@ def mk_container_type(container_id, element_value, annotation):
         return (True, SequenceType(element_type, annotation))
     elif container_id == 'List':
         return (True, ListType(element_type, annotation))
+    elif container_id == 'Iterable':
+        return (True, IterableType(element_type, annotation))
     else:
         return (False, tr("Unsupported container type: {}").format(container_id))
 

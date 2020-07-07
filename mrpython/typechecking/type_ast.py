@@ -456,9 +456,9 @@ class ListType(TypeAST):
 
     def __str__(self):
         if self.elem_type:
-            return "list[{}]".format(str(self.elem_type))
+            return "List[{}]".format(str(self.elem_type))
         else:
-            return "emptylist"
+            return "EmptyList"
 
     def __repr__(self):
         return "ListType({})".format(repr(self.elem_type)) if self.elem_type else "ListType()"
