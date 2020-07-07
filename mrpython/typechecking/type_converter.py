@@ -16,6 +16,8 @@ def type_converter(annotation):
             return (True, StrType(annotation))
         elif annotation.id == "float":
             return (True, FloatType(annotation))
+        elif annotation.id == "Number":
+            return (False, tr("the `Number` type is deprecated, use `float` instead"))
         else:
             return (True, TypeAlias(annotation.id, annotation))
     elif hasattr(annotation, "slice"):

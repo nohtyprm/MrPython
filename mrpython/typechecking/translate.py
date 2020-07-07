@@ -135,6 +135,7 @@ TRANSLATOR_DICT = {
     , "Parameter '{}': {}" : { 'fr' : "Paramètre '{}' : {}"}
     , "Return type: {}" : { 'fr' : "Type de retour : {}"}
     , "Type expression problem" : { 'fr' : "Problème d'expression de type"}
+    , "the `Number` type is deprecated, use `float` instead" : { 'fr' : "le type `Number` n'est plus disponible, utiliser `float` en remplacement" }
 }
 
 def tr(msg):
