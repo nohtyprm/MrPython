@@ -38,6 +38,7 @@ def install_locals(locals):
     locals['Sequence'] = typing.Sequence
     locals['List'] = typing.List
     locals['Iterable'] = typing.Iterable
+    locals['Tuple'] = typing.Tuple
 
     for tvar in PREDEFINED_TYPE_VARIABLES:
         locals[tvar] = typing.TypeVar(tvar)

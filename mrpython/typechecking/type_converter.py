@@ -5,7 +5,7 @@ except ImportError:
     from type_ast import *
     from translate import tr
 
-def mk_container_type(container_id, element_value, annotation):
+def mk_container_type(container_id, element_value, annotation):    
     ok, element_type = type_converter(element_value)
     if not ok:
         return (False, element_type)
@@ -19,6 +19,18 @@ def mk_container_type(container_id, element_value, annotation):
     else:
         return (False, tr("Unsupported container type: {}").format(container_id))
 
+def mk_tuple_type(tuple_value, annotation):
+    if hasattr(annotation.slice.value, "elts"):    
+        elem_types = []
+        for elem_annot in annotation.slice.value.elts:
+            ok, elem_type = type_converter(elem_annot)
+            if not ok:
+                return (False, elem_type)
+            elem_types.append(elem_type)
+        return (True, TupleType(elem_types))
+    else:
+        return (False, tr("Does not understand the declared tuple type (missing element types)."))
+        
 def type_converter(annotation):
     # import astpp
     # print(astpp.dump(annotation))
@@ -39,14 +51,14 @@ def type_converter(annotation):
         else:
             return (True, TypeAlias(annotation.id, annotation))
     elif hasattr(annotation, "slice"):
+        # import astpp
+        # print("type annot = {}".format(astpp.dump(annotation)))
         if hasattr(annotation.value, "id"):
             container_id = annotation.value.id
-            return mk_container_type(container_id, annotation.slice.value, annotation)
-        elif hasattr(annotation.slice.value, "elts"):    
-            types = []
-            for i in annotation.slice.value.elts:
-                types.append(type_converter(i))
-            return (True, TupleType(types))
+            if container_id == "Tuple":
+                return mk_tuple_type(annotation.slice.value, annotation)
+            else:
+                return mk_container_type(container_id, annotation.slice.value, annotation)
         else:
             return (False, tr("Does not understand the declared container type."))
     else:

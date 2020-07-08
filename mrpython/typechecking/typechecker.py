@@ -435,25 +435,32 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
 def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
     lineno = assign_target.ast.lineno
 
-    var_name = assign_target.var_name
-    if var_name not in ctx.declared_env:
-        ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("Missing variable declaration for variable: {}").format(var_name)))
-        return None
-    
-    decl_type, idk = ctx.declared_env[var_name]
+    vars = []
+    if isinstance(assign_target, LHSTuple):
+        vars = assign_target.variables()
+    else:
+        vars = [assign_target]
+
     declared_types = dict()
 
-    if decl_type is None:
-        ctx.add_type_error(TypeExprParseError(lineno, assign_target.ast.col_offset, annotation.id))
-        return None
+    for var in vars:
+        var_name = var.var_name
+        if var_name not in ctx.declared_env:
+            ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("Missing variable declaration for variable: {}").format(var_name)))
+            return None
+    
+        decl_type, idk = ctx.declared_env[var_name]
+        if decl_type is None:
+            ctx.add_type_error(TypeExprParseError(lineno, assign_target.ast.col_offset, annotation.id))
+            return None
 
-    udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
+        udecl_type, unknown_alias = decl_type.unalias(ctx.type_defs)
 
-    if udecl_type is None:
-        ctx.add_type_error(UnknownTypeAliasError(decl_type, unknown_alias, lineno, assign_target.ast.col_offset))
-        return None
-    else:
-        declared_types[var_name] = udecl_type
+        if udecl_type is None:
+            ctx.add_type_error(UnknownTypeAliasError(decl_type, unknown_alias, lineno, assign_target.ast.col_offset))
+            return None
+        else:
+            declared_types[var_name] = udecl_type
 
     return declared_types
 

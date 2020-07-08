@@ -138,6 +138,7 @@ TRANSLATOR_DICT = {
     , "Type expression problem" : { 'fr' : "Problème d'expression de type"}
     , "the `Number` type is deprecated, use `float` instead" : { 'fr' : "le type `Number` n'est plus disponible, utiliser `float` en remplacement" }
     , "Unsupported container type: {}" : { 'fr' : "Ce type de contenant n'est pas supporté : {}" }
+    , "Does not understand the declared tuple type (missing element types)." : { 'fr' : "Je ne comprends pas le type n-uplet déclaré, il manque les types des éléments."}
 }
 
 def tr(msg):
