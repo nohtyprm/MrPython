@@ -406,46 +406,9 @@ def parse_var_name(declaration):
 
     return (None, tr("Missing ':' character before variable type declaration"))
 
-def parse_declaration_type(ctx, lineno):
-    """parse a declared type: returns a pair (v, T) with v the declared
-variable name and T its type, or (None, msg, err_cat) with an informational message if the parsing fails."""
-
-    decl_line = ctx.prog.get_source_line(lineno).strip()
-
-    if (not decl_line) or decl_line[0] != '#':
-        return (None, tr("Missing variable declaration"), 'header-char')
-
-    # HACK: avoid parsing type aliases as variable declarations
-    type_alias, _ = type_def_parser(decl_line)
-    if type_alias is not None:
-        return (None, tr("Not a variable type declaration : it is a type alias."), 'noerror')
-
-    decl_line = decl_line[1:].strip()
-    var_name, decl_line = parse_var_name(decl_line)
-    if var_name is None:
-        return (None, decl_line, 'colon')
-
-    decl_line = decl_line[1:].strip()
-    decl_type = var_type_parser(decl_line)
-    #print("rest='{}'".format(decl_line[decl_type.end_pos.offset:]))
-    if decl_type.iserror: # or decl_line[decl_type.end_pos.offset:]!='': (TODO some sanity check ?)
-        return (None, tr("I don't understand the declared type for variable '{}'").format(var_name), 'parse')
-
-    remaining = decl_line[decl_type.end_pos.offset:].strip()
-    if remaining != '' and not remaining.startswith('('):
-        return (None, tr("The declared type for variable '{}' has strange appended string: {}").format(var_name, remaining), 'parse')
-
-    return (var_name, decl_type.content, "")
-
 def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
 
     lineno = assign_target.ast.lineno
-
-    var_name1, decl_type1, err_cat1 = parse_declaration_type(ctx, lineno-1)
-    if(var_name1 is not None):
-        ctx.add_type_error(DifferentDeclarationWarning(lineno, var_name1))
-        return None
-
 
     var_name = assign_target.var_name
     ok, decl_type = type_converter(annotation)
@@ -472,11 +435,11 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
 def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
     lineno = assign_target.ast.lineno
 
-    var_name1, decl_type1, err_cat1 = parse_declaration_type(ctx, lineno-1)
-    if(var_name1 is not None):
-        ctx.add_type_error(DifferentDeclarationWarning(lineno, var_name1))
-
     var_name = assign_target.var_name
+    if var_name not in ctx.declared_env:
+        ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("Missing variable declaration for variable: {}").format(var_name)))
+        return None
+    
     decl_type, idk = ctx.declared_env[var_name]
     declared_types = dict()
 
@@ -690,7 +653,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
     if declaration:
         if hasattr(assign, "type_annotation"):
             ctx.add_type_error( DuplicateMultiAssignError(lineno,var.var_name))
-        # Assignation of variables that have already benn declared
+        # Assignation of variables that have already been declared
         declared_types = fetch_assign_declared_mypy_types(ctx, assign.target,True if assign.target.arity() == 1 else False )
 
     else: # ne priori declaration
@@ -743,7 +706,8 @@ def type_check_For(for_node, ctx):
             ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
             return False
 
-    declared_types = fetch_assign_declaration_types(ctx, for_node.target, True if for_node.target.arity() == 1 else False)
+            
+    declared_types = fetch_assign_declared_mypy_types(ctx, for_node.target, True if for_node.target.arity() == 1 else False)
     if declared_types is None:
         if for_node.target.arity() == 1:
             return False
