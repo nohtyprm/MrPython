@@ -287,8 +287,7 @@ class Application:
 
         reply = self.editor_list.get_current_editor().maybesave_run()
         if (reply != "cancel"):
-            #TODO: A remplacer
-            # self.editor_list.get_current_editor().save_send_instruction(program_execution=True)
+            self.editor_list.get_current_editor().send_update_changed_line(force_sending=True)
             tracing.send_statement("started", "execution")
             tracing.save_execution_start()
             file_name = self.editor_list.get_current_editor().long_title()

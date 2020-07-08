@@ -60,21 +60,20 @@ class StudentRunner:
             compile and execute """
         # Compile the code and get the AST from it, which will be used for all
         # the conventions checkings that need to be done
-        import logging
+
+        # If tracing is activated, small warning if the student number isn't initialized
         source = self.source.split("\n")
-        #TODO: Changestudent number tracing
-        '''
         if tracing.tracing_active:
             tracing.check_modified_student_number(source[0])
-            if tracing.student_hash_uninitialized():
+            if tracing.student_hash_uninitialized():  # User is not identified
                 error_message = ("Student number is not initialized.\n"
                                  "Please type in the first line your student number in the format:\n"
-                                 "#number or # number1 number2")
+                                 "# number or # your-number partner-number")
                 self.report.add_convention_error("warning", "Uninitialized student number", details=error_message)
             error_incoherence = tracing.check_incoherence_function_exercise(source)
-            if error_incoherence is not None:
+            if error_incoherence is not None:  # If theme and exercise number != Function name
                 self.report.add_convention_error("warning", "Context incoherence", details=error_incoherence)
-        '''
+
 
         try:
             self.AST = ast.parse(self.source, self.filename)

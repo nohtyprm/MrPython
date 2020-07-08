@@ -22,12 +22,6 @@ session_filepath = os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_session.t
 
 # LRS properties
 
-"""
-lrs_endpoint="https://cloud.scorm.com/lrs/90J41PMBAW/"
-lrs_version ="1.0.1" # 1.0.1 | 1.0.0 | 0.95 | 0.9
-lrs_username="gIX4lEOMvbXHPCLNmbc"
-lrs_password="DKXdFLk8RwgUXsvg2Xk"
-"""
 lrs_endpoint = "https://lrsmocah.lip6.fr/data/xAPI"
 lrs_version = "1.0.1" # 1.0.1 | 1.0.0 | 0.95 | 0.9
 lrs_username = "8cba24cdc8d3306dd8cd917d586fb5972789efbc"

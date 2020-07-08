@@ -152,7 +152,7 @@ def incoherence_found(function_name, theme_number, exercise_number):
 
 
 def check_incoherence_function_exercise(source):
-    # Check if there is an incoherence in the student's code: Exercise declared != Function name
+    # Check if there is an incoherence in the user's source code: Exercise declared != Function name
     theme_number = None
     exercise_number = None
     for instruction in source:
@@ -358,7 +358,6 @@ def _add_extensions_error(error, error_category, filename = None, instruction = 
                   }
     if filename:
         extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filename"] = os.path.basename(filename)
-    print(extensions)
     return extensions
 
 

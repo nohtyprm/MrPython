@@ -116,6 +116,7 @@ class ReadOnlyText(Text):
         self.bind("<<copy>>", self.copy_event)
 
     def copy_event(self,event):
+        # Trace copy event in the output console
         first = self.index("sel.first")
         last = self.index("sel.last")
         if first != "" and last != "":
@@ -313,11 +314,11 @@ class Console:
                 self.write("==> " + tr("Only one (successful) test found, it's probably not enough"), tags=('warning'))
                 report.add_convention_error("warning", tr("Missing tests")
                                             , details = tr("Only one (successful) test found, it's probably not enough")
-                                            , class_name="OneTestWarning")
+                                            , class_name="OneTestWarning")  # Error added for future tracing
             else:
                 self.write("==> " + tr("There is no test! you have to write tests!"), tags=('error'))
                 report.add_convention_error("error", tr("Missing tests"), details = tr("There is no test! you have to write tests!")
-                                            , class_name="NoTestError")
+                                            , class_name="NoTestError")  # Error added for future tracing
 
         
         self.write(report.footer, tags=(tag))

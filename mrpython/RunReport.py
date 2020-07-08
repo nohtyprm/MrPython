@@ -2,7 +2,7 @@
 from translate import tr
 
 class ErrorReport:
-    def __init__(self, severity, err_type, line, offset, details, class_name):
+    def __init__(self, severity, err_type, line, offset, details, class_name):  # Added class_name for tracing
         self.severity = severity # 'info' 'warning' 'error'    (red, orange, red)
         self.err_type = err_type
         self.line = line

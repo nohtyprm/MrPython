@@ -147,6 +147,8 @@ class PyEditor(HighlightingText):
         self.bind("<<copy>>", self.copied_event)
         self.bind("<<prev-move-cursor>>", self.prev_move_cursor_event)
         self.bind("<<move-cursor>>", self.move_cursor_event)
+
+        # These should probably be added to config...
         prev_move_cursor = ['<KeyPress-Left>', '<KeyPress-Right>', '<KeyPress-Up>', '<KeyPress-Down>',
                         '<ButtonPress-1>']
         move_cursor = ['<KeyRelease-Left>', '<KeyRelease-Right>', '<KeyRelease-Up>', '<KeyRelease-Down>',
@@ -970,7 +972,9 @@ class PyEditor(HighlightingText):
                       "https://www.lip6.fr/mocah/invalidURI/extensions/new-instruction": new_line.instruction}
         return extensions
 
-    def send_update_changed_line(self, newline = False):
+    def send_update_changed_line(self, newline = False, force_sending = True):
+        """Send a statement whenever a user modified an instruction.
+        force_sending is used to send  a statement when the user's program is executed"""
         if self.old_line is None:
             return
         old_line = self.old_line
@@ -980,7 +984,7 @@ class PyEditor(HighlightingText):
         not_both_empty = (old_line.instruction != "" and not old_line.instruction.isspace())
         not_both_empty = not_both_empty or (new_line.instruction != "" and not new_line.instruction.isspace())
         instruction_has_been_modified = old_line.instruction.strip() != new_line.instruction.strip()
-        if cursor_changed_line:
+        if cursor_changed_line or force_sending:
             if not_both_empty and instruction_has_been_modified:
                 if new_line.line_number == 1:
                     tracing.check_modified_student_number(new_line.instruction)
@@ -993,6 +997,9 @@ class PyEditor(HighlightingText):
                 self.old_line = self.create_line(cursor_line_number)
 
     def reset_line(self):
+        """Used after an undo, a redo or a multi-line text deletion in order to
+        consistently trace modified instructions
+        """
         self.old_line = None
 
     def send_keyword(self, end_word):
@@ -1006,7 +1013,7 @@ class PyEditor(HighlightingText):
         -the cursor has been moved (prev_move_cursor_event and move_cursor_event)
         end_word is the character of the previous cursor position.
 
-        We don't simply check all keypress because we want to prevent cases where the user types something
+        We don't simply check all keypresses because we want to prevent cases where the user types something
         like 'define' or 'assert'.
         In these cases, the user typed the keywords 'def' or 'as' but we don't want to trace these.
 
