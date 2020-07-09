@@ -53,6 +53,8 @@ class RunReport:
 
         self.nb_passed_tests = 0
 
+        self.first_line = ""  # To check if user identified him/herself in the first line
+
 
     def add_convention_error(self, severity, err_type, line=None, offset=None, details="", class_name = ""):
         self.convention_errors.append(ErrorReport(severity, err_type, line, offset, details, class_name))
@@ -71,6 +73,9 @@ class RunReport:
 
     def has_execution_error(self):
         return bool(self.execution_errors)
+
+    def add_first_line(self,first_line):
+        self.first_line = first_line
         
     def set_output(self, output):
         """Set the (standard) output of an execution."""

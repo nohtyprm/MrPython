@@ -320,6 +320,15 @@ class Console:
                 report.add_convention_error("error", tr("Missing tests"), details = tr("There is no test! you have to write tests!")
                                             , class_name="NoTestError")  # Error added for future tracing
 
+        # Check if user identified themselves for tracing
+        if exec_mode == 'exec' and status and self.mode == tr('student'):
+            tracing.check_modified_student_number(report.first_line)
+            if tracing.student_hash_uninitialized():  # User is not identified
+                error_message = ("Student number is not initialized.\n"
+                                 "Please type in the first line your student number in the format:\n"
+                                 "# number or # your-number partner-number")
+                report.add_convention_error("warning", "Uninitialized student number", details=error_message)
+
         
         self.write(report.footer, tags=(tag))
 
