@@ -122,7 +122,6 @@ class Import:
 
 class FunctionDef:
     def __init__(self, node):
-
         self.ast = node
         self.name = self.ast.name
         self.python101ready = True
@@ -137,6 +136,7 @@ class FunctionDef:
 
         first_instr = self.ast.body[0]
         next_instr_index = 0
+        self.docstring = None
         if isinstance(first_instr, ast.Expr) and isinstance(first_instr.value, ast.Str):
             self.docstring = first_instr.value.s
             next_instr_index = 1

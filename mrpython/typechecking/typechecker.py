@@ -274,6 +274,9 @@ def type_check_Program(prog):
 
     # third step : process each function to fill the global environment
     for (fun_name, fun_def) in prog.functions.items():
+        if fun_def.docstring is None:
+            ctx.add_type_error(NoFunctionDocWarning(fun_def))
+        
         if fun_def.returns is None:
             ctx.add_type_error(MissingReturnTypeError(fun_def, fun_def.ast.lineno, fun_def.ast.col_offset))
             return ctx
@@ -2546,6 +2549,22 @@ class WrongFunctionDefError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr('Wrong definition'), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
                                     , tr("The function '{}' has no correct specification.").format(self.fun_def.ast.name))
+
+class NoFunctionDocWarning(TypeError):
+    def __init__(self, fun_def):
+        self.fun_def = fun_def
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "NoFunctionDocWarning[{}]@{}:{}".format(str(self.fun_def.ast.name)
+                                                       , self.fun_def.ast.lineno
+                                                       , self.fun_def.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr('Wrong definition'), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
+                                    , tr("The function '{}' has no documentation.").format(self.fun_def.ast.name))
 
 
 

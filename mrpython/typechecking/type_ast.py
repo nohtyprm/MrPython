@@ -209,10 +209,10 @@ class NumberType(TypeAST):
         return isinstance(other, NumberType)
 
     def __str__(self):
-        return "Number"
+        return "float"  # Hack: number is the same as float (since v.3.99.1)
 
     def __repr__(self):
-        return "NumberType()"
+        return "FloatType()"
 
 
 class NoneTypeType(TypeAST):
