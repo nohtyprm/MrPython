@@ -86,7 +86,7 @@ TRANSLATOR_DICT = {
     , "Forbidden use of parameter '{}' in assignment" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé dans une affectation (ou initialisation)" }
     , "Forbidden use of parameter '{}' in with construct" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé comme variable de la construction with" }
     , "the arguments of `range` are incorrect." : { 'fr' : 'les arguments de `range` sont incorrects.'  }
-    , "The iterator variable '{}' is already declared" : { 'fr' : "La variable d'itération '{}' est déjà déclarée" }
+    , "The iterator variable '{}' is already in use." : { 'fr' : "La variable d'itération '{}' est déjà utilisée." }
     , "The `with` variable '{}' is already declared" : { 'fr' : "La variable '{}' du `with` est déjà déclarée" }
     , "Forbidden use of parameter '{}' as iteration variable" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé comme variable d'itération" }
     , "Forbidden use of parameter '{}' as comprehension variable" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé comme variable de compréhension" }
@@ -137,7 +137,7 @@ TRANSLATOR_DICT = {
     , "Parameter '{}': {}" : { 'fr' : "Paramètre '{}' : {}"}
     , "Return type: {}" : { 'fr' : "Type de retour : {}"}
     , "Type expression problem" : { 'fr' : "Problème d'expression de type"}
-    , "the `Number` type is deprecated, use `float` instead" : { 'fr' : "le type `Number` n'est plus disponible, utiliser `float` en remplacement" }
+    , "the `{}` type is deprecated, use `{}` instead" : { 'fr' : "le type `{}` n'est plus disponible, utiliser `{}` en remplacement" }
     , "Unsupported container type: {}" : { 'fr' : "Ce type de contenant n'est pas supporté : {}" }
     , "Does not understand the declared tuple type (missing element types)." : { 'fr' : "Je ne comprends pas le type n-uplet déclaré, il manque les types des éléments."}
 }

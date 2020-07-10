@@ -3190,7 +3190,7 @@ class IterVariableInEnvError(TypeError):
 
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
-                                    , tr("The iterator variable '{}' is already declared").format(self.var_name))
+                                    , tr("The iterator variable '{}' is already in use.").format(self.var_name))
 
 class WithVariableInEnvError(TypeError):
     def __init__(self, var_name, node):

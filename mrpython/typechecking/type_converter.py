@@ -32,9 +32,13 @@ def mk_tuple_type(tuple_value, annotation):
         return (False, tr("Does not understand the declared tuple type (missing element types)."))
         
 def type_converter(annotation):
-    # import astpp
-    # print(astpp.dump(annotation))
+    import astpp
+    print(astpp.dump(annotation))
 
+    # Special case for None/NonType
+    if hasattr(annotation, "value") and annotation.value == None:
+        return (True, NoneTypeType(annotation))
+    
     if hasattr(annotation, "id"):
         if annotation.id == "int":
             return (True, IntType(annotation))
@@ -45,7 +49,9 @@ def type_converter(annotation):
         elif annotation.id == "float":
             return (True, FloatType(annotation))
         elif annotation.id == "Number":
-            return (False, tr("the `Number` type is deprecated, use `float` instead"))
+            return (False, tr("the `{}` type is deprecated, use `{}` instead").format('Number', 'float'))
+        elif annotation.id == "NoneType":
+            return (False, tr("the `{}` type is deprecated, use `{}` instead").format('NoneType', 'None'))
         elif annotation.id in PREDEFINED_TYPE_VARIABLES:
             return (True, TypeVariable(annotation.id, annotation))
         else:
