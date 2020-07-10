@@ -1,6 +1,6 @@
+##!FAIL: TypeComparisonError[float/str]@12:24
 
-
-def f(l :Iterable[Tuple[float,Tuple[float,float,Tuple[float,float,float], float], float]]) -> float:
+def f(l :Iterable[Tuple[float,Tuple[float,str,Tuple[float,float,float], float], float]]) -> float:
     """"""
 
     a : float
