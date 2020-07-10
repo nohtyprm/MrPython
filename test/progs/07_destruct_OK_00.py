@@ -1,10 +1,10 @@
 
 
-def f(a):
-    """ Number -> Number """
+def f(a : float) -> float:
+    """"""
 
-    # g : Number
-    # e : Number
+    g : float
+    e : float
     b, (c, d, (e, _, f), _), g = (a, (2, 3, (4, 5, 6), 7), 8)
 
     return a + b + c + d + e + f + g

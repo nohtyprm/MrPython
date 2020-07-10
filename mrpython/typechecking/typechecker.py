@@ -446,8 +446,11 @@ def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
     for var in vars:
         var_name = var.var_name
         if var_name not in ctx.declared_env:
-            ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("Missing variable declaration for variable: {}").format(var_name)))
-            return None
+            if strict:
+                ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("Missing variable declaration for variable: {}").format(var_name)))
+                return None
+            else:
+                continue
     
         decl_type, idk = ctx.declared_env[var_name]
         if decl_type is None:
@@ -539,22 +542,26 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
 
     return declared_types
 
-def linearize_tuple_type(working_var, working_type, declared_types, ctx, expr, strict=False):
+def check_linearized_tuple_type(working_var, working_type, declared_types, ctx, expr, strict=False):
+    
     if not isinstance(working_var, LHSTuple):
         #check if working_var is an instance of LHSVar
         if isinstance(working_var, LHSVar):
+            
             if working_var.var_name == '_': # just skip this check
                 return True
-            if strict:
-                if working_var.var_name in declared_types:
-                    var_type = declared_types[working_var.var_name]
-                    if not var_type.type_compare(ctx, expr, working_type, raise_error=False):
-                        ctx.add_type_error(VariableTypeError(expr, working_var, declared_types[working_var.var_name], working_type))
-                        return False
-                    ctx.local_env[working_var.var_name] = (var_type, ctx.fetch_scope_mode())
-                    return True
-                else:
+
+            if working_var.var_name in declared_types:
+                var_type = declared_types[working_var.var_name]
+                if not var_type.type_compare(ctx, expr, working_type, raise_error=False):
+                    ctx.add_type_error(VariableTypeError(expr, working_var, declared_types[working_var.var_name], working_type))
                     return False
+                ctx.local_env[working_var.var_name] = (var_type, ctx.fetch_scope_mode())
+                return True
+
+            # not declared
+            if strict:
+                return False
             else:
                 ctx.local_env[working_var.var_name] = (working_type, ctx.fetch_scope_mode())
                 return True
@@ -569,7 +576,7 @@ def linearize_tuple_type(working_var, working_type, declared_types, ctx, expr, s
         ctx.add_type_error(TupleDestructArityError(expr, working_type, working_type.size(), working_var.arity()))
         return False
     for i in range(working_var.arity()):
-        if not linearize_tuple_type(working_var.elements[i], working_type.elem_types[i],  declared_types, ctx, expr):
+        if not check_linearized_tuple_type(working_var.elements[i], working_type.elem_types[i],  declared_types, ctx, expr):
             return False
 
     return True
@@ -656,19 +663,22 @@ def type_check_Assign(assign, ctx, global_scope = False):
     # here we consider an initialization and not an actual assignment
 
     # next fetch the declared types  (only required for mono-variables)
-
+    
     if declaration:
         if hasattr(assign, "type_annotation"):
             ctx.add_type_error( DuplicateMultiAssignError(lineno,var.var_name))
         # Assignation of variables that have already been declared
         declared_types = fetch_assign_declared_mypy_types(ctx, assign.target,True if assign.target.arity() == 1 else False )
 
-    else: # ne priori declaration
-        if not hasattr(assign, "type_annotation"):
-            ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'missing', lineno, tr("Missing variable declaration for variable: {}").format(var.var_name)))
-            return False
+    else: # no priori declaration
+        if assign.target.arity() == 1:
+            if not hasattr(assign, "type_annotation"):
+                ctx.add_type_error(DeclarationError(ctx.function_def, assign, 'missing', lineno, tr("Missing variable declaration for variable: {}").format(var.var_name)))
+                return False
 
-        declared_types = fetch_assign_mypy_types(ctx, assign.target,assign.type_annotation, True if assign.target.arity() == 1 else False)
+            declared_types = fetch_assign_mypy_types(ctx, assign.target,assign.type_annotation, True if assign.target.arity() == 1 else False)
+        else:
+            declared_types = dict()
 
     if declared_types is None:
         # XXX: was not an error => declared_types = dict()
@@ -686,7 +696,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
 
     # here we have a destructured initialization, it is not necessary to declare variables
 
-    if not linearize_tuple_type(assign.target, expr_type, declared_types, ctx, assign.target, strict):
+    if not check_linearized_tuple_type(assign.target, expr_type, declared_types, ctx, assign.target, strict):
         return False
 
     assign.side_effect(ctx)
@@ -750,7 +760,7 @@ def type_check_For(for_node, ctx):
         if for_node.target.arity() == 1:
             strict = True
 
-        if not linearize_tuple_type(for_node.target, expr_type, declared_types, ctx, for_node.target, strict):
+        if not check_linearized_tuple_type(for_node.target, expr_type, declared_types, ctx, for_node.target, strict):
             ctx.pop_parent()
             return False
 
@@ -1703,7 +1713,7 @@ def type_infer_EComp(ecomp, ctx):
             #         ctx.pop_parent()
             #         return None
 
-                # expr_var_types = linearize_tuple_type(iter_elem_type)
+                # expr_var_types = check_linearized_tuple_type(iter_elem_type)
 
                 # if len(expr_var_types) != len(generator.target.variables()):
                 #     ctx.add_type_error(TupleDestructArityError(generator.target, iter_elem_type, len(expr_var_types), len(generator.target.variables())))
@@ -1727,7 +1737,7 @@ def type_infer_EComp(ecomp, ctx):
                         #ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())
 
             # now the lexical env is built for this generator conditions
-            if not linearize_tuple_type(generator.target, iter_elem_type, None, ctx, generator.target):
+            if not check_linearized_tuple_type(generator.target, iter_elem_type, None, ctx, generator.target):
                 ctx.pop_parent()
                 return None
 
