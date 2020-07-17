@@ -33,9 +33,9 @@ def mk_tuple_type(tuple_value, annotation):
         
 def type_converter(annotation):
     import astpp
-    print(astpp.dump(annotation))
+    #print(astpp.dump(annotation))
 
-    # Special case for None/NonType
+    # Special case for None/NoneType
     if hasattr(annotation, "value") and annotation.value == None:
         return (True, NoneTypeType(annotation))
     

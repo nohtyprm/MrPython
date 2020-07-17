@@ -47,6 +47,9 @@ class Program:
         # global (read-only) variables
         self.global_vars = []
 
+        # type aliases (extracted from the global_vars)
+        self.type_aliases = []
+
         # other top level definitions
         self.other_top_defs = []
 
@@ -84,6 +87,7 @@ class Program:
             raise ValueError("Cannot build program from AST: not a module (please report)")
         self.ast = modast
 
+        import pdb ; pdb.set_trace()
         for node in modast.body:
             #print(str(dir(node)))
             if isinstance(node, ast.Import):
@@ -103,7 +107,15 @@ class Program:
                 self.global_vars.append(DeclareVar_ast)
             elif isinstance(node, ast.Assign) or isinstance(node, ast.AnnAssign):
                 assign_ast = Assign(node)
-                self.global_vars.append(assign_ast)
+                if not isinstance(assign_ast.target, LHSVar) or not hasattr(assign_ast.ast, "value"):
+                    self.global_vars.append(assign_ast)
+                else:
+                    ok, type_annotation = type_converter(assign_ast.ast.value)
+                    if not ok:
+                        self.global_vars.append(assign_ast)
+                    else:
+                        assign_ast.type_annotation = type_annotation
+                        self.type_aliases.append(assign_ast)
             else:
                 # print("Unsupported instruction: " + node)
                 self.other_top_defs.append(UnsupportedNode(node))

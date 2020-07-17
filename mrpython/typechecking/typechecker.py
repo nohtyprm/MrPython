@@ -210,7 +210,6 @@ UnsupportedNode.type_check = type_check_UnsupportedNode
 # Takes a program, and returns a
 # (possibly empty) list of type errors
 def type_check_Program(prog):
-
     ctx = TypingContext(prog)
 
     # we do not type check a program with unsupported top-level nodes
@@ -236,24 +235,19 @@ def type_check_Program(prog):
     # type checking begins here
 
     # first step : parse all type definitions
-    if prog.source_lines is None: # Hackish ...
-        prog.source_lines = prog.source.split('\n')
 
-    for i in range(len(prog.source_lines)):
-        source_line = prog.source_lines[i]
-        type_name, parse_result = type_def_parser(source_line)
-        if type_name is not None:
-            if parse_result.iserror:
-                ctx.add_type_error(TypeDefParseError(i+1, type_name))
-            elif type_name in ctx.type_defs:
-                ctx.add_type_error(DuplicateTypeDefError(i+1, type_name))
-            else:
-                type_def, unknown_alias = parse_result.content.unalias(ctx.type_defs)
-                if type_def is None:
-                    ctx.add_type_error(UnknownTypeAliasError(parse_result.content, unknown_alias, i+1, parse_result.start_pos.char_pos))
-                    return ctx
-                else:
-                    ctx.type_defs[type_name] = type_def
+    for alias_assign in prog.type_aliases:
+        type_name = alias_assign.target.var_name
+        if type_name in ctx.type_defs:
+            ctx.add_type_error(DuplicateTypeDefError(alias_assign.ast.lineno, type_name))
+            return ctx
+
+        type_def, unknown_alias = alias_assign.type_annotation.unalias(ctx.type_defs)
+        if type_def is None:
+            ctx.add_type_error(UnknownTypeAliasError(alias_assign.type_annotation, unknown_alias, alias_assign.expr.ast.lineno, alias_assign.expr.ast.col_offset))
+            return ctx
+        else:
+            ctx.type_defs[type_name] = type_def
 
     # second step :  fill the global environment
 
