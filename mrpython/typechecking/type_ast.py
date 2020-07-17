@@ -295,11 +295,12 @@ class StrType(TypeAST):
 ### XXX : this is the "ultimate" hack but it's very practical
 ###       from a pedagogical point of view : we know that 'T', 'U', 'V', etc.
 ###       are identifiers for type variables exclusively  (and reserved in Python101)
-PREDEFINED_TYPE_VARIABLES = { 'T', 'U', 'V', 'W'
+PREDEFINED_TYPE_VARIABLES = { 'T', 'U', 'V', 'W', 'K'
                               , 'T1', 'T2', 'T3', 'T4'
                               , 'U1', 'U2', 'U3', 'U4'
                               , 'V1', 'V2', 'V3', 'V4'
-                              , 'W1', 'W2', 'W3', 'W4' }
+                              , 'W1', 'W2', 'W3', 'W4'
+                              , 'K1', 'K2', 'K3', 'K4' }
 
 class TypeVariable(TypeAST):
     def __init__(self, var_name, annotation=None):

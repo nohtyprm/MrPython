@@ -40,6 +40,7 @@ def install_locals(locals):
     locals['Set'] = typing.Set
     locals['Iterable'] = typing.Iterable
     locals['Tuple'] = typing.Tuple
+    locals['Dict'] = typing.Dict
 
     for tvar in PREDEFINED_TYPE_VARIABLES:
         locals[tvar] = typing.TypeVar(tvar)

@@ -140,6 +140,10 @@ TRANSLATOR_DICT = {
     , "the `{}` type is deprecated, use `{}` instead" : { 'fr' : "le type `{}` n'est plus disponible, utiliser `{}` en remplacement" }
     , "Unsupported container type: {}" : { 'fr' : "Ce type de contenant n'est pas supporté : {}" }
     , "Does not understand the declared tuple type (missing element types)." : { 'fr' : "Je ne comprends pas le type n-uplet déclaré, il manque les types des éléments."}
+    , "A dictionnary type must have two arguments: the key type and the value type" : { 'fr' : "Un type dictionnaire doit avoir exactement deux arguments: le type des clés et le type des valeurs" }
+    , "Does not understand the declared dictionary type (missing key/value types)." : { 'fr' : "Je ne comprends pas le type dictionnaire déclaré : il manque le type des clés et/ou des valeurs" }
+    , "The colon ':' separator is not allower in dictionnary types, use ',' instead" : { 'fr' : "le séparateur ':' n'est pas autorisé dans les types dictionnaire, utiliser plutôt la virgule ','" }
+    , "Missing key,value types in dictionnary type" : { 'fr' : "Type dictionnaire incorrect : il manque le type des clés et des valeurs."}
 }
 
 def tr(msg):

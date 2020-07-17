@@ -22,16 +22,30 @@ def mk_container_type(container_id, element_value, annotation):
         return (False, tr("Unsupported container type: {}").format(container_id))
 
 def mk_tuple_type(tuple_value, annotation):
-    if hasattr(annotation.slice.value, "elts"):    
+    if hasattr(tuple_value, "elts"):    
         elem_types = []
-        for elem_annot in annotation.slice.value.elts:
+        for elem_annot in tuple_value.elts:
             ok, elem_type = type_converter(elem_annot)
             if not ok:
                 return (False, elem_type)
             elem_types.append(elem_type)
-        return (True, TupleType(elem_types))
+        return (True, TupleType(elem_types, annotation))
     else:
         return (False, tr("Does not understand the declared tuple type (missing element types)."))
+
+def mk_dict_type(dict_value, annotation):
+    if hasattr(dict_value, "elts"):    
+        elem_types = []
+        for elem_annot in dict_value.elts:
+            ok, elem_type = type_converter(elem_annot)
+            if not ok:
+                return (False, elem_type)
+            elem_types.append(elem_type)
+        if len(elem_types) != 2:
+            return (False, tr("A dictionnary type must have two arguments: the key type and the value type"))
+        return (True, DictType(elem_types[0], elem_types[1], annotation))
+    else:
+        return (False, tr("Does not understand the declared dictionary type (missing key/value types)."))
         
 def type_converter(annotation):
     #import astpp
@@ -63,12 +77,19 @@ def type_converter(annotation):
         # print("type annot = {}".format(astpp.dump(annotation)))
         if hasattr(annotation.value, "id"):
             container_id = annotation.value.id
-            if container_id == "Tuple":
+            if container_id == "Tuple" and hasattr(annotation.slice, "value"):
                 return mk_tuple_type(annotation.slice.value, annotation)
+            elif container_id == "Dict":
+                if hasattr(annotation.slice, "lower") or hasattr(annotation.slice, "upper"):
+                    return (False, tr("The colon ':' separator is not allower in dictionnary types, use ',' instead"))
+                elif hasattr(annotation.slice, "value"):
+                    return mk_dict_type(annotation.slice.value, annotation)
+                else:
+                    return (False, tr("Missing key,value types in dictionnary type")) 
             else:
                 return mk_container_type(container_id, annotation.slice.value, annotation)
-        else:
-            return (False, tr("Does not understand the declared container type."))
+        
+        return (False, tr("Does not understand the declared container type."))
     else:
         return (False, tr("Does not understand the declared type."))
 

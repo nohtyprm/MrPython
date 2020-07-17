@@ -111,7 +111,7 @@ class TypingContext:
 
         _, parent_local_declare = self.parent_decl_stack.pop()
         for (var_name, var_info) in self.declared_env.items():
-            if (var_name, _) not in parent_local_declare.items():
+            if var_name not in parent_local_declare:
                 # XXX: barendregt convention too strong ?
                 # self.dead_variables.add(var)
                 if var_name not in self.local_env and var_name not in protected_vars:
