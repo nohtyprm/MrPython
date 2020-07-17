@@ -234,20 +234,33 @@ def type_check_Program(prog):
 
     # type checking begins here
 
-    # first step : parse all type definitions
+    # first step : extract type definitions from global_vars
+    new_global_vars = []
+    for global_var in prog.global_vars:
+        to_remove = False
+        if isinstance(global_var, Assign) and isinstance(global_var.target, LHSVar) \
+           and hasattr(global_var.ast, "value"):
+            ok, type_annotation = type_converter(global_var.ast.value)
+            if ok:
+                to_remove = True
+                type_name = global_var.target.var_name
+                if type_name in ctx.type_defs:
+                    ctx.add_type_error(DuplicateTypeDefError(global_var.ast.lineno, type_name))
+                    return ctx
 
-    for alias_assign in prog.type_aliases:
-        type_name = alias_assign.target.var_name
-        if type_name in ctx.type_defs:
-            ctx.add_type_error(DuplicateTypeDefError(alias_assign.ast.lineno, type_name))
-            return ctx
+                type_def, unknown_alias = type_annotation.unalias(ctx.type_defs)
+                if type_def is None:
+                    if check_if_roughly_type_expr(global_var.ast.value):
+                        ctx.add_type_error(UnknownTypeAliasError(type_annotation, unknown_alias, global_var.expr.ast.lineno, global_var.expr.ast.col_offset))
+                        return ctx
+                    else:
+                        to_remove = False
+                else:
+                    ctx.type_defs[type_name] = type_def
+        if not to_remove:
+            new_global_vars.append(global_var)
 
-        type_def, unknown_alias = alias_assign.type_annotation.unalias(ctx.type_defs)
-        if type_def is None:
-            ctx.add_type_error(UnknownTypeAliasError(alias_assign.type_annotation, unknown_alias, alias_assign.expr.ast.lineno, alias_assign.expr.ast.col_offset))
-            return ctx
-        else:
-            ctx.type_defs[type_name] = type_def
+    prog.global_vars = new_global_vars
 
     # second step :  fill the global environment
 

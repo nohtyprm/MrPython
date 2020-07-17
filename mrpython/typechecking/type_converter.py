@@ -32,7 +32,7 @@ def mk_tuple_type(tuple_value, annotation):
         return (False, tr("Does not understand the declared tuple type (missing element types)."))
         
 def type_converter(annotation):
-    import astpp
+    #import astpp
     #print(astpp.dump(annotation))
 
     # Special case for None/NoneType
@@ -69,6 +69,16 @@ def type_converter(annotation):
             return (False, tr("Does not understand the declared container type."))
     else:
         return (False, tr("Does not understand the declared type."))
+
+def check_if_roughly_type_expr(annotation):
+    ### XXX : this is *very* rough !
+    if hasattr(annotation, "id") and annotation.id in {"int", "bool", "str", "float"} | PREDEFINED_TYPE_VARIABLES:
+        return True
+    elif hasattr(annotation, "slice") and hasattr(annotation.value, "id") \
+         and annotation.value.id in {"Tuple", "List", "Iterable", "Sequence", "Dict" }:
+        return True
+    else:
+        return False
 
 def fun_type_converter(fun_def):
     param_types = []
