@@ -14,6 +14,8 @@ def mk_container_type(container_id, element_value, annotation):
         return (True, SequenceType(element_type, annotation))
     elif container_id == 'List':
         return (True, ListType(element_type, annotation))
+    elif container_id == 'Set':
+        return (True, SetType(element_type, annotation))
     elif container_id == 'Iterable':
         return (True, IterableType(element_type, annotation))
     else:
@@ -75,7 +77,7 @@ def check_if_roughly_type_expr(annotation):
     if hasattr(annotation, "id") and annotation.id in {"int", "bool", "str", "float"} | PREDEFINED_TYPE_VARIABLES:
         return True
     elif hasattr(annotation, "slice") and hasattr(annotation.value, "id") \
-         and annotation.value.id in {"Tuple", "List", "Iterable", "Sequence", "Dict" }:
+         and annotation.value.id in {"Tuple", "List", "Iterable", "Set", "Sequence", "Dict" }:
         return True
     else:
         return False

@@ -37,6 +37,7 @@ def install_locals(locals):
     # install the typing module
     locals['Sequence'] = typing.Sequence
     locals['List'] = typing.List
+    locals['Set'] = typing.Set
     locals['Iterable'] = typing.Iterable
     locals['Tuple'] = typing.Tuple
 
