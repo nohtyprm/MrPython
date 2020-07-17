@@ -64,6 +64,8 @@ def type_converter(annotation):
             return (True, StrType(annotation))
         elif annotation.id == "float":
             return (True, FloatType(annotation))
+        elif annotation.id in { 'range', 'Range' }:
+            return (True, SequenceType(IntType(), annotation))
         elif annotation.id == "Number":
             return (False, tr("the `{}` type is deprecated, use `{}` instead").format('Number', 'float'))
         elif annotation.id == "NoneType":
