@@ -235,11 +235,21 @@ def type_check_Program(prog):
     # type checking begins here
 
     # first step : extract type definitions from global_vars
+
+    declared_global_vars = set()
+    for global_var in prog.global_vars:
+        if isinstance(global_var, DeclareVar):
+            # TODO: track duplicate global variable declaractions here ?
+            if global_var.target.var_name in declared_global_vars:
+                ctx.add_type_error(DuplicateMultiAssignError(global_var.ast.lineno, global_var.target.var_name))
+                return ctx
+            declared_global_vars.add(global_var.target.var_name)
+
     new_global_vars = []
     for global_var in prog.global_vars:
         to_remove = False
         if isinstance(global_var, Assign) and isinstance(global_var.target, LHSVar) \
-           and hasattr(global_var.ast, "value"):
+           and hasattr(global_var.ast, "value") and global_var.target.var_name not in declared_global_vars:
             ok, type_annotation = type_converter(global_var.ast.value)
             if ok:
                 to_remove = True
@@ -2411,7 +2421,7 @@ class DuplicateMultiAssignError(TypeError):
         self.var_name = var_name
 
     def fail_string(self):
-        return "DuplicateTypeDefError[{}]@{}:{}".format(self.type_name, self.lineno, 0)
+        return "DuplicateMultiAssignError[{}]@{}:{}".format(self.var_name, self.lineno, 0)
 
     def report(self, report):
         report.add_convention_error('error', tr("Declaration problem"), self.lineno, 0
