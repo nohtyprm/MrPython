@@ -102,7 +102,10 @@ class TypingContext:
             self.parent_decl_stack = []
         self.parent_decl_stack.append((parent_node, parent_local_declare))
 
-    def pop_parent(self):
+    def pop_parent(self, protected_vars=None):
+        if protected_vars is None:
+            protected_vars = set()
+
         if not self.parent_decl_stack:
             raise ValueError("Cannot pop from empty parent declaration stack (please report)")
 
@@ -111,7 +114,7 @@ class TypingContext:
             if (var_name, _) not in parent_local_declare.items():
                 # XXX: barendregt convention too strong ?
                 # self.dead_variables.add(var)
-                if var_name not in self.local_env:
+                if var_name not in self.local_env and var_name not in protected_vars:
                     self.add_type_error(NotUsedDeclarationWarning(self.function_def, var_name,var_info))
 
         self.declared_env = parent_local_declare
@@ -1690,7 +1693,6 @@ def type_infer_Slicing(slicing, ctx):
 Slicing.type_infer = type_infer_Slicing
 
 def type_infer_EComp(ecomp, ctx):
-
     # we will modify the lexical environment
     ctx.push_parent(ecomp)
 
@@ -1710,20 +1712,20 @@ def type_infer_EComp(ecomp, ctx):
             else:
                 iter_elem_type = iter_type.elem_type
 
-            if generator.target.arity() == 1:
-                var = generator.target.variables()[0]
-                if var.var_name in ctx.dead_variables:
-                    ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
-                    ctx.pop_parent()
-                    return None
-                elif var.var_name in ctx.local_env:
-                    ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
-                    ctx.pop_parent()
-                    return None
-                # check that the variable is not a parameter
-                elif ctx.param_env and var.var_name in ctx.param_env:
-                    ctx.add_type_error(ParameterInCompError(var.var_name, var))
-                    return None
+            # if generator.target.arity() == 1:
+            #     var = generator.target.variables()[0]
+            #     if var.var_name in ctx.dead_variables:
+            #         ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
+            #         ctx.pop_parent()
+            #         return None
+            #     elif var.var_name in ctx.local_env:
+            #         ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
+            #         ctx.pop_parent()
+            #         return None
+            #     # check that the variable is not a parameter
+            #     elif ctx.param_env and var.var_name in ctx.param_env:
+            #         ctx.add_type_error(ParameterInCompError(var.var_name, var))
+            #         return None
             #     elif var.var_name != "_":
             #         ctx.local_env[var.var_name] = (iter_elem_type, ctx.fetch_scope_mode())
             # else: # tuple destruct
@@ -1740,25 +1742,28 @@ def type_infer_EComp(ecomp, ctx):
                 #     ctx.pop_parent()
                 #     return None
 
-                for (i, var) in zip(range(0, len(generator.target.variables())), generator.target.variables()):
-                    if var.var_name in ctx.dead_variables:
-                        ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
-                        ctx.pop_parent()
-                        return None
-                    # check that the variable is not a parameter
-                    elif ctx.param_env and var.var_name in ctx.param_env:
-                        ctx.add_type_error(ParameterInCompError(var.var_name, var))
-                        return None
-                    elif var.var_name in ctx.local_env:
-                        ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
-                        ctx.pop_parent()
-                        return None
-                    #elif var.var_name != "_":
-                        #ctx.local_env[var.var_name] = (expr_var_types[i], ctx.fetch_scope_mode())
+            declared_types = dict()
+
+            for (i, var) in zip(range(0, len(generator.target.variables())), generator.target.variables()):
+                if var.var_name in ctx.dead_variables:
+                    ctx.add_type_error(DeadVariableDefineError(var.var_name, var))
+                    ctx.pop_parent()
+                    return None
+                # check that the variable is not a parameter
+                elif ctx.param_env and var.var_name in ctx.param_env:
+                    ctx.add_type_error(ParameterInCompError(var.var_name, var))
+                    return None
+                elif var.var_name in ctx.local_env:
+                    ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
+                    ctx.pop_parent()
+                    return None
+                elif var.var_name in ctx.declared_env:
+                    declared_types[var.var_name] = ctx.declared_env[var.var_name][0]
 
             # now the lexical env is built for this generator conditions
-            if not check_linearized_tuple_type(generator.target, iter_elem_type, None, ctx, generator.target):
-                ctx.pop_parent()
+
+            if not check_linearized_tuple_type(generator.target, iter_elem_type, declared_types, ctx, generator.target):
+                ctx.pop_parent(protected_vars={v for v in declared_types})
                 return None
 
             for condition in generator.conditions:
