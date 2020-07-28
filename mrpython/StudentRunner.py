@@ -42,6 +42,9 @@ def install_locals(locals):
     locals['Tuple'] = typing.Tuple
     locals['Dict'] = typing.Dict
 
+    # hack
+    locals['Image'] = None
+
     for tvar in PREDEFINED_TYPE_VARIABLES:
         locals[tvar] = typing.TypeVar(tvar)
 
