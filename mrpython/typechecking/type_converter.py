@@ -16,6 +16,8 @@ def mk_container_type(container_id, element_value, annotation):
         return (True, ListType(element_type, annotation))
     elif container_id == 'Set':
         return (True, SetType(element_type, annotation))
+    elif container_id == 'Optional':
+        return (True, OptionType(element_type, annotation))
     elif container_id == 'Iterable':
         return (True, IterableType(element_type, annotation))
     else:
