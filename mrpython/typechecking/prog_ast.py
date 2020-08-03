@@ -92,6 +92,9 @@ class Program:
             if isinstance(node, ast.Import):
                 imp_ast = Import(node)
                 self.imports[imp_ast.name] = imp_ast
+            elif isinstance(node, ast.ImportFrom):
+                if not check_typing_imports(node):
+                    self.other_top_defs.append(UnsupportedNode(node))
             elif isinstance(node, ast.FunctionDef):
                 fun_ast = FunctionDef(node)
                 if fun_ast.python101ready:
@@ -110,6 +113,17 @@ class Program:
             else:
                 # print("Unsupported instruction: " + node)
                 self.other_top_defs.append(UnsupportedNode(node))
+
+ALLOWED_TYPING_IMPORTS = { 'Optional', 'Tuple', 'List', 'Dict', 'Set'}
+
+def check_typing_imports(node):
+    if node.module != "typing":
+        return False
+    for alias in node.names:
+        if alias.name not in ALLOWED_TYPING_IMPORTS:
+            return False
+    return True
+        
 
 class UnsupportedNode:
     def __init__(self, node):
