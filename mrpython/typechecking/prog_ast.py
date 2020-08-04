@@ -108,13 +108,14 @@ class Program:
                 DeclareVar_ast = DeclareVar(node)
                 self.global_vars.append(DeclareVar_ast)
             elif isinstance(node, ast.Assign) or isinstance(node, ast.AnnAssign):
-                assign_ast = Assign(node)
-                self.global_vars.append(assign_ast)
+                if isinstance(node, ast.Assign) and not check_typevar_assign(node):
+                    assign_ast = Assign(node)
+                    self.global_vars.append(assign_ast)
             else:
                 # print("Unsupported instruction: " + node)
                 self.other_top_defs.append(UnsupportedNode(node))
 
-ALLOWED_TYPING_IMPORTS = { 'Optional', 'Tuple', 'List', 'Dict', 'Set'}
+ALLOWED_TYPING_IMPORTS = { 'Optional', 'Tuple', 'List', 'Dict', 'Set', 'TypeVar' }
 
 def check_typing_imports(node):
     if node.module != "typing":
@@ -122,6 +123,21 @@ def check_typing_imports(node):
     for alias in node.names:
         if alias.name not in ALLOWED_TYPING_IMPORTS:
             return False
+    return True
+        
+def check_typevar_assign(node):
+    # TODO : more precise error checking
+    if len(node.targets) != 1:
+        return False
+    if node.targets[0].id not in PREDEFINED_TYPE_VARIABLES:
+        return False
+    if node.value.func.id != 'TypeVar':
+        return False
+    if len(node.value.args) != 1:
+        return False
+    if node.value.args[0].s != node.targets[0].id:
+        return False
+
     return True
         
 
