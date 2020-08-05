@@ -2252,10 +2252,10 @@ DictType.type_compare = type_compare_DictType
 
 BUILTINS_IMPORTS = {
     'len' : function_type_parser("Iterable[α] -> int").content
-    ,'abs' : function_type_parser("Number -> Number").content
+    ,'abs' : function_type_parser("float -> float").content
     ,'print' : function_type_parser("Ω -> NoneType").content
-    ,'min' : function_type_parser("Number * Number -> Number").content
-    ,'max' : function_type_parser("Number * Number -> Number").content
+    ,'min' : function_type_parser("float * float -> float").content
+    ,'max' : function_type_parser("float * float -> float").content
     # ,'range' : function_type_parser("int * int -> Iterable[int]").content  # range is an expression now
     , 'int' : function_type_parser("Ω -> int").content
     , 'float' : function_type_parser("Ω -> float").content
@@ -2291,21 +2291,21 @@ BUILTINS_IMPORTS = {
 }
 
 MATH_IMPORTS = {
-    'math.sqrt' : function_type_parser("Number -> float").content
-    , 'math.floor' : function_type_parser("Number -> int").content
-    , 'math.ceil' : function_type_parser("Number -> int").content
-    , 'math.sin' : function_type_parser("Number -> float").content
-    , 'math.cos' : function_type_parser("Number -> float").content
-    , 'math.tan' : function_type_parser("Number -> float").content
-    , 'math.cosh' : function_type_parser("Number -> float").content
-    , 'math.sinh' : function_type_parser("Number -> float").content
-    , 'math.tanh' : function_type_parser("Number -> float").content
-    , 'math.acos' : function_type_parser("Number -> float").content
-    , 'math.asin' : function_type_parser("Number -> float").content
-    , 'math.atan' : function_type_parser("Number -> float").content
-    , 'math.acosh' : function_type_parser("Number -> float").content
-    , 'math.asinh' : function_type_parser("Number -> float").content
-    , 'math.atanh' : function_type_parser("Number -> float").content}
+    'math.sqrt' : function_type_parser("float -> float").content
+    , 'math.floor' : function_type_parser("float -> int").content
+    , 'math.ceil' : function_type_parser("float -> int").content
+    , 'math.sin' : function_type_parser("float -> float").content
+    , 'math.cos' : function_type_parser("float -> float").content
+    , 'math.tan' : function_type_parser("float -> float").content
+    , 'math.cosh' : function_type_parser("float -> float").content
+    , 'math.sinh' : function_type_parser("float -> float").content
+    , 'math.tanh' : function_type_parser("float -> float").content
+    , 'math.acos' : function_type_parser("float -> float").content
+    , 'math.asin' : function_type_parser("float -> float").content
+    , 'math.atan' : function_type_parser("float -> float").content
+    , 'math.acosh' : function_type_parser("float -> float").content
+    , 'math.asinh' : function_type_parser("float -> float").content
+    , 'math.atanh' : function_type_parser("float -> float").content}
 
 
 RANDOM_IMPORTS = {
