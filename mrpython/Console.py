@@ -327,7 +327,8 @@ class Console:
                 error_message = ("Student number is not initialized.\n"
                                  "Please type in the first line your student number in the format:\n"
                                  "# number or # your-number partner-number")
-                report.add_convention_error("warning", "Uninitialized student number", details=error_message)
+                report.add_convention_error("warning", "Uninitialized student number", details=error_message,
+                                            class_name="UninitializedStudentNumberWarning")
 
         
         self.write(report.footer, tags=(tag))

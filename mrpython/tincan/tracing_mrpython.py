@@ -184,15 +184,17 @@ def student_hash_uninitialized():
 
 
 def clear_stack():
-    """Clear the stack of statements"""
-    statement = io.get_statement()
-    while statement:  # While there are statements
-        statement = Statement.from_json(statement)
-        if _send_statement_lrs(statement):  # If the statement could have been sent to the LRS
-            io.remove_statement()
-            statement = io.get_statement()
-        else:
-            return
+    """Re-send and clear the stack of statements that couldn't be sent"""
+    def thread_function(stack):
+        for i in range(len(stack)):
+            s = stack[i]
+            statement = Statement.from_json(s)
+            print("Tracing: Sending statement number {} from stack".format(i+1))
+            if not _send_statement_lrs(statement):  # Send statement and receive HTTP response
+                io.add_statement(statement)  # Backup the statement if it couldn't been sent
+    stack = io.get_and_clear_stack()
+    x = threading.Thread(target=thread_function, args=(stack,))
+    x.start()
 
 
 def user_is_typing():

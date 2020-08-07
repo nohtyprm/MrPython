@@ -67,7 +67,7 @@ class StudentRunner:
             self.report.add_first_line(source[0])
             error_incoherence = tracing.check_incoherence_function_exercise(source)
             if error_incoherence is not None:  # If theme and exercise number != Function name
-                self.report.add_convention_error("warning", "Context incoherence", details=error_incoherence)
+                self.report.add_convention_error("warning", "Context incoherence", details=error_incoherence, class_name="ContextExerciseFunctionWarning")
 
 
         try:
@@ -150,7 +150,7 @@ class StudentRunner:
             traceb = traceback.extract_tb(tb)
             if len(traceb) > 1:
                 filename, lineno, file_type, line = traceb[-1]
-            self.report.add_execution_error('error', a.__name__, lineno, details=str(err))
+            self.report.add_execution_error('error', a.__name__, lineno, details=str(err), class_name=a.__name__)
             return (False, None)
         finally:
             self.running = False

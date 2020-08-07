@@ -13,39 +13,33 @@ debug_filepath: Keep all the statements if debug_log is True in tracing_mrpython
 from tincan import (tracing_config as config)
 import json
 import os
+import threading
+lock = threading.Lock()
 
 backup_filepath = config.backup_filepath
 session_filepath = config.session_filepath
 debug_filepath = config.debug_filepath
 
-# Backup
+# BackupJSONDecodeError
 
 
 def add_statement(statement):
+    lock.acquire()
     """Add a statement to the stack"""
-    if not os.path.isfile(backup_filepath):  # File creation
-        with open(backup_filepath, "w") as backup_file:
-            data = {"statements": []}
-            json.dump(data, backup_file, indent=2)
 
     statement = statement.to_json()
-    with open(backup_filepath, "r+") as f:
-        data = json.load(f)
-        list_statements = data["statements"]
-        list_statements.append(statement)
-        f.truncate(0)
-        f.seek(0)
-        json.dump(data, f, indent=2)
+    with open(backup_filepath, "a+") as f:
+        f.write(statement + '\n')
+    lock.release()
 
 
-def get_statement():
+def get_and_clear_stack():
     """Get the first statement of the stack"""
     if os.path.isfile(backup_filepath):
-        with open(backup_filepath, "r") as f:
-            data = json.load(f)
-            list_statements = data["statements"]
-            if list_statements:
-                return list_statements[0]
+        with open(backup_filepath, "r+") as f:
+            stack = f.readlines()
+            f.truncate(0)
+            return stack
     return None
 
 

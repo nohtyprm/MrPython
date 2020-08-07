@@ -16,7 +16,7 @@ import os
 tracing_active = True  # Create the statements
 send_to_LRS = False and tracing_active  # Send the created statements to the LRS
 debug_log = True and tracing_active  # Keep a record of all statements produced in debug_filepath
-backup_filepath =  os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_backup.json')
+backup_filepath =  os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_backup_stack.txt')
 debug_filepath = os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_debug.txt')
 session_filepath = os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_session.txt')
 
@@ -223,7 +223,10 @@ error_groups = {"AssertionInFunctionWarning": "Semantique&Python101",
                  "ZeroDivisionError": "Semantique",
                  "AssertionError": "Tests",
                  "OtherExecutionError": "Autre",
-                 "UserTerminatedError": "Autre"}
+                 "UserTerminatedError": "Autre",
+                 "ContextExerciseFunctionWarning": "Python101",
+                 "UninitializedStudentNumberWarning": "Python101"
+                }
 
 # Mapping function name -> theme number, exercise number, question number
 function_names_context = {
