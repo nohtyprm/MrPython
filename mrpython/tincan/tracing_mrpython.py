@@ -224,7 +224,7 @@ def execution_duration():
 
 
 def update_active_timestamp():
-    io.write_session_info(session, datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"))
+    io.write_session_info(session, datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), tracing_enabled)
 
 
 def _send_statement_lrs(statement):
@@ -248,7 +248,7 @@ def _send_statement_lrs(statement):
 
 def send_statement(verb_key, activity_key, activity_extensions=None):
     """Send a statement with the verb and activity keys and the context extensions"""
-    if not tracing_active:
+    if not tracing_enabled:
         return
 
     def thread_function(statement):
@@ -297,32 +297,59 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
         x.start()
 
 
-def initialize_tracing():
-    global time_opened, session
-    write_session_file = False
+def user_first_session():
+    return not io.session_file_exists()
 
+
+def check_tracing_is_enabled():
+    _, _, tracing_enabled = io.get_session_info()
+    return tracing_enabled
+
+def switch_tracing_enabled_disabled():
+    global tracing_enabled
+    prev_session, prev_active_time, tracing_enabled = io.get_session_info()
+    if tracing_enabled:
+        #  User disabled tracing.
+        #  We assume it's ok to send this statement since the user initially enabled the tracing before the switch
+        send_statement("disabled", "tracing")
+    tracing_enabled = not tracing_enabled
+    if tracing_enabled:
+        send_statement("enabled", "tracing")
+    io.write_session_info(prev_session, prev_active_time, tracing_enabled)
+    return tracing_enabled
+
+def initialize_tracing(user_enabled_tracing):
+    global time_opened, session, tracing_enabled
+    rewrite_session_id = False
+    initially_accepted_tracing = False  # User said yes in the initial tracing message box
     if io.session_file_exists():
-        session, active_time = io.get_session_info()
-        active_time = datetime.datetime.strptime(active_time, "%Y-%m-%dT%H:%M:%S")
-        elapsed_time = datetime.datetime.now() - active_time
+        session, last_active_time, _ = io.get_session_info()
+        last_active_time = datetime.datetime.strptime(last_active_time, "%Y-%m-%dT%H:%M:%S")
+        elapsed_time = datetime.datetime.now() - last_active_time
         if elapsed_time > datetime.timedelta(minutes=30):
-            write_session_file = True
+            rewrite_session_id = True
     else:
-        write_session_file = True
-    if write_session_file:
+        if user_enabled_tracing: # If it's the first session and user accepted tracing
+            initially_accepted_tracing = True
+        rewrite_session_id = True
+
+    if rewrite_session_id:
         session = str(uuid.uuid1(clock_seq=int(time.time() * 1e9)))
-        active_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        io.write_session_info(session, active_time)
+    active_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    tracing_enabled = user_enabled_tracing
+    io.write_session_info(session, active_time, tracing_enabled)
 
     # Initialize debug
     if debug_log:
         io.initialize_debug_file()
     time_opened = time.time()
+    if initially_accepted_tracing:
+        send_statement("accepted", "tracing")
     send_statement("opened", "application")
 
 
 def send_statement_close_app():
-    if not tracing_active:
+    if not tracing_enabled:
         return
     elapsed_seconds = int(time.time() - time_opened)
     m, s = divmod(elapsed_seconds, 60)
@@ -365,7 +392,7 @@ def _add_extensions_error(error, error_category, filename = None, instruction = 
 
 def send_statement_execute(report, mode, filename):
     """Create and send a statement at the end of the execution of the students program"""
-    if not tracing_active:
+    if not tracing_enabled:
         return
     with tokenize.open(filename) as fp:
         source = fp.read()
@@ -450,7 +477,7 @@ def send_statement_execute(report, mode, filename):
 
 def send_statement_evaluate(report, mode, instruction):
     """Create and send a statement at the end of the execution of the students program"""
-    if not tracing_active:
+    if not tracing_enabled:
         return
     # Send statements for all errors
     nb_errors = 0
@@ -512,7 +539,7 @@ statement_number = 1  # for debug and print
 machine_id, student_hash, partner_hash, input_type = _init_id()
 session = None  # Initialized in initialize_tracing()
 # Tracing behaviour
-tracing_active = config.tracing_active
+tracing_enabled = None  # Initialized in initialize_tracing()
 send_to_LRS = config.send_to_LRS
 debug_log = config.debug_log
 # Error and function data

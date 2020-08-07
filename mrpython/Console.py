@@ -338,7 +338,8 @@ class Console:
         expr = self.input_console.get()
         if not expr:
             return
-        tracing.send_statement("started", "evaluation")
+        tracing.send_statement("started", "evaluation",
+                               {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": tr(self.mode)})
         tracing.user_is_interacting()
         local_interpreter = False
         if self.interpreter is None:

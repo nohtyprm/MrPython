@@ -2,7 +2,7 @@ from MainView import MainView
 from tkinter import Tk, sys
 from PyEditor import PyEditor
 import Bindings
-
+import tkinter.messagebox as tkMessageBox
 
 
 
@@ -62,12 +62,23 @@ class Application:
         self.running_interpreter_proxy = None
         self.running_interpreter_callback = None
 
+        tracing.clear_stack()
+        user_accepted_tracing = False
+        if tracing.user_first_session():
+            user_enabled_tracing = tkMessageBox.askyesno(
+                  title="Suivi pédagogique",
+                  message="Acceptez-vous que des traces de vos actions dans MrPython " +
+                          "soient collectées par l'équipe de recherche du LIP6 ?\n" +
+                          "Ces traces seront anonymisées et uniquement utilisées dans un but d'amélioration pédagogique",
+                  default=tkMessageBox.YES,
+                    parent=self.root)
+        else:
+            user_enabled_tracing = tracing.check_tracing_is_enabled()
+        tracing.initialize_tracing(user_enabled_tracing)
+
         self.root.after(1000, self.check_user_state)
         self.root.after(5000, self.update_active_timestamp)
         self.state = "idle"  # 3 states: idle, interacting or typing
-
-        tracing.clear_stack()
-        tracing.initialize_tracing()
 
     def run(self):
         """ Run the application """
@@ -81,12 +92,14 @@ class Application:
         self.save_button = self.icon_widget.icons['save'].wdgt
         self.open_button = self.icon_widget.icons['open'].wdgt
         self.mode_button = self.icon_widget.icons['mode'].wdgt
+        self.tracing_button = self.icon_widget.icons['tracing'].wdgt
         self.new_file_button.bind("<1>", self.new_file)
         self.run_button.bind("<1>", self.run_module)
         self.mode_button.bind("<1>", self.change_mode)
         self.save_button.bind("<1>", self.save)
         self.save_button.bind("<3>", self.editor_list.save_as)
         self.open_button.bind("<1>", self.open)
+        self.tracing_button.bind("<1>", self.enable_disable_tracing)
 
         # File
         self.root.bind("<Control-n>", self.new_file)
@@ -249,6 +262,16 @@ class Application:
             else:
                 file_editor.destroy()
 
+    def enable_disable_tracing(self, event=None):
+        tracing_enabled = tracing.switch_tracing_enabled_disabled()
+        if tracing_enabled:
+            msg = "Le suivi a été activé\n"
+        else:
+            msg = "Le suivi a été désactivé\n"
+        print(msg[:-1])
+        self.console.write(msg, tags=('error'))
+
+
     def close_all_event(self, event=None):
         """ Quit all the PyEditor : called when exiting application """
 
@@ -288,7 +311,8 @@ class Application:
         reply = self.editor_list.get_current_editor().maybesave_run()
         if (reply != "cancel"):
             self.editor_list.get_current_editor().send_update_changed_line(force_sending=True)
-            tracing.send_statement("started", "execution")
+            tracing.send_statement("started", "execution",
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": tr(self.mode)})
             tracing.save_execution_start()
             file_name = self.editor_list.get_current_editor().long_title()
             self.update_title()

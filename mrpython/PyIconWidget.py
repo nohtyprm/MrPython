@@ -21,6 +21,7 @@ class PyIconWidget(Frame):
         icon_new_file_gif = PhotoImage(file=expand_filename("icons/new_file_icon4.gif"))
         icon_save_gif = PhotoImage(file=expand_filename("icons/save_icon2.gif"))
         icon_open_gif = PhotoImage(file=expand_filename("icons/open_icon2.gif"))
+        icon_tracing_png = PhotoImage(file=expand_filename("icons/tracing_icon.png"))
         self.icon_student_gif = PhotoImage(file=expand_filename("icons/student_icon2.gif"))
         self.icon_pro_gif = PhotoImage(file=expand_filename("icons/pro_icon3.gif"))
         self.icon_run_gif = PhotoImage(file=expand_filename("icons/run_icon2.gif"))
@@ -60,6 +61,12 @@ class PyIconWidget(Frame):
                                           compound=None, activebackground='#A9A9A9'),
                                     msg = tr('Run Ctrl-R'))
 
+        self.icons['tracing'] = ToolTip(Label(self, image=icon_tracing_png, justify=CENTER,
+                                          cursor="hand1", background="#e1e1e1",
+                                          relief="raised", text='',
+                                          compound=None, activebackground='#A9A9A9'),
+                                    msg = tr('Enable/Disable Tracing'))
+
 
         # Set the icons inside the labels
         self.icons['new_file'].wdgt.image = icon_new_file_gif
@@ -67,6 +74,7 @@ class PyIconWidget(Frame):
         self.icons['open'].wdgt.image = icon_open_gif
         self.icons['mode'].wdgt.image = self.icon_student_gif
         self.icons['run'].wdgt.image = self.icon_run_gif
+        self.icons['tracing'].wdgt.image = icon_tracing_png
 
         # Packing the labels
         sep = Label(self, background="white")
@@ -84,6 +92,10 @@ class PyIconWidget(Frame):
         sep = Label(self, background="white")
         sep.grid(row=0, column=6, ipadx=7, ipady=3)
         self.icons['run'].wdgt.grid(row=0, column=7, ipadx=7,
+                                    ipady=3)
+        sep = Label(self, background="white")
+        sep.grid(row=0, column=8, ipadx=60, ipady=3)
+        self.icons['tracing'].wdgt.grid(row=0, column=9, ipadx=7,
                                     ipady=3)
 
     def enable_icon_running(self):

@@ -65,11 +65,12 @@ def get_session_info():
         session_data = json.load(f)
     session = session_data["id-session"]
     active_time = session_data["active-timestamp"]
-    return session, active_time
+    tracing_enabled = session_data["tracing-enabled"]
+    return session, active_time, tracing_enabled
 
 
-def write_session_info(session, active_time):
-    session_data = {"id-session": session, "active-timestamp": active_time}
+def write_session_info(session, active_time, tracing_enabled):
+    session_data = {"id-session": session, "active-timestamp": active_time, "tracing-enabled": tracing_enabled}
     with open(session_filepath, "w") as f:
         json.dump(session_data, f)
 

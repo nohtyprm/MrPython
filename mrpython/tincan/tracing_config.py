@@ -13,9 +13,8 @@ import os
 
 # MrPython behaviour and filepaths
 
-tracing_active = True  # Create the statements
-send_to_LRS = False and tracing_active  # Send the created statements to the LRS
-debug_log = True and tracing_active  # Keep a record of all statements produced in debug_filepath
+send_to_LRS = False  # Send the created statements to the LRS
+debug_log = True  # Keep a record of all statements produced in debug_filepath
 backup_filepath =  os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_backup_stack.txt')
 debug_filepath = os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_debug.txt')
 session_filepath = os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_session.txt')
@@ -72,6 +71,12 @@ verbs = {
         id="http://activitystrea.ms/schema/1.0/update", display=LanguageMap({'en-US': 'updated'})),
     "entered": Verb(
         id="https://www.lip6.fr/mocah/invalidURI/verbs/entered", display=LanguageMap({'en-US': 'entered'})),
+    "accepted": Verb(
+        id="http://activitystrea.ms/schema/1.0/accept", display=LanguageMap({'en-US': 'accepted'})),
+    "enabled": Verb(
+        id="http://id.tincanapi.com/verb/enabled", display=LanguageMap({'en-US': 'enabled'})),
+    "disabled": Verb(
+        id="http://id.tincanapi.com/verb/disabled", display=LanguageMap({'en-US': 'disabled'})),
     }
 activities = {
     "application": Activity(
@@ -153,6 +158,10 @@ activities = {
         id="https://www.lip6.fr/mocah/invalidURI/activity-types/idle-state",
         definition=ActivityDefinition(
             name=LanguageMap({'en-US': 'an idle state'}))),
+    "tracing": Activity(
+        id="https://www.lip6.fr/mocah/invalidURI/activity-types/tracing",
+        definition=ActivityDefinition(
+            name=LanguageMap({'en-US': 'the MrPython tracing'}))),
     }
 
 # Errors and functions details. Mapping error class_name -> error category
