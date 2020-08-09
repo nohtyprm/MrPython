@@ -6,18 +6,13 @@ import threading, os, tokenize
 import hashlib, uuid, getpass
 import copy
 import time, datetime
-import json
 import re
 from tincan import (
     RemoteLRS,
     Statement,
     Agent,
-    Verb,
-    Activity,
     Context,
     Group,
-    LanguageMap,
-    ActivityDefinition,
     tracing_config as config,
     tracing_io as io
 )
@@ -25,6 +20,7 @@ from translate import tr
 
 
 def _create_actor():
+    """Create xAPI actor"""
     student_id = "https://www.lip6.fr/mocah/invalidURI/student-number:" + student_hash
     partner_id = "https://www.lip6.fr/mocah/invalidURI/partner-number:" + partner_hash
     StudentAgent = Agent(openid=student_id, name="student")
@@ -111,7 +107,7 @@ def _modify_partner_number(partner_number):
 def check_modified_student_number(list_numbers):
     """
     Change the hash identifiers if the user typed one (or two) integers in the form # student_number partner_number
-    Called in PyEditor and StudentRunner to check the first line of the editor.
+    Called in PyEditor and Console to check the first line of the editor.
     """
     pattern = re.compile(r'\s*#\s*(\d+)(\s+\d*)?', re.IGNORECASE)
     match = pattern.search(list_numbers)
@@ -184,17 +180,19 @@ def student_hash_uninitialized():
 
 
 def clear_stack():
-    """Re-send and clear the stack of statements that couldn't be sent"""
+    """Re-send and clear the stack of statements that couldn't be sent."""
     def thread_function(stack):
         for i in range(len(stack)):
             s = stack[i]
             statement = Statement.from_json(s)
-            print("Tracing: Sending statement number {} from stack".format(i+1))
+            if debug_log_print:
+                print("Tracing: Sending statement number {} from stack".format(i+1))
             if not _send_statement_lrs(statement):  # Send statement and receive HTTP response
                 io.add_statement(statement)  # Backup the statement if it couldn't been sent
     stack = io.get_and_clear_stack()
-    x = threading.Thread(target=thread_function, args=(stack,))
-    x.start()
+    if stack is not None:
+        x = threading.Thread(target=thread_function, args=(stack,))  # Non-blocking
+        x.start()
 
 
 def user_is_typing():
@@ -210,7 +208,7 @@ def user_is_interacting():
 
 
 def save_execution_start():
-    """Keep the timestamp of the last action"""
+    """Keep the timestamp of the the start of a program's execution."""
     global start_execution_timestamp
     start_execution_timestamp = time.time()
 
@@ -220,11 +218,13 @@ def get_action_timestamps():
 
 
 def execution_duration():
+    """ Get the duration of a program's execution. Used after save_execution_start()"""
     return time.time() - start_execution_timestamp
 
 
 def update_active_timestamp():
-    io.write_session_info(session, datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), tracing_enabled)
+    """Update last active timestamp of the user's session. Used to know when to change session ID"""
+    io.write_session_info(session_id, datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), tracing_enabled)
 
 
 def _send_statement_lrs(statement):
@@ -232,16 +232,20 @@ def _send_statement_lrs(statement):
     try:
         response = lrs.save_statement(statement)
     except OSError as e:
-        print("Tracing: Couldn't connect to the LRS: {}".format(e))
+        if debug_log_print:
+            print("Tracing: Couldn't connect to the LRS: {}".format(e))
         return False
     if not response:
-        print("Tracing: statement failed to save")
+        if debug_log_print:
+            print("Tracing: Failed to get server response for statement request")
         return False
     elif response and not response.success:
-        print("Tracing: Statement request could not be sent to the LRS: {}".format(response.data))
+        if debug_log_print:
+            print("Tracing: Statement request could not be sent to the LRS: {}".format(response.data))
         return False
     else:
-        print("Tracing: Statement request has been sent properly to the LRS, Statement ID is {}".format(
+        if debug_log_print:
+            print("Tracing: Statement request has been sent properly to the LRS, Statement ID is {}".format(
             response.data))
         return True
 
@@ -257,20 +261,23 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
             io.add_statement(statement) # Backup the statement if it couldn't been sent
 
     global statement_number
-    # Create the statement from the actor, the verb and activity keys and potentially the context
+    # Create the statement from the actor, the verb, the context and the activity keys
     if verb_key not in verbs:
-        print("Tracing: Missing verb key {}".format(verb_key))
+        if debug_log_print:
+            print("Tracing: Missing verb key {}".format(verb_key))
         return
     if activity_key not in activities:
-        print("Tracing: Missing activity key {}".format(activity_key))
+        if debug_log_print:
+            print("Tracing: Missing activity key {}".format(activity_key))
         return
-    if send_to_LRS:
+    if send_to_LRS and debug_log_print:
         print("Tracing: Creating and Sending statement {}, {} {}".format(statement_number, verb_key, activity_key))
-    else:
+    elif debug_log_print:
         print("Tracing: Creating (without sending) statement {}, {} {}".format(statement_number, verb_key, activity_key))
+    statement_number += 1
     verb = verbs[verb_key]
     activity = activities[activity_key]
-    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session,
+    extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session_id,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/machine-id": machine_id,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": input_type}
     context = Context(extensions=extensions)
@@ -288,9 +295,8 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
         context=context,
         timestamp=statement_time
     )
-    if debug_log:
+    if debug_log_print:
         io.add_statement_debug(statement, statement_number)
-    statement_number += 1
     # Send the statement from another thread
     if send_to_LRS:
         x = threading.Thread(target=thread_function, args=(statement,))
@@ -298,6 +304,8 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
 
 
 def user_first_session():
+    """Check if it's the user's first session by checking if the session file exists.
+    Used to ask initial consent for tracing"""
     return not io.session_file_exists()
 
 
@@ -306,6 +314,7 @@ def check_tracing_is_enabled():
     return tracing_enabled
 
 def switch_tracing_enabled_disabled():
+    """Enable/disable tracing"""
     global tracing_enabled
     prev_session, prev_active_time, tracing_enabled = io.get_session_info()
     if tracing_enabled:
@@ -319,39 +328,53 @@ def switch_tracing_enabled_disabled():
     return tracing_enabled
 
 def initialize_tracing(user_enabled_tracing):
-    global time_opened, session, tracing_enabled
+    """Initialize the session file, the debug file and global variables"""
+    global opened_timestamp, session_id, tracing_enabled  # Initialize global vars
     rewrite_session_id = False
     initially_accepted_tracing = False  # User said yes in the initial tracing message box
+
+    # Initialize Session
+
     if io.session_file_exists():
-        session, last_active_time, _ = io.get_session_info()
+        session_id, last_active_time, _ = io.get_session_info()
         last_active_time = datetime.datetime.strptime(last_active_time, "%Y-%m-%dT%H:%M:%S")
         elapsed_time = datetime.datetime.now() - last_active_time
-        if elapsed_time > datetime.timedelta(minutes=30):
+        if elapsed_time > datetime.timedelta(minutes=30):  # If the last session's end was less than 30 minutes before
             rewrite_session_id = True
     else:
-        if user_enabled_tracing: # If it's the first session and user accepted tracing
+        if user_enabled_tracing:  # If it's the first session and user accepted tracing
             initially_accepted_tracing = True
         rewrite_session_id = True
 
     if rewrite_session_id:
-        session = str(uuid.uuid1(clock_seq=int(time.time() * 1e9)))
+        session_id = str(uuid.uuid1(clock_seq=int(time.time() * 1e9)))
     active_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     tracing_enabled = user_enabled_tracing
-    io.write_session_info(session, active_time, tracing_enabled)
+    io.write_session_info(session_id, active_time, tracing_enabled)  # write session file
 
     # Initialize debug
-    if debug_log:
+
+    if debug_log_print:
         io.initialize_debug_file()
-    time_opened = time.time()
+    opened_timestamp = time.time()
+
+    # Clear the stack
+
+    if tracing_enabled:
+        clear_stack()
+    
+    # Send statements
+
     if initially_accepted_tracing:
         send_statement("accepted", "tracing")
     send_statement("opened", "application")
 
 
 def send_statement_close_app():
+    """Send the statement of closing of the app"""
     if not tracing_enabled:
         return
-    elapsed_seconds = int(time.time() - time_opened)
+    elapsed_seconds = int(time.time() - opened_timestamp)
     m, s = divmod(elapsed_seconds, 60)
     h, m = divmod(m, 60)
     if m < 10:
@@ -363,7 +386,8 @@ def send_statement_close_app():
     send_statement("closed", "application", extensions)
 
 
-def _add_extensions_error(error, error_category, filename = None, instruction = None):
+def _add_extensions_error(error, error_category, filename=None, instruction=None):
+    """Add extensions to error statement"""
     try:
         groups = error_groups[error.class_name]
         class_name = error.class_name
@@ -397,10 +421,12 @@ def send_statement_execute(report, mode, filename):
     with tokenize.open(filename) as fp:
         source = fp.read()
         source = source.split('\n')
-    # Send statements for all errors
     manually_terminated = False
     nb_errors = 0
     nb_warnings = 0
+
+    # Check and send statements for all errors
+
     for error in report.convention_errors:
         if error.severity == "error":
             nb_errors += 1
@@ -434,7 +460,7 @@ def send_statement_execute(report, mode, filename):
         send_statement("received", activity, activity_extensions=extensions)
 
     for error in report.execution_errors:
-        if(error.err_type == tr("User interruption")):
+        if error.err_type == tr("User interruption"):
             manually_terminated = True
         if error.severity == "error":
             nb_errors += 1
@@ -452,6 +478,7 @@ def send_statement_execute(report, mode, filename):
         send_statement("received", "execution-error", activity_extensions=extensions)
 
     #  Send final statement: Execution passed or failed
+
     if nb_errors == 0:
         verb = "passed"
     elif manually_terminated:
@@ -476,12 +503,14 @@ def send_statement_execute(report, mode, filename):
 
 
 def send_statement_evaluate(report, mode, instruction):
-    """Create and send a statement at the end of the execution of the students program"""
+    """Create and send a statement at the end of the evaluation of the students instruction"""
     if not tracing_enabled:
         return
-    # Send statements for all errors
     nb_errors = 0
     nb_warnings = 0
+
+    # Check and send statements for all errors
+
     for error in report.convention_errors:
         if error.severity == "error":
             nb_errors += 1
@@ -518,8 +547,8 @@ def send_statement_evaluate(report, mode, instruction):
         extensions = _add_extensions_error(error, "execution", instruction=instruction)
         send_statement("received", activity, activity_extensions=extensions)
 
-
     #  Send final statement: Evaluation passed or failed
+
     if nb_errors == 0:
         verb = "passed"
     else:
@@ -534,21 +563,22 @@ def send_statement_evaluate(report, mode, instruction):
 #
 # global variables used during tracing
 #
-statement_number = 1  # for debug and print
+statement_number = 1  # keep number order for statements
 # Identifiers
 machine_id, student_hash, partner_hash, input_type = _init_id()
-session = None  # Initialized in initialize_tracing()
+session_id = None  # Session ID, Initialized in initialize_tracing()
 # Tracing behaviour
-tracing_enabled = None  # Initialized in initialize_tracing()
-send_to_LRS = config.send_to_LRS
-debug_log = config.debug_log
+tracing_enabled = None  # Enable user to enable/disable tracing, Initialized in initialize_tracing()
+send_to_LRS = config.send_to_LRS  # Send the created statements to the LRS
+debug_log_print = config.debug_log_print  # Keep Log of statements and Print messages related to tracing
 # Error and function data
 error_groups = config.error_groups
 function_names_context = config.function_names_context
 # Timestamps
-last_typing_timestamp = None
-last_interacting_timestamp = None
-start_execution_timestamp = None
+opened_timestamp = None  # Opened app
+last_typing_timestamp = None  # Last typed in editor
+last_interacting_timestamp = None  # Last interacted with software
+start_execution_timestamp = None  # Last execution start
 
 #
 # xAPI and LRS setup

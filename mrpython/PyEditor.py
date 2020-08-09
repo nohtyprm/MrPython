@@ -134,7 +134,7 @@ class PyEditor(HighlightingText):
         self.old_line = None
 
         # Used for tracing keywords. Check send_keyword for more information.
-        self.typed_char = False # User previously typed a character
+        self.typed_char = False  #True if user previously typed a character
 
 
     def apply_bindings(self,keydefs=None):
@@ -142,11 +142,11 @@ class PyEditor(HighlightingText):
         self.bind("<<newline-and-indent>>",self.newline_and_indent_event)
         self.bind("<<smart-indent>>",self.smart_indent_event)
 
+        self.bind("<<prev-move-cursor>>", self.prev_move_cursor_event)
+        self.bind("<<move-cursor>>", self.move_cursor_event)
         self.bind('<KeyPress>', self.keypress_event)
         self.bind("<<paste>>", self.paste_event)
         self.bind("<<copy>>", self.copied_event)
-        self.bind("<<prev-move-cursor>>", self.prev_move_cursor_event)
-        self.bind("<<move-cursor>>", self.move_cursor_event)
 
         # These should probably be added to config...
         prev_move_cursor = ['<KeyPress-Left>', '<KeyPress-Right>', '<KeyPress-Up>', '<KeyPress-Down>',
@@ -538,6 +538,9 @@ class PyEditor(HighlightingText):
     def smart_backspace_event(self, event):
         tracing.user_is_typing()
         self.typed_char = False
+        if self.old_line is None:
+            self.old_line = self.create_line(self.get_current_line_number())
+
         first, last = self.get_selection_indices()
         if first and last:
             self.send_deletion(first, last)
@@ -550,8 +553,9 @@ class PyEditor(HighlightingText):
         if chars == '':
             if self.compare("insert", ">", "1.0"):
                 # easy: delete preceding newline
+                self.send_update_changed_line(force_sending=True)
+                self.reset_line()
                 self.delete("insert-1c")
-                self.send_update_changed_line()
             else:
                 self.bell()     # at start of buffer
             return "break"
@@ -589,6 +593,9 @@ class PyEditor(HighlightingText):
 
     def newline_and_indent_event(self, event):
         tracing.user_is_typing()
+        if self.old_line is None:
+            self.old_line = self.create_line(self.get_current_line_number())
+
         # Trace last word if it's a keyword
         if self.typed_char:
             cursor = self.index("insert")
@@ -802,7 +809,7 @@ class PyEditor(HighlightingText):
         return head, tail, chars, lines
 
     #
-    # Functions and events used for tracing
+    # Functions used for tracing
     #
     def get_current_line_number(self):
         """Get the line number of the cursor"""
@@ -825,6 +832,7 @@ class PyEditor(HighlightingText):
         return first.split('.')[0] != last.split('.')[0]
 
     def maybe_get_function_name(self, line_number):
+        """Get the function name of instruction at position line_number"""
         function_name = ""
         if line_number < 1:
             return function_name
@@ -838,7 +846,7 @@ class PyEditor(HighlightingText):
         return function_name
 
     def get_previous_function(self, line_number):
-        """Get the name of the previous function defined"""
+        """Get the name of the previous function defined before line_number"""
         while line_number >= 1:
             function_name = self.maybe_get_function_name(line_number)
             if function_name:
@@ -847,6 +855,7 @@ class PyEditor(HighlightingText):
         return "no function defined"
 
     def add_context(self, extensions, line_number):
+        """Add extensions context"""
         i = line_number
         function_name = ""
         incoherence_found = False
@@ -925,8 +934,9 @@ class PyEditor(HighlightingText):
         return pattern.search(comment) is not None
 
     def create_line(self, line_number):
-        line_instruction = self.get_instruction(line_number)
-        if "'''" in line_instruction or '"""' in line_instruction:
+        """Create a Line object for the instruction at line_number."""
+        line_instruction = self.get_instruction(line_number)  # Content of the instruction
+        if "'''" in line_instruction or '"""' in line_instruction:  # Instruction is a beginning or end of multi-string
             if self.is_one_liner_signature(line_instruction):
                 line_type = "signature-oneliner"
             elif self.maybe_get_function_name(line_number-1) != "":
@@ -935,7 +945,7 @@ class PyEditor(HighlightingText):
                 line_type = "signature-ending"
             else:
                 line_type = "multi-string"
-        elif self.is_part_of_multistring(line_number):
+        elif self.is_part_of_multistring(line_number):  # Instruction is part of a multistring
             if self.is_under_signature(line_number-1):
                 line_type = "signature-middle"
             else:
@@ -944,10 +954,12 @@ class PyEditor(HighlightingText):
             instruction_comment = line_instruction.split("#", 1)
             comment_tags = self.tag_nextrange("COMMENT", str(line_number) + ".0 linestart",
                                               str(line_number) + ".0 lineend")
+
             if len(instruction_comment) >= 2 and len(comment_tags) != 0:
                 instruction, comment = instruction_comment[0].strip(), instruction_comment[1].strip()
             else:
                 instruction, comment = instruction_comment[0].strip(), ""
+
             if instruction and comment:
                 line_type = "instruction_and_comment"
             elif instruction:
@@ -965,6 +977,7 @@ class PyEditor(HighlightingText):
         return line
 
     def create_changed_line_extensions(self, old_line, new_line):
+        """Extensions for 'modified instruciton' statement"""
         extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/line-number": old_line.line_number,
                       "https://www.lip6.fr/mocah/invalidURI/extensions/old-instruction-type": old_line.type,
                       "https://www.lip6.fr/mocah/invalidURI/extensions/old-instruction": old_line.instruction,
@@ -972,15 +985,16 @@ class PyEditor(HighlightingText):
                       "https://www.lip6.fr/mocah/invalidURI/extensions/new-instruction": new_line.instruction}
         return extensions
 
-    def send_update_changed_line(self, newline = False, force_sending = True):
+    def send_update_changed_line(self, newline=False, force_sending=False):
         """Send a statement whenever a user modified an instruction.
-        force_sending is used to send  a statement when the user's program is executed"""
+        force_sending is used to force the sending (program execution, backspace over previous line)"""
         if self.old_line is None:
             return
         old_line = self.old_line
         new_line = self.create_line(old_line.line_number)
         cursor_line_number = self.get_current_line_number()
         cursor_changed_line = old_line.line_number != cursor_line_number
+        # not_both_empty: Check if whether old_line, new_line or both are not empty spaces
         not_both_empty = (old_line.instruction != "" and not old_line.instruction.isspace())
         not_both_empty = not_both_empty or (new_line.instruction != "" and not new_line.instruction.isspace())
         instruction_has_been_modified = old_line.instruction.strip() != new_line.instruction.strip()
@@ -990,15 +1004,17 @@ class PyEditor(HighlightingText):
                     tracing.check_modified_student_number(new_line.instruction)
                 extensions = self.create_changed_line_extensions(old_line,new_line)
                 self.add_context(extensions, old_line.line_number)
+                # print(extensions['https://www.lip6.fr/mocah/invalidURI/extensions/old-instruction'])
+                # print(extensions['https://www.lip6.fr/mocah/invalidURI/extensions/new-instruction'])
                 tracing.send_statement("modified", "instruction", extensions)
-            if newline:
+            if newline:  # If newline, we want old_line to be considered empty
                 self.old_line = Line(cursor_line_number, "", "empty")
             else:
                 self.old_line = self.create_line(cursor_line_number)
 
     def reset_line(self):
         """Used after an undo, a redo or a multi-line text deletion in order to
-        consistently trace modified instructions
+        consistently trace modified instructions and keep them mutually exclusive
         """
         self.old_line = None
 
@@ -1042,6 +1058,9 @@ class PyEditor(HighlightingText):
             self.add_context(extensions, int(first.split('.')[0]))
             tracing.send_statement("deleted", "text", extensions)
 
+    #
+    # Functions used for tracing
+    #
     def prev_move_cursor_event(self, event):
         if self.typed_char:
             self.send_keyword(self.index("insert"))
@@ -1050,25 +1069,9 @@ class PyEditor(HighlightingText):
     def move_cursor_event(self, event):
         self.send_update_changed_line()
 
-    def paste_event(self, event):
-        pasted_text = self.clipboard_get()
-        insert_index = self.index("insert")
-        if pasted_text != "":
-            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/text": pasted_text,
-                          "https://www.lip6.fr/mocah/invalidURI/extensions/index": insert_index}
-            self.add_context(extensions, int(insert_index.split('.')[0]))
-            tracing.send_statement("inserted", "text", extensions)
-
-    def copied_event(self, event):
-        first, last = self.get_selection_indices()
-        if first and last:
-            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.get(first, last),
-                          "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": first,
-                          "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last}
-            self.add_context(extensions, int(first.split('.')[0]))
-            tracing.send_statement("copied", "text", extensions)
-
     def keypress_event(self, event):
+        """Used to check if user typed a keyword, deleted some selection
+        and to initialize old_line to check if user modified an instruction"""
         tracing.user_is_typing()
 
         keypress_is_char = len(event.char) >= 1
@@ -1084,6 +1087,27 @@ class PyEditor(HighlightingText):
 
         if self.old_line is None:
             self.old_line = self.create_line(self.get_current_line_number())
+
+    def paste_event(self, event):
+        """User pasted something"""
+        pasted_text = self.clipboard_get()
+        insert_index = self.index("insert")
+        if pasted_text != "":
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/text": pasted_text,
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/index": insert_index}
+            self.add_context(extensions, int(insert_index.split('.')[0]))
+            tracing.send_statement("inserted", "text", extensions)
+
+    def copied_event(self, event):
+        """User copied something"""
+        first, last = self.get_selection_indices()
+        if first and last:
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.get(first, last),
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": first,
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last}
+            self.add_context(extensions, int(first.split('.')[0]))
+            tracing.send_statement("copied", "text", extensions)
+
 
 
 # "line.col" -> line, as an int

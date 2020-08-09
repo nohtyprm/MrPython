@@ -1,6 +1,6 @@
 """
 Contains and modify MrPython behaviour, filepaths for input/output, LRS properties,
-xAPI verbs and activities, error categories and function_names
+xAPI verbs and activities, error categories and mapping function_names->exercise
 """
 from tincan import (
     Verb,
@@ -13,8 +13,8 @@ import os
 
 # MrPython behaviour and filepaths
 
-send_to_LRS = False  # Send the created statements to the LRS
-debug_log = True  # Keep a record of all statements produced in debug_filepath
+send_to_LRS = True  # Send the created statements to the LRS
+debug_log_print = True  # Keep a record of all statements produced in debug_filepath / Print messages related to tracing
 backup_filepath =  os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_backup_stack.txt')
 debug_filepath = os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_debug.txt')
 session_filepath = os.path.join(MrPythonConf.GetUserCfgDir(), 'tracing_session.txt')

@@ -324,9 +324,10 @@ class Console:
         if exec_mode == 'exec' and status and self.mode == tr('student'):
             tracing.check_modified_student_number(report.first_line)
             if tracing.student_hash_uninitialized():  # User is not identified
-                error_message = ("Student number is not initialized.\n"
-                                 "Please type in the first line your student number in the format:\n"
-                                 "# number or # your-number partner-number")
+                error_message = ("Numéro d'étudiant non initialisé.\n"
+                                 "Veuillez saisir votre ou vos numéros en premiere ligne au format:\n"
+                                 "'# numero' ou '# votre-numero binome-numero' \n")
+                self.write("\n==> " + error_message, tags=('warning'))
                 report.add_convention_error("warning", "Uninitialized student number", details=error_message,
                                             class_name="UninitializedStudentNumberWarning")
 

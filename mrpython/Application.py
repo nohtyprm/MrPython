@@ -62,8 +62,6 @@ class Application:
         self.running_interpreter_proxy = None
         self.running_interpreter_callback = None
 
-        tracing.clear_stack()
-        user_accepted_tracing = False
         if tracing.user_first_session():
             user_enabled_tracing = tkMessageBox.askyesno(
                   title="Suivi pédagogique",
@@ -263,6 +261,8 @@ class Application:
                 file_editor.destroy()
 
     def enable_disable_tracing(self, event=None):
+        """ Enable/Disable tracing"""
+        tracing.user_is_interacting()
         tracing_enabled = tracing.switch_tracing_enabled_disabled()
         if tracing_enabled:
             msg = "Le suivi a été activé\n"

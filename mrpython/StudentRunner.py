@@ -62,7 +62,8 @@ class StudentRunner:
         # the conventions checkings that need to be done
 
         # If tracing is activated, check first line for student numbers and check incoherences
-        if tracing.tracing_enabled:
+        import logging
+        if tracing.check_tracing_is_enabled():
             source = self.source.split("\n")
             self.report.add_first_line(source[0])
             error_incoherence = tracing.check_incoherence_function_exercise(source)
