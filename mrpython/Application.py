@@ -2,7 +2,7 @@ from MainView import MainView
 from tkinter import Tk, sys
 from PyEditor import PyEditor
 import Bindings
-
+import tkinter.messagebox as tkMessageBox
 
 
 
@@ -13,7 +13,8 @@ from translate import tr, set_translator_locale
 import multiprocessing as mp
 
 from RunReport import RunReport
-
+from tincan import tracing_mrpython as tracing
+import time
 class Application:
     """
     The main class of the application
@@ -59,6 +60,22 @@ class Application:
         self.running_interpreter_proxy = None
         self.running_interpreter_callback = None
 
+        if tracing.user_first_session():
+            user_enabled_tracing = tkMessageBox.askyesno(
+                  title="Suivi pédagogique",
+                  message="Acceptez-vous que des traces de vos actions dans MrPython " +
+                          "soient collectées par l'équipe de recherche du LIP6 ?\n" +
+                          "Ces traces seront anonymisées et uniquement utilisées dans un but d'amélioration pédagogique",
+                  default=tkMessageBox.YES,
+                    parent=self.root)
+        else:
+            user_enabled_tracing = tracing.check_tracing_is_enabled()
+        tracing.initialize_tracing(user_enabled_tracing)
+
+        self.root.after(1000, self.check_user_state)
+        self.root.after(5000, self.update_active_timestamp)
+        self.state = "idle"  # 3 states: idle, interacting or typing
+
     def run(self):
         """ Run the application """
         self.main_view.show()
@@ -71,12 +88,14 @@ class Application:
         self.save_button = self.icon_widget.icons['save'].wdgt
         self.open_button = self.icon_widget.icons['open'].wdgt
         self.mode_button = self.icon_widget.icons['mode'].wdgt
+        self.tracing_button = self.icon_widget.icons['tracing'].wdgt
         self.new_file_button.bind("<1>", self.new_file)
         self.run_button.bind("<1>", self.run_module)
         self.mode_button.bind("<1>", self.change_mode)
         self.save_button.bind("<1>", self.save)
         self.save_button.bind("<3>", self.editor_list.save_as)
         self.open_button.bind("<1>", self.open)
+        self.tracing_button.bind("<1>", self.enable_disable_tracing)
 
         # File
         self.root.bind("<Control-n>", self.new_file)
@@ -129,6 +148,49 @@ class Application:
             if keylist:
                 self.root.event_add(event, *keylist)
 
+    def check_user_state(self):
+        """
+        Send a statement of the state of the user. User has 3 state: idle, interacting or typing
+        """
+        last_typing_time, last_interacting_time = tracing.get_action_timestamps()
+        elapsed_typing_time = time.time() - last_typing_time if last_typing_time else None
+        elapsed_interacting_time = time.time() - last_interacting_time if last_interacting_time else None
+        inactivity_threshhold = 30
+        new_state = ""
+        if elapsed_typing_time is not None and elapsed_interacting_time is not None:
+            if self.state == "idle":
+                if elapsed_typing_time < inactivity_threshhold:
+                    new_state = "typing"
+                elif elapsed_interacting_time < inactivity_threshhold:
+                    new_state = "interacting"
+            elif self.state == "interacting":
+                if elapsed_typing_time < inactivity_threshhold:
+                    new_state = "typing"
+                elif elapsed_interacting_time > inactivity_threshhold:
+                    new_state = "idle"
+            elif self.state == "typing" and elapsed_typing_time > inactivity_threshhold:
+                if elapsed_interacting_time < 30:
+                    new_state = "interacting"
+        elif elapsed_typing_time is not None:
+            if self.state == "idle" and elapsed_typing_time < inactivity_threshhold:
+                new_state = "typing"
+            elif self.state == "typing" and elapsed_typing_time > inactivity_threshhold:
+                new_state = "idle"
+        elif elapsed_interacting_time is not None:
+            if self.state == "idle" and elapsed_interacting_time < inactivity_threshhold:
+                new_state = "interacting"
+            elif self.state == "interacting" and elapsed_interacting_time > inactivity_threshhold:
+                new_state = "idle"
+
+        if new_state:
+            tracing.send_statement("entered", new_state + "-state")
+            self.state = new_state
+        self.root.after(1000, self.check_user_state)
+
+    def update_active_timestamp(self):
+        tracing.update_active_timestamp()
+        self.root.after(5000, self.update_active_timestamp)
+
 
     def update_title(self, event=None):
         """ Give the title the current filename """
@@ -168,21 +230,45 @@ class Application:
         self.icon_widget.switch_icon_mode(self.mode)
         self.console.change_mode(tr(self.mode))
         self.status_bar.change_mode(tr(self.mode))
+        if event:
+            tracing.user_is_interacting()
+            tracing.send_statement("switched", "mode",
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": tr(self.mode)})
+
+
 
     def new_file(self, event=None):
         """ Creates a new empty editor and put it into the pyEditorList """
+        tracing.user_is_interacting()
         file_editor = PyEditorFrame(self.editor_list)
         self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
+        tracing.send_statement("created", "file")
 
     def open(self, event=None):
         """ Open a file in the text editor """
+        tracing.user_is_interacting()
         file_editor = PyEditorFrame(self.editor_list, open=True)
         if (self.editor_list.focusOn(file_editor.long_title()) == False):
             if (file_editor.isOpen()):
                 self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
-            #not clean, io should be handled here and should not require creation of PyEditor widget
+                # not clean, io should be handled here and should not require creation of PyEditor widget
+                extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/filename": file_editor.get_file_name()}
+                with open(file_editor.long_title(), "r") as source:
+                    extensions["https://www.lip6.fr/mocah/invalidURI/extensions/text"] = source.read()
+                tracing.send_statement("opened", "file", extensions)
             else:
-              file_editor.destroy()
+                file_editor.destroy()
+
+    def enable_disable_tracing(self, event=None):
+        """ Enable/Disable tracing"""
+        tracing.user_is_interacting()
+        tracing_enabled = tracing.switch_tracing_enabled_disabled()
+        if tracing_enabled:
+            msg = "Le suivi a été activé\n"
+        else:
+            msg = "Le suivi a été désactivé\n"
+        print(msg[:-1])
+        self.console.write(msg, tags=('error'))
 
     def close_all_event(self, event=None):
         """ Quit all the PyEditor : called when exiting application """
@@ -196,18 +282,19 @@ class Application:
             if self.running_interpreter_proxy and self.running_interpreter_proxy.process.is_alive():                
                 self.running_interpreter_proxy.process.terminate()
                 self.running_interpreter_proxy.process.join()
+            tracing.send_statement_close_app()
             sys.exit(0)
 
 
     def run_module(self, event=None):
         """ Run the code : give the file name and code will be run from the source file """
-
+        tracing.user_is_interacting()
         # already running
         if self.running_interpreter_callback:
             if self.running_interpreter_proxy and self.running_interpreter_proxy.process.is_alive():
                 report = RunReport()
                 report.set_header("\n====== STOP ======\n")
-                report.add_execution_error('error', tr('User interruption'))
+                report.add_execution_error('error', tr('User interruption'), class_name='UserTerminatedError')
                 report.set_footer("\n==================\n")
                 self.running_interpreter_callback(False, report)
             self.running_interpreter_callback = None
@@ -221,6 +308,10 @@ class Application:
         
         reply = self.editor_list.get_current_editor().maybesave_run()
         if (reply != "cancel"):
+            self.editor_list.get_current_editor().send_update_changed_line(force_sending=True)
+            tracing.send_statement("started", "execution",
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": tr(self.mode)})
+            tracing.save_execution_start()
             file_name = self.editor_list.get_current_editor().long_title()
             self.update_title()
             self.status_bar.update_save_label(file_name)

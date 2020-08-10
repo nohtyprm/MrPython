@@ -274,7 +274,6 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
         print("Tracing: Creating and Sending statement {}, {} {}".format(statement_number, verb_key, activity_key))
     elif debug_log_print:
         print("Tracing: Creating (without sending) statement {}, {} {}".format(statement_number, verb_key, activity_key))
-    statement_number += 1
     verb = verbs[verb_key]
     activity = activities[activity_key]
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/session-id": session_id,
@@ -297,6 +296,7 @@ def send_statement(verb_key, activity_key, activity_extensions=None):
     )
     if debug_log_print:
         io.add_statement_debug(statement, statement_number)
+    statement_number += 1
     # Send the statement from another thread
     if send_to_LRS:
         x = threading.Thread(target=thread_function, args=(statement,))

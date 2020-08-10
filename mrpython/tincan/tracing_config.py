@@ -234,7 +234,11 @@ error_groups = {"AssertionInFunctionWarning": "Semantique&Python101",
                  "OtherExecutionError": "Autre",
                  "UserTerminatedError": "Autre",
                  "ContextExerciseFunctionWarning": "Python101",
-                 "UninitializedStudentNumberWarning": "Python101"
+                 "UninitializedStudentNumberWarning": "Python101",
+                "MissingReturnTypeError": "Typage",
+                "NotUsedDeclarationWarning": "Typage&Python101",
+                "TypeExprParseError": "Typage&Python101",
+                "NoFunctionDocWarning": "Typage&Python101"
                 }
 
 # Mapping function name -> theme number, exercise number, question number
