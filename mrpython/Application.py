@@ -256,7 +256,9 @@ class Application:
                 self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
                 extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/filename": file_editor.get_file_name()}
                 with open(file_editor.long_title(), "r") as source:
-                    extensions["https://www.lip6.fr/mocah/invalidURI/extensions/text"] = source.read()
+                    text = source.read()
+                    extensions["https://www.lip6.fr/mocah/invalidURI/extensions/text"] = text
+                    extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filelength"] = len(text)
                 tracing.send_statement("opened", "file", extensions)
             #not clean, io should be handled here and should not require creation of PyEditor widget
             else:
