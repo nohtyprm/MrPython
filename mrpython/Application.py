@@ -319,7 +319,6 @@ class Application:
                                    {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": tr(self.mode)})
             tracing.save_execution_start()
             file_name = self.editor_list.get_current_editor().long_title()
-            print(file_name)
             self.update_title()
             self.status_bar.update_save_label(file_name)
             self.console.run(file_name)
