@@ -24,7 +24,8 @@ class PyIconWidget(Frame):
         icon_new_file_gif = PhotoImage(file=expand_filename("icons/new_file_icon4.gif"))
         icon_save_gif = PhotoImage(file=expand_filename("icons/save_icon2.gif"))
         icon_open_gif = PhotoImage(file=expand_filename("icons/open_icon2.gif"))
-        icon_tracing_png = PhotoImage(file=expand_filename("icons/tracing_icon.png"))
+        self.icon_tracing_png = PhotoImage(file=expand_filename("icons/tracing_icon.png"))
+        self.icon_not_tracing_png = PhotoImage(file=expand_filename("icons/not_tracing_icon.png"))
         self.icon_student_gif = PhotoImage(file=expand_filename("icons/student_icon2.gif"))
         self.icon_pro_gif = PhotoImage(file=expand_filename("icons/pro_icon3.gif"))
         self.icon_run_gif = PhotoImage(file=expand_filename("icons/run_icon2.gif"))
@@ -64,7 +65,7 @@ class PyIconWidget(Frame):
                                           compound=None, activebackground='#A9A9A9'),
                                     msg=tr('Run Ctrl-R'))
 
-        self.icons['tracing'] = ToolTip(Label(self, image=icon_tracing_png, justify=CENTER,
+        self.icons['tracing'] = ToolTip(Label(self, image=self.icon_tracing_png, justify=CENTER,
                                               cursor="hand1", background="#e1e1e1",
                                               relief="raised", text='',
                                               compound=None, activebackground='#A9A9A9'),
@@ -76,7 +77,7 @@ class PyIconWidget(Frame):
         self.icons['open'].wdgt.image = icon_open_gif
         self.icons['mode'].wdgt.image = self.icon_student_gif
         self.icons['run'].wdgt.image = self.icon_run_gif
-        self.icons['tracing'].wdgt.image = icon_tracing_png
+        self.icons['tracing'].wdgt.image = self.icon_tracing_png
 
         # Packing the labels
         sep = Label(self, background="white")
@@ -113,3 +114,8 @@ class PyIconWidget(Frame):
         elif mode == "full":
             self.icons['mode'].wdgt.config(image=self.icon_pro_gif)
 
+    def switch_icon_tracing(self, tracing_enabled):
+        if tracing_enabled:
+            self.icons['tracing'].wdgt.config(image=self.icon_tracing_png)
+        else:
+            self.icons['tracing'].wdgt.config(image=self.icon_not_tracing_png)

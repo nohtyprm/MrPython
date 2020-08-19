@@ -64,13 +64,15 @@ class Application:
             user_enabled_tracing = tkMessageBox.askyesno(
                   title="Suivi pédagogique",
                   message="Acceptez-vous que des traces de vos actions dans MrPython " +
-                          "soient collectées par l'équipe de recherche du LIP6 ?\n" +
-                          "Ces traces seront anonymisées et uniquement utilisées dans un but d'amélioration pédagogique",
+                          "soient collectées par le LIP6 ?\n" +
+                          "Ces traces seront anonymisées et uniquement utilisées dans un but d'amélioration pédagogique " +
+                          "de MrPython.",
                   default=tkMessageBox.YES,
                     parent=self.root)
         else:
             user_enabled_tracing = tracing.check_tracing_is_enabled()
         tracing.initialize_tracing(user_enabled_tracing)
+        self.icon_widget.switch_icon_tracing(user_enabled_tracing)
 
         self.root.after(1000, self.check_user_state)
         self.root.after(5000, self.update_active_timestamp)
@@ -254,7 +256,9 @@ class Application:
                 # not clean, io should be handled here and should not require creation of PyEditor widget
                 extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/filename": file_editor.get_file_name()}
                 with open(file_editor.long_title(), "r") as source:
-                    extensions["https://www.lip6.fr/mocah/invalidURI/extensions/text"] = source.read()
+                    text = source.read()
+                    extensions["https://www.lip6.fr/mocah/invalidURI/extensions/text"] = text
+                    extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filelength"] = len(text)
                 tracing.send_statement("opened", "file", extensions)
             else:
                 file_editor.destroy()
@@ -267,8 +271,8 @@ class Application:
             msg = "Le suivi a été activé\n"
         else:
             msg = "Le suivi a été désactivé\n"
-        print(msg[:-1])
         self.console.write(msg, tags=('error'))
+        self.icon_widget.switch_icon_tracing(tracing_enabled)
 
     def close_all_event(self, event=None):
         """ Quit all the PyEditor : called when exiting application """

@@ -486,8 +486,11 @@ def send_statement_execute(report, mode, filename):
     else:
         verb = "failed"
 
+    with open(filename, "r") as f:
+        file_length = len(f.read())
     extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": mode,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/filename": os.path.basename(filename),
+                  "https://www.lip6.fr/mocah/invalidURI/extensions/filelength": file_length,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/nb-errors": nb_errors,
                   "https://www.lip6.fr/mocah/invalidURI/extensions/nb-warnings": nb_warnings}
     if manually_terminated:
