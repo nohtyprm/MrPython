@@ -66,13 +66,15 @@ class Application:
             user_enabled_tracing = tkMessageBox.askyesno(
                   title="Suivi pédagogique",
                   message="Acceptez-vous que des traces de vos actions dans MrPython " +
-                          "soient collectées par l'équipe de recherche du LIP6 ?\n" +
-                          "Ces traces seront anonymisées et uniquement utilisées dans un but d'amélioration pédagogique",
+                          "soient collectées par le LIP6 ?\n" +
+                          "Ces traces seront anonymisées et uniquement utilisées dans un but d'amélioration pédagogique " +
+                          "de MrPython.",
                   default=tkMessageBox.YES,
                     parent=self.root)
         else:
             user_enabled_tracing = tracing.check_tracing_is_enabled()
         tracing.initialize_tracing(user_enabled_tracing)
+        self.icon_widget.switch_icon_tracing(user_enabled_tracing)
 
         self.root.after(1000, self.check_user_state)
         self.root.after(5000, self.update_active_timestamp)
@@ -268,8 +270,8 @@ class Application:
             msg = "Le suivi a été activé\n"
         else:
             msg = "Le suivi a été désactivé\n"
-        print(msg[:-1])
         self.console.write(msg, tags=('error'))
+        self.icon_widget.switch_icon_tracing(tracing_enabled)
 
 
     def close_all_event(self, event=None):
@@ -315,6 +317,7 @@ class Application:
                                    {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": tr(self.mode)})
             tracing.save_execution_start()
             file_name = self.editor_list.get_current_editor().long_title()
+            print(file_name)
             self.update_title()
             self.status_bar.update_save_label(file_name)
             self.console.run(file_name)
