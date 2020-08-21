@@ -755,14 +755,34 @@ class ERange(Expr):
             self.stop = self.start
             self.start = None
 
+def parse_args(args):
+    eargs = []
+    for arg in args:
+        eargs.append(parse_expression(arg))
+    return eargs
 
 def parse_call(node):
     if isinstance(node.func, ast.Name) and node.func.id == 'range':
         return ERange(node)
+    elif isinstance(node.func, ast.Name) and node.func.id == 'min':
+        return EMin(node, parse_args(node.args))
+    elif isinstance(node.func, ast.Name) and node.func.id == 'max':
+        return EMax(node, parse_args(node.args))
     elif isinstance(node.func, (ast.Name, ast.Attribute)):
         return ECall(node)
     else:
         return UnsupportedNode(node)
+
+
+class EMin(Expr):
+    def __init__(self, node, args):
+        self.ast = node
+        self.args = args
+
+class EMax(Expr):
+    def __init__(self, node, args):
+        self.ast = node
+        self.args = args
 
 class EList(Expr):
     def __init__(self, node):

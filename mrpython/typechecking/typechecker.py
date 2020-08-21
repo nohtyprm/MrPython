@@ -1393,6 +1393,34 @@ ENot.type_infer = type_infer_ENot
 def type_infer_ENone(node, ctx):
     return NoneTypeType()
 
+
+def type_infer_EMin(node, ctx):
+    return type_infer_narynum(node.args, ctx)
+
+EMin.type_infer = type_infer_EMin
+
+def type_infer_EMax(node, ctx):
+    return type_infer_narynum(node.args, ctx)
+
+EMax.type_infer = type_infer_EMax
+
+def type_infer_narynum(args, ctx):
+    targ = None
+    only_ints = True
+    for arg in args:
+        targ = arg.type_infer(ctx)
+        if not targ:
+            return None
+        if not isinstance(targ, (NumberType, FloatType, IntType)):
+            ctx.add_type_error(NaryNumOpArgNotNumeric(arg))
+            return None
+        if not isinstance(targ, IntType):
+            only_ints = False
+    if only_ints:
+        return IntType()
+    else:
+        return FloatType()
+
 ENone.type_infer = type_infer_ENone
 
 def type_infer_ECall(call, ctx):
@@ -2975,6 +3003,20 @@ class IndexingSequenceNotNumeric(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Bad index"), self.index.ast.lineno, self.index.ast.col_offset
                                     , tr("Sequence index must be an integer"))
+
+class NaryNumOpArgNotNumeric(TypeError):
+    def __init__(self, arg):
+        self.arg = arg
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "NaryNumOpArgNotNumeric[]@{}:{}".format(self.arg.ast.lineno, self.arg.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad argument"), self.arg.ast.lineno, self.arg.ast.col_offset
+                                    , tr("This argument is not numeric."))
 
 
 class IndexingDictKeyTypeError(TypeError):
