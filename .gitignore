@@ -58,3 +58,6 @@ target/
 
 # MrPython
 interpreter_output
+
+# temp files
+*~
