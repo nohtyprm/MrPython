@@ -1,8 +1,8 @@
 ##!FAIL: ContainerAssignTypeError[str]@7:4
 
-def f():
-    """ -> NoneType """
-    # s : str
+def f() -> None:
+    """"""
+    s : str
     s = 'hello'
     s[0] = 'H'
 

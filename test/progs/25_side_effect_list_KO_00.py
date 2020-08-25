@@ -1,8 +1,8 @@
 ##!FAIL: SideEffectWarning[append]@7:4
 
-def side_effect(L, I):
+def side_effect(l : List[int], ll : List[List[int]]) -> int:
     """list[int] * list[list[int]]->int"""
-    #M : list[list[int]]
-    M = [L, []]
-    M[0].append(2)
+    lll : List[List[int]]
+    lll = [l, []]
+    lll[0].append(2)
     return 0

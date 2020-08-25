@@ -1,9 +1,9 @@
 ##!FAIL: ForbiddenMultiAssign[b]@9:0
 
-# a : int
+a : int
 a = 3
 
-# b : bool
+b : bool
 b = True
 
 b = a

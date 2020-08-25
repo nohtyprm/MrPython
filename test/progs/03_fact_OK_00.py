@@ -1,13 +1,12 @@
 
-def fact(n):
-    """ int -> int
-    retourne la factorielle de n.
+def fact(n : int) -> int:
+    """Retourne la factorielle de n.
     """
 
-    # acc : int (accumulateur)
+    acc : int # accumulateur
     acc = 1
 
-    # i : int (compteur)
+    i : int # compteur
     i = 2
 
     while i <= n:

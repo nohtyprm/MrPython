@@ -1,3 +1,3 @@
-def concatenation(L):  
-    """ list[tuple[int, int]] -> list[tuple[int, int]] """  
-    return L[:2] + L[2:]
+def concatenation(l : List[Tuple[int, int]]) -> List[Tuple[int, int]]:  
+    """ """  
+    return l[:2] + l[2:]

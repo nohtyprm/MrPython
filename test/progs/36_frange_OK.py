@@ -1,10 +1,10 @@
-def f():
-    """ -> int"""
+def f() -> int:
+    """ """
 
-    # r : range
+    r : range
     r = range(1, 11)
 
-    # i : int
+    i : int
     for i in r:
         print(i)
 
@@ -12,14 +12,14 @@ def f():
 
 assert f() == 5
 
-def g(R):
-    """ range -> int"""
+def g(r : range) -> int:
+    """ """
 
-    # s : int
+    s : int
     s = 0
 
-    # i : int
-    for i in R:
+    i : int
+    for i in r:
         s = s + i
 
     return s

@@ -1,10 +1,10 @@
-def bad_function(T):
-    '''tuple[int,int] -> int'''
+def bad_function(t : Tuple[int, int]) -> int:
+    ''''''
 
-    #a : tuple[tuple[int,int],int]
+    a : Tuple[Tuple[int,int],int]
     a = ((1,2),4)
-    #d : tuple[int,int]
-    #g: int
+    d : Tuple[int,int]
+    g: int
     (d,g) = a
     return 0
 

@@ -10,9 +10,14 @@ from translate import tr
 import studentlib.gfx.image
 import studentlib.gfx.img_canvas
 
+import typing
+
 from typechecking.typechecker import typecheck_from_ast
+from typechecking.type_ast import PREDEFINED_TYPE_VARIABLES
 
 def install_locals(locals):
+    # install the gfx lib
+    
     #locals = { k:v for (k,v) in locs.items() }
     locals['draw_line'] = studentlib.gfx.image.draw_line
     locals['line'] = studentlib.gfx.image.draw_line
@@ -28,6 +33,21 @@ def install_locals(locals):
     locals['underlay'] = studentlib.gfx.image.underlay
     locals['empty_image'] = studentlib.gfx.image.empty_image
     locals['show_image'] = studentlib.gfx.img_canvas.show_image
+
+    # install the typing module
+    locals['Sequence'] = typing.Sequence
+    locals['List'] = typing.List
+    locals['Set'] = typing.Set
+    locals['Iterable'] = typing.Iterable
+    locals['Tuple'] = typing.Tuple
+    locals['Dict'] = typing.Dict
+
+    # hack
+    locals['Image'] = None
+
+    for tvar in PREDEFINED_TYPE_VARIABLES:
+        locals[tvar] = typing.TypeVar(tvar)
+
     return locals
 
 class StudentRunner:

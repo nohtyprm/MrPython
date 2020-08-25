@@ -1,14 +1,14 @@
 ##!FAIL: SideEffectWarning[append]@16:4
-def f(P):
-    """list[int] -> int"""
-    #T:tuple[list[list[int]], list[list[int]]]
+def f(P : List[int]) -> int:
+    """"""
+    T:Tuple[List[List[int]], List[List[int]]]
     T = ([[]], [[]])
-    #M: list[list[int]]
-    #N: list[list[int]]
+    M: List[List[int]]
+    N: List[List[int]]
     M,N = T
     
-    #K: list[list[int]]
-    #L: list[list[int]]
+    K: List[List[int]]
+    L: List[List[int]]
     K, L = T
     K.append(P)
     

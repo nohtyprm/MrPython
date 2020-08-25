@@ -1,7 +1,7 @@
 ##!FAIL: ParameterInAssignmentError[x]@7:4
 
-def f(x):
-    """ int -> int """
+def f(x : int) -> int:
+    """blabla"""
 
     # x : int
     x = 42

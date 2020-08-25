@@ -1,10 +1,10 @@
-##!FAIL: SignatureTrailingError[f/ing]@6:0
+##!FAIL: UnknownTypeAliasError[string]@6:0
 
 # remark : string type is "str" not "string"
 # counter-example courtesy of wegank@github, thanks !
 
-def f(x):
-    """ int -> string """
+def f(x : int) -> string:
+    """blabla"""
 
     return "test"
 

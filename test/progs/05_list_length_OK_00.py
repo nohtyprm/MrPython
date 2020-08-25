@@ -1,35 +1,33 @@
 
-def longueur(L):
-    """Iterable[α] -> int
-    Retourne la longueur de L"""
+def longueur(l : Iterable[T]) -> int:
+    """Retourne la longueur de L"""
 
-    # l : int
-    l = 0
+    long : int
+    long = 0
 
-    # e : α
-    for e in L:
+    e : T
+    for e in l:
         print(e)
-        l = l + 1
+        long = long + 1
 
-    return l
+    return long
 
 
 assert longueur([1, 2, 3, 4]) == 4
 assert longueur([]) == 0
 
 
-def list_length(LL):
-    """Iterable[Iterable[α]] -> list[int]
-    Retourne la liste des longueurs de listes de L"""
+def list_length(ll : Iterable[Iterable[T]]) -> List[int]:
+    """Retourne la liste des longueurs de listes de L"""
 
-    # LR : list[int]
-    LR = []
+    lr : List[int]
+    lr = []
 
-    # L : Iterable[α]
-    for L in LL:
-        LR.append(longueur(L))
+    l : Iterable[T]
+    for l in ll:
+        lr.append(longueur(l))
 
-    return LR
+    return lr
 
 assert list_length([[], [1], [1, 2], [1, 2, 3], [1, 2, 3, 4]]) == [0, 1, 2, 3, 4]
 assert list_length([]) == []

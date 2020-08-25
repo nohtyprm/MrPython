@@ -209,10 +209,10 @@ class NumberType(TypeAST):
         return isinstance(other, NumberType)
 
     def __str__(self):
-        return "Number"
+        return "float"  # Hack: number is the same as float (since v.3.99.1)
 
     def __repr__(self):
-        return "NumberType()"
+        return "FloatType()"
 
 
 class NoneTypeType(TypeAST):
@@ -292,6 +292,15 @@ class StrType(TypeAST):
     def __repr__(self):
         return "StrType()"
 
+### XXX : this is the "ultimate" hack but it's very practical
+###       from a pedagogical point of view : we know that 'T', 'U', 'V', etc.
+###       are identifiers for type variables exclusively  (and reserved in Python101)
+PREDEFINED_TYPE_VARIABLES = { 'T', 'U', 'V', 'W', 'K'
+                              , 'T1', 'T2', 'T3', 'T4'
+                              , 'U1', 'U2', 'U3', 'U4'
+                              , 'V1', 'V2', 'V3', 'V4'
+                              , 'W1', 'W2', 'W3', 'W4'
+                              , 'K1', 'K2', 'K3', 'K4' }
 
 class TypeVariable(TypeAST):
     def __init__(self, var_name, annotation=None):
@@ -448,9 +457,9 @@ class ListType(TypeAST):
 
     def __str__(self):
         if self.elem_type:
-            return "list[{}]".format(str(self.elem_type))
+            return "List[{}]".format(str(self.elem_type))
         else:
-            return "emptylist"
+            return "EmptyList"
 
     def __repr__(self):
         return "ListType({})".format(repr(self.elem_type)) if self.elem_type else "ListType()"

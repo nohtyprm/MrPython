@@ -1,13 +1,14 @@
-##!FAIL: UnhashableElementError[list[int]]@13:7
+##!FAIL: UnhashableElementError[List[int]]@14:7
 
-def deepsetlist(L):
-    """ list[list[alpha]] -> list[set[alpha]] """
-    # E : set[alpha]
-    E = set()
-    # e : alpha
-    for e in L[0]:
-        E.add(e)
-    return [E]
+def deepsetlist(l : List[List[T]]) -> List[Set[T]]:
+    """ """
+    ens : Set[T]
+    ens = set()
+    
+    e : T
+    for e in l[0]:
+        ens.add(e)
+    return [ens]
 
 
 assert deepsetlist([[[1, 2], [3, 4]], []]) == [set()]  # boum !
