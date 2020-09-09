@@ -58,7 +58,6 @@ Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\config-highli
 Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\config-keys.def"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\config-main.def"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\config-version.def"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\interpreter_output"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\libcrypto-1_1.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\libffi-7.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\libssl-1_1.dll"; DestDir: "{app}"; Flags: ignoreversion
