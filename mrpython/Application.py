@@ -246,6 +246,8 @@ class Application:
         self.console.runit(file_name)
 
 if __name__ == "__main__":
+    # windows only
+    mp.freeze_support()
     mp.set_start_method('spawn')
     app = Application()
     app.run()
