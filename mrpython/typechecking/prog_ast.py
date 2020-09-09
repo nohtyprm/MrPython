@@ -16,6 +16,8 @@ except ImportError:
 
 import os.path, sys
 
+import astpp
+
 main_path = os.path.dirname(os.path.realpath(__file__))
 found_path = False
 for path in sys.path:
@@ -24,9 +26,6 @@ for path in sys.path:
         break
 if not found_path:
     sys.path.append(main_path)
-
-
-import astpp
 
 class Program:
     def __init__(self):
@@ -562,7 +561,7 @@ def EBinOp(node):
         wrap_node = BINOP_CLASSES[binop_type_name](node, left, right)
         return wrap_node
     else:
-        print(astpp.dump(node))
+        #print(astpp.dump(node))
         return UnsupportedNode(node)
 
 class EAnd(Expr):
