@@ -1,37 +1,27 @@
-## Welcome to GitHub Pages
+## Welcome / Bienvenue
 
-You can use the [editor on GitHub](https://github.com/nohtyprm/MrPython/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+MrPython is a minimalistic, distraction-free, pedagocical Python editor.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+It is a free software based on the [IDLE editor](https://docs.python.org/3/library/idle.html)
+(the rest is if for now in french only)
 
-### Markdown
+## Qu'est-ce-que MrPython ?
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+MrPython est un éditeur de code source Python minimaliste et à vocation principalement pédagogique. Il est notamment utilisé dans le cours d'introduction à l'informatique de Sorbonne Université. Il est aussi adapté comme outil de support pour le livre suivant :
 
-```markdown
-Syntax highlighted code block
+> [**Eléments de programmation**](https://www.editions-ellipses.fr/accueil/10671-elements-de-programmation-de-lalgorithme-au-programme-python-9782340041066.html)
+> De l'algorithme au programme Python
+> Frédéric Peschanski et Romain Demangeon
+> Editions Ellipses
 
-# Header 1
-## Header 2
-### Header 3
+## Fonctionnalités principales
 
-- Bulleted
-- List
+ - Edition de code source Python avec indentation assisté et coloration syntaxique
+ - Mode étudiant avec typage (annotations [PEP-484](https://www.python.org/dev/peps/pep-0484/)) et nombreuses autres vérifications, bibliothèque graphique fonctionnelle, assertions de test, etc.
+ - Mode expert avec support de l'intégralité du langage Python
 
-1. Numbered
-2. List
+## Installation
 
-**Bold** and _Italic_ and `Code` text
+- Il existe des consignes d'installation manuelle pour Linux, MacOS et Windows
+- et un installateur pour Windows 10 est disponible à cette adresse :  <bientôt>
 
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/nohtyprm/MrPython/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
