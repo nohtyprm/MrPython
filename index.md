@@ -25,3 +25,6 @@ MrPython est un éditeur de code source Python minimaliste et à vocation princi
 - Il existe des consignes d'installation manuelle pour Linux, MacOS et Windows
 - et un installateur pour Windows 10 est disponible à cette adresse :  <bientôt>
 
+## Manuel d'utilisation
+
+Consultez le document de [prise en main de MrPython](https://nohtyprm.github.io/MrPython/manual-FR)
