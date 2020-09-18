@@ -110,11 +110,11 @@ Un code de couleur est employé pour catégoriser les sorties :
 
  - le **noir** correspond à des informations neutres, comme par exemple les valeurs, les informations de version, etc.
  - le <span style="color: green">**vert**</span> indique qu'une étape (par exemple, le typage) de l'interprétation s'est déroulée correctement
- - l'orange correspond à un avertissement, c'est-à-dire un problème non-critique rencontré dans l'intérprétation du programme
- - le rouge identifie une erreur qui empêche le bon fonctionnement du programme. Il y a plusieurs types d'erreurs gérés par MrPython, notamment :
+ - l'<span style="color: orange">**orange**</span> correspond à un *avertissement*, c'est-à-dire un problème non-critique rencontré dans l'intérprétation du programme
+ - le <span style="color: red">**rouge**</span> identifie une *erreur* qui empêche le bon fonctionnement du programme. Il y a plusieurs types d'erreurs gérés par MrPython, notamment :
    - les erreurs de conventions ou de typage en mode étudiant
    - les erreurs («exceptions») signalées par l'interprète Python
    - etc.
- - le gris correspond à des affichages du programme sur la sortie standard (`stdout`), suite par exemple à l'invocation de la procédure `print` de Python.
+ - le <span style="color: grey">**gris**</span> correspond à des affichages du programme sur la sortie standard (`stdout`), suite par exemple à l'invocation de la procédure `print` de Python.
  
  
