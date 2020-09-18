@@ -11,7 +11,9 @@ MrPython est un éditeur de code source Python minimaliste et à vocation princi
 
 > [**Eléments de programmation**](https://www.editions-ellipses.fr/accueil/10671-elements-de-programmation-de-lalgorithme-au-programme-python-9782340041066.html)
 > De l'algorithme au programme Python
+>
 > Frédéric Peschanski et Romain Demangeon
+>
 > Editions Ellipses
 
 ## Fonctionnalités principales
