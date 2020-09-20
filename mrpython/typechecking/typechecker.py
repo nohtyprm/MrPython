@@ -1165,14 +1165,14 @@ def type_infer_EMult(expr, ctx):
     if not left_type:
         return None
 
-    # first case if the left operand is a string
+    # first case if the left operand is a string, a liste or a sequence
 
     if isinstance(left_type, (StrType, ListType, SequenceType)):
         right_type = type_expect(ctx, expr.right, IntType())
         if not right_type:
             return None
         else:
-            return StrType()
+            return left_type
 
     # second case if the left operand is an int, and the right operand is a str, sequence or list
     if isinstance(left_type, IntType):
