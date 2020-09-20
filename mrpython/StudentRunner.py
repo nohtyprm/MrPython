@@ -41,6 +41,7 @@ def install_locals(locals):
     locals['Iterable'] = typing.Iterable
     locals['Tuple'] = typing.Tuple
     locals['Dict'] = typing.Dict
+    locals['Optional'] = typing.Optional
 
     # hack
     locals['Image'] = None
