@@ -1,6 +1,6 @@
 ## Welcome / Bienvenue
 
-MrPython is a minimalistic, distraction-free, pedagocical Python editor.
+MrPython is a minimalistic, distraction-free, pedagogical Python editor.
 
 It is a free software based on the [IDLE editor](https://docs.python.org/3/library/idle.html)
 (the rest is if for now in french only)
@@ -12,7 +12,7 @@ MrPython est un éditeur de code source Python minimaliste et à vocation princi
 > [**Eléments de programmation**](https://www.editions-ellipses.fr/accueil/10671-elements-de-programmation-de-lalgorithme-au-programme-python-9782340041066.html)
 > De l'algorithme au programme Python
 >
-> Frédéric Peschanski et Romain Demangeon
+> *Frédéric Peschanski* et *Romain Demangeon*
 >
 > Editions Ellipses
 
@@ -25,7 +25,8 @@ MrPython est un éditeur de code source Python minimaliste et à vocation princi
 ## Installation
 
 - Il existe des consignes d'installation manuelle pour Linux, MacOS et Windows
-- un [installateur pour Windows 10](https://github.com/nohtyprm/MrPython/raw/win-installer/mrpython_4_0_0_install_FR.exe) est disponible
+- un [installateur pour Windows 10 (MrPython v4.0.1)](https://github.com/nohtyprm/MrPython/raw/win-installer/mrpython_4_0_1_install_FR.exe) est disponible
+- les sources de MrPython v4.0.1 sont également diponibles au [format zip](https://github.com/nohtyprm/MrPython/archive/v4.0.1.zip) et au [format tar.gz](https://github.com/nohtyprm/MrPython/archive/v4.0.1.tar.gz)
 - un installateur pour MacOS est en cours d'investigation, ainsi que pour différentes version de Linux, n'hésitez pas à [contribuer au projet](https://github.com/nohtyprm/MrPython) !
 
 ## Manuel d'utilisation
