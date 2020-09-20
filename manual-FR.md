@@ -9,17 +9,18 @@ Au lancement de l'application, la fenêtre principale se présente ainsi :
 
 L’environnement propose trois zones principales :
 
- — la **zone de commandes** qui consiste en un nombre réduit de commandes
-   — créer, charger et sauvergarder un fichier Python
-   — alterner entre le «mode étudiant» et le «mode expert»
-   — lancer l’interprétation du programme courant
- — la **zone d’édition** qui permet de rédiger un programme Python de façon confortable
-   — coloration syntaxique
-   — gestion «intelligente» de l’indentation
-   — commandes usuelles d’édition (Ctrl-C, Ctrl-V, etc.)
- — la zone d’interaction composée de deux «sous-zones» :
-   — la **zone d’affichage** qui affiche les résultats d’évaluation, les erreurs éventuelles, etc.
-   — la **zone d’évaluation** permettant de saisir une expression Python simple (sur une
+ * la **zone de commandes** qui consiste en un nombre réduit de commandes
+   * créer, charger et sauvergarder un fichier Python
+   * alterner entre le «mode étudiant» et le «mode expert»
+   * lancer l’interprétation du programme courant
+ 
+ * la **zone d’édition** qui permet de rédiger un programme Python de façon confortable
+   * coloration syntaxique
+   * gestion «intelligente» de l’indentation
+   * commandes usuelles d’édition (Ctrl-C, Ctrl-V, etc.)
+ * la zone d’interaction composée de deux «sous-zones» :
+   * la **zone d’affichage** qui affiche les résultats d’évaluation, les erreurs éventuelles, etc.
+   * la **zone d’évaluation** permettant de saisir une expression Python simple (sur une
 ligne) et de l’évaluer (bouton Eval ou simplement retour chariot – touche Entrée).
 
 
