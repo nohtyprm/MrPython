@@ -2285,8 +2285,8 @@ BUILTINS_IMPORTS = {
     ,'min' : function_type_parser("float * float -> float").content
     ,'max' : function_type_parser("float * float -> float").content
     # ,'range' : function_type_parser("int * int -> Iterable[int]").content  # range is an expression now
-    , 'int' : function_type_parser("Ω -> int").content
-    , 'float' : function_type_parser("Ω -> float").content
+    , 'int' : function_type_parser("float -> int").content
+    , 'float' : function_type_parser("float -> float").content
     , 'str' : function_type_parser("Ω -> str").content
     , 'ord' : function_type_parser("str -> int").content
     , 'chr' : function_type_parser("int -> str").content
