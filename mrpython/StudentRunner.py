@@ -11,6 +11,7 @@ import studentlib.gfx.image
 import studentlib.gfx.img_canvas
 
 import typing
+from tincan import tracing_mrpython as tracing
 
 from typechecking.typechecker import typecheck_from_ast
 from typechecking.type_ast import PREDEFINED_TYPE_VARIABLES
@@ -78,6 +79,14 @@ class StudentRunner:
     def execute(self, locals):
         """ Run the file : customized parsing for checking rules,
             compile and execute """
+        # If tracing is activated, check first line for student numbers and check incoherences
+        if tracing.check_tracing_is_enabled():
+            source = self.source.split("\n")
+            self.report.add_first_line(source[0])
+            error_incoherence = tracing.check_incoherence_function_exercise(source)
+            if error_incoherence is not None:  # If theme and exercise number != Function name
+                self.report.add_convention_error("warning", "Context incoherence", details=error_incoherence, class_name="ContextExerciseFunctionWarning")
+
         # Compile the code and get the AST from it, which will be used for all
         # the conventions checkings that need to be done
 
@@ -85,10 +94,10 @@ class StudentRunner:
             self.AST = ast.parse(self.source, self.filename)
         # Handle the different kinds of compilation errors
         except IndentationError as err:
-            self.report.add_compilation_error('error', tr("Bad indentation"), err.lineno, err.offset)
+            self.report.add_compilation_error('error', tr("Bad indentation"), err.lineno, err.offset, class_name="IndentationError")
             return False
         except SyntaxError as err:
-            self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=err.text)
+            self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=err.text, class_name="SyntaxError")
             return False
         except Exception as err:
             typ, exc, tb = sys.exc_info()
@@ -128,7 +137,7 @@ class StudentRunner:
             a, b, tb = sys.exc_info()
             filename, lineno, file_type, line = traceback.extract_tb(tb)[-1]
             err_str = self._extract_error_details(err)
-            self.report.add_execution_error('error', tr("Type error"), lineno, details=str(err))
+            self.report.add_execution_error('error', tr("Type error"), lineno, details=str(err), class_name="TypeError")
             return (False, None)
         except NameError as err:
             a, b, tb = sys.exc_info() # Get the traceback object
@@ -137,12 +146,12 @@ class StudentRunner:
             # traceback, [1] refers to the last error inside code
             filename, lineno, file_type, line = traceback.extract_tb(tb)[-1]
             err_str = self._extract_error_details(err)
-            self.report.add_execution_error('error', tr("Name error (unitialized variable?)"), lineno, details=err_str)
+            self.report.add_execution_error('error', tr("Name error (unitialized variable?)"), lineno, details=err_str, class_name="NameError")
             return (False, None)
         except ZeroDivisionError:
             a, b, tb = sys.exc_info()
             filename, lineno, file_type, line = traceback.extract_tb(tb)[-1]
-            self.report.add_execution_error('error', tr("Division by zero"), lineno if mode=='exec' else None)
+            self.report.add_execution_error('error', tr("Division by zero"), lineno if mode=='exec' else None, class_name="ZeroDivisionError")
             return (False, None)
         except AssertionError:
             a, b, tb = sys.exc_info()
@@ -150,7 +159,7 @@ class StudentRunner:
             traceb = traceback.extract_tb(tb)
             if len(traceb) > 1:
                 filename, lineno, file_type, line = traceb[-1]
-            self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno)
+            self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno, class_name="AssertionError")
             return (True, None)
         except Exception as err:
             a, b, tb = sys.exc_info() # Get the traceback object
@@ -161,7 +170,7 @@ class StudentRunner:
             traceb = traceback.extract_tb(tb)
             if len(traceb) > 1:
                 filename, lineno, file_type, line = traceb[-1]
-            self.report.add_execution_error('error', a.__name__, lineno, details=str(err))
+            self.report.add_execution_error('error', a.__name__, lineno, details=str(err), class_name=a.__name__)
             return (False, None)
         finally:
             self.running = False
@@ -176,7 +185,7 @@ class StudentRunner:
         try:
             code = compile(self.source, self.filename, 'exec')
         except SyntaxError as err:
-            self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=str(err))
+            self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=str(err), class_name="SyntaxError")
             return False
         except Exception as err:
             typ, exc, tb = sys.exc_info()
@@ -253,7 +262,8 @@ class StudentRunner:
         if missing:
             self.report.add_convention_error('warning', tr('Missing tests')
                                              , details="\n" + tr('Untested functions: ')
-                                             + "{}".format(missing) + "\n")
+                                             + "{}".format(missing) + "\n",
+                                             class_name="MissingTestsWarning")
         elif defined_funs:
             # all the functions are tested at least once
             self.report.add_convention_error('run', tr('All functions tested'), details="==> " + tr("All functions tested (good)"))

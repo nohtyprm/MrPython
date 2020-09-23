@@ -141,81 +141,102 @@ class PyEditorList(CloseableNotebook):
             return None
 
     def save_as(self,event=None):
-        return self.get_current_editor().save_as(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().save_as(event)
 
     def save_as_copy(self,event=None):
-        return self.get_current_editor().save_a_copy(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().save_a_copy(event)
 
     def undo_event(self,event=None):
-        return self.get_current_editor().undo_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().undo_event(event)
 
     def redo_event(self,event=None):
-        return self.get_current_editor().redo_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().redo_event(event)
 
     def cut_event(self,event=None):
-        return self.get_current_editor().cut(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().cut(event)
 
     def copy_event(self,event=None):
-        return self.get_current_editor().copy(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().copy(event)
 
     def paste_event(self,event=None):
-        return self.get_current_editor().paste(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().paste(event)
 
     def select_all_event(self,event=None):
-        return self.get_current_editor().select_all(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().select_all(event)
 
     def find_event(self,event=None):
-        return self.get_current_editor().find_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().find_event(event)
 
     def find_again_event(self, event=None):
-        return self.get_current_editor().find_again_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().find_again_event(event)
 
     def find_selection_event(self, event=None):
-        return self.get_current_editor().find_selection_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().find_selection_event(event)
 
     def find_in_files_event(self, event=None):
-       return self.get_current_editor().find_in_files_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().find_in_files_event(event)
 
     def replace_event(self, event=None):
-         return self.get_current_editor().replace_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().replace_event(event)
 
     def goto_line_event(self,event=None):
-        return self.get_current_editor().goto_line_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().goto_line_event(event)
 
     def indent_region_event(self,event=None):
-        return self.get_current_editor().indent_region_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().indent_region_event(event)
 
     def comment_region_event(self,event=None):
-        return self.get_current_editor().comment_region_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().comment_region_event(event)
 
     def dedent_region_event(self, event=None):
-        return self.get_current_editor().dedent_region_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().dedent_region_event(event)
 
     def uncomment_region_event(self, event=None):
-        return self.get_current_editor().uncomment_region_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().uncomment_region_event(event)
 
     def tabify_region_event(self, event=None):
-        return self.get_current_editor().tabify_region_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().tabify_region_event(event)
 
     def untabify_region_event(self, event=None):
-        return self.get_current_editor().untabify_region_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().untabify_region_event(event)
 
     def toggle_tabs_event(self, event=None):
-        return self.get_current_editor().toggle_tabs_event(event)
+        if self.get_size() > 0:
+            return self.get_current_editor().toggle_tabs_event(event)
 
-    def goto_line_event(self, event=None):
-        return self.get_current_editor().goto_line_event(event)
+    #def goto_line_event(self, event=None):
+    #    return self.get_current_editor().goto_line_event(event)
 
     def increase_font_size_event(self, event=None):
         edit = self.select()
-        if edit:
+        if edit and self.get_size() > 0:
             edit = self.get_current_editor()
             edit.change_font_size(self.parent.console, lambda s: s + 2)
 
 
     def decrease_font_size_event(self, event=None):
         edit = self.select()
-        if edit:
+        if edit and self.get_size() > 0:
             edit = self.get_current_editor()
             edit.change_font_size(self.parent.console, lambda s: s - 2)
 

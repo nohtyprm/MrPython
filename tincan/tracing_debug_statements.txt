@@ -1,0 +1,231 @@
+STATEMENT 1
+{
+  "version": "1.0.1",
+  "actor": {
+    "objectType": "Group",
+    "member": [
+      {
+        "objectType": "Agent",
+        "name": "student",
+        "openid": "https://www.lip6.fr/mocah/invalidURI/student-number:default"
+      },
+      {
+        "objectType": "Agent",
+        "name": "partner",
+        "openid": "https://www.lip6.fr/mocah/invalidURI/partner-number:default"
+      }
+    ],
+    "name": "default||default"
+  },
+  "verb": {
+    "id": "http://activitystrea.ms/schema/1.0/open",
+    "display": {
+      "en-US": "opened"
+    }
+  },
+  "object": {
+    "id": "http://activitystrea.ms/schema/1.0/application",
+    "objectType": "Activity",
+    "definition": {
+      "name": {
+        "en-US": "the MrPython application"
+      }
+    }
+  },
+  "timestamp": "2020-06-18T22:47:54.735Z",
+  "context": {
+    "extensions": {
+      "https://www.lip6.fr/mocah/invalidURI/extensions/session-id": "6c3fff5d-8",
+      "https://www.lip6.fr/mocah/invalidURI/extensions/machine-id": "1050348859386",
+      "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": "default-input"
+    }
+  }
+}
+STATEMENT 2
+{
+  "version": "1.0.1",
+  "actor": {
+    "objectType": "Group",
+    "member": [
+      {
+        "objectType": "Agent",
+        "name": "student",
+        "openid": "https://www.lip6.fr/mocah/invalidURI/student-number:default"
+      },
+      {
+        "objectType": "Agent",
+        "name": "partner",
+        "openid": "https://www.lip6.fr/mocah/invalidURI/partner-number:default"
+      }
+    ],
+    "name": "default||default"
+  },
+  "verb": {
+    "id": "http://activitystrea.ms/schema/1.0/start",
+    "display": {
+      "en-US": "started"
+    }
+  },
+  "object": {
+    "id": "https://www.lip6.fr/mocah/invalidURI/activity-types/interpretation",
+    "objectType": "Activity",
+    "definition": {
+      "name": {
+        "en-US": "a programming evaluation"
+      },
+      "description": {
+        "en-US": "interpretation made by the MrPython interpretor"
+      }
+    }
+  },
+  "timestamp": "2020-06-18T22:47:58.894Z",
+  "context": {
+    "extensions": {
+      "https://www.lip6.fr/mocah/invalidURI/extensions/session-id": "6c3fff5d-8",
+      "https://www.lip6.fr/mocah/invalidURI/extensions/machine-id": "1050348859386",
+      "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": "default-input"
+    }
+  }
+}
+STATEMENT 3
+{
+  "version": "1.0.1",
+  "actor": {
+    "objectType": "Group",
+    "member": [
+      {
+        "objectType": "Agent",
+        "name": "student",
+        "openid": "https://www.lip6.fr/mocah/invalidURI/student-number:default"
+      },
+      {
+        "objectType": "Agent",
+        "name": "partner",
+        "openid": "https://www.lip6.fr/mocah/invalidURI/partner-number:default"
+      }
+    ],
+    "name": "default||default"
+  },
+  "verb": {
+    "id": "https://www.lip6.fr/mocah/invalidURI/verbs/entered",
+    "display": {
+      "en-US": "entered"
+    }
+  },
+  "object": {
+    "id": "https://www.lip6.fr/mocah/invalidURI/activity-types/interacting-state",
+    "objectType": "Activity",
+    "definition": {
+      "name": {
+        "en-US": "an interacting state"
+      }
+    }
+  },
+  "timestamp": "2020-06-18T22:47:59.765Z",
+  "context": {
+    "extensions": {
+      "https://www.lip6.fr/mocah/invalidURI/extensions/session-id": "6c3fff5d-8",
+      "https://www.lip6.fr/mocah/invalidURI/extensions/machine-id": "1050348859386",
+      "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": "default-input"
+    }
+  }
+}
+STATEMENT 4
+{
+  "version": "1.0.1",
+  "actor": {
+    "objectType": "Group",
+    "member": [
+      {
+        "objectType": "Agent",
+        "name": "student",
+        "openid": "https://www.lip6.fr/mocah/invalidURI/student-number:default"
+      },
+      {
+        "objectType": "Agent",
+        "name": "partner",
+        "openid": "https://www.lip6.fr/mocah/invalidURI/partner-number:default"
+      }
+    ],
+    "name": "default||default"
+  },
+  "verb": {
+    "id": "http://adlnet.gov/expapi/verbs/passed",
+    "display": {
+      "en-US": "passed"
+    }
+  },
+  "object": {
+    "id": "https://www.lip6.fr/mocah/invalidURI/activity-types/interpretation",
+    "objectType": "Activity",
+    "definition": {
+      "name": {
+        "en-US": "a programming evaluation"
+      },
+      "description": {
+        "en-US": "interpretation made by the MrPython interpretor"
+      },
+      "extensions": {
+        "https://www.lip6.fr/mocah/invalidURI/extensions/mode": "\u00e9tudiant",
+        "https://www.lip6.fr/mocah/invalidURI/extensions/instruction": "print(\"tse\")",
+        "https://www.lip6.fr/mocah/invalidURI/extensions/nb-errors": 0,
+        "https://www.lip6.fr/mocah/invalidURI/extensions/nb-warnings": 0
+      }
+    }
+  },
+  "timestamp": "2020-06-18T22:47:59.959Z",
+  "context": {
+    "extensions": {
+      "https://www.lip6.fr/mocah/invalidURI/extensions/session-id": "6c3fff5d-8",
+      "https://www.lip6.fr/mocah/invalidURI/extensions/machine-id": "1050348859386",
+      "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": "default-input"
+    }
+  }
+}
+STATEMENT 5
+{
+  "version": "1.0.1",
+  "actor": {
+    "objectType": "Group",
+    "member": [
+      {
+        "objectType": "Agent",
+        "name": "student",
+        "openid": "https://www.lip6.fr/mocah/invalidURI/student-number:default"
+      },
+      {
+        "objectType": "Agent",
+        "name": "partner",
+        "openid": "https://www.lip6.fr/mocah/invalidURI/partner-number:default"
+      }
+    ],
+    "name": "default||default"
+  },
+  "verb": {
+    "id": "http://activitystrea.ms/schema/1.0/close",
+    "display": {
+      "en-US": "closed"
+    }
+  },
+  "object": {
+    "id": "http://activitystrea.ms/schema/1.0/application",
+    "objectType": "Activity",
+    "definition": {
+      "name": {
+        "en-US": "the MrPython application"
+      },
+      "extensions": {
+        "https://www.lip6.fr/mocah/invalidURI/extensions/session": "6c3fff5d-8",
+        "https://www.lip6.fr/mocah/invalidURI/extensions/elapsed-time": "0:00:08"
+      }
+    }
+  },
+  "timestamp": "2020-06-18T22:48:03.251Z",
+  "context": {
+    "extensions": {
+      "https://www.lip6.fr/mocah/invalidURI/extensions/session-id": "6c3fff5d-8",
+      "https://www.lip6.fr/mocah/invalidURI/extensions/machine-id": "1050348859386",
+      "https://www.lip6.fr/mocah/invalidURI/extensions/input-context": "default-input"
+    }
+  }
+}
