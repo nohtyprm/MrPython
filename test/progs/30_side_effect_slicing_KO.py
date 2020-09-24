@@ -1,8 +1,8 @@
 ##!FAIL: SideEffectWarning[append]@8:4
-def f(P):
-    """list[list[int]] -> int"""
+def f(P : List[List[int]]) -> int:
+    """"""
     
-    #K: list[list[int]]
+    K: List[List[int]]
     K = P[:]
     
     K[0].append(1)

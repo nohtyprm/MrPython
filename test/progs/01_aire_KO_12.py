@@ -1,16 +1,15 @@
-##!FAIL: UnsupportedNumericTypeError[3j]@14:24
+##!FAIL: UnsupportedNumericTypeError[3j]@13:24
 
 import math
 
-def aire_triangle(a,b,c):
-    """ Number * Number * Number -> float
-    Hypothèse : (a>0) and (b>0) and (c>0)
-    Hypothèse : les côtés a, b et c définissent bien un triangle.
+def aire_triangle(a : float, b : float, c : float) -> float:
+    """Précondition : (a>0) and (b>0) and (c>0)
+    Précondition : les côtés a, b et c définissent bien un triangle.
 
     retourne l'aire du triangle dont les côtés sont de 
              longueurs a, b, et c."""
 
-    # p : float
+    p : float
     p = (a + b + c) / 2+3j
 
     return math.sqrt(p * (p - a) * (p - b) * (p - c))

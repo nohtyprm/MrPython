@@ -1,14 +1,13 @@
-##!FAIL: CompareConditionError[int/bool]@14:10
+##!FAIL: CompareConditionError[int/bool]@13:10
 
-def fact(n):
-    """ int -> int
-    retourne la factorielle de n.
+def fact(n : int) -> int:
+    """Retourne la factorielle de n.
     """
 
-    # acc : int (accumulateur)
+    acc : int # accumulateur
     acc = 1
 
-    # i : int (compteur)
+    i : int # compteur
     i = 2
 
     while i <= True:

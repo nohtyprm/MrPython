@@ -6,6 +6,7 @@ Jordhan Leoture - extracted code from IDLE
 Alexandre Doussot / Christian Trublerau - type annotations parsing
 Matthieu Eyraud / Fatemeh Hamissi - GUI fixes
 Matthieu Eyraud - Side effect analysis
+Quentin Piotrowski / Pierre-Octave Velly - early support for pep484 annotations
 
 MrPython is based on IDLE, cf. IDLE_info/CREDITS.txt
 

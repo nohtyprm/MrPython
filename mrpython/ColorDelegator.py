@@ -5,6 +5,8 @@ import builtins
 from Delegator import Delegator
 from configHandler import MrPythonConf
 
+from typechecking.type_ast import PREDEFINED_TYPE_VARIABLES
+
 DEBUG = False
 
 def any(name, alternates):
@@ -12,10 +14,19 @@ def any(name, alternates):
     return "(?P<%s>" % name + "|".join(alternates) + ")"
 
 def make_pat():
-    kw = r"\b" + any("KEYWORD", keyword.kwlist) + r"\b"
+    kwlist = keyword.kwlist
+    # HACK : add the type constructors as keywords (for coloration)
+    kwlist += ["List", "Iterable", "Sequence", "Tuple", "Dict", "Set"]
+    kw = r"\b" + any("KEYWORD", kwlist) + r"\b"
+
     builtinlist = [str(name) for name in dir(builtins)
                                         if not name.startswith('_') and \
                                         name not in keyword.kwlist]
+    # HACK: add the type variables as builtins
+    builtinlist += [tvar for tvar in PREDEFINED_TYPE_VARIABLES]
+    # HACK : add methods as builtins
+    builtinlist += [ ".append", ".add" ]
+
     # self.file = open("file") :
     # 1st 'file' colorized normal, 2nd as builtin, 3rd as string
     builtin = r"([^.'\"\\#]\b|^)" + any("BUILTIN", builtinlist) + r"\b"

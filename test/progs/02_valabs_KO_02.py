@@ -1,17 +1,16 @@
-##!FAIL: UnknownVariableError[p]@20:11
+##!FAIL: UnknownVariableError[p]@19:11
 
-def valeur_absolue(x):
-    """ Number -> Number
-    retourne la valeur absolue de x.
+def valeur_absolue(x : float) -> float:
+    """Retourne la valeur absolue de x.
     """
 
-    # abs_x : Number
+    abs_x : float
     abs_x = 0
     # stockage de la valeur absolue, le choix de 0 pour
     # l'initialisation est ici arbitraire
 
     if x >= 0:
-        # p : int
+        p : int
         p = 1
         abs_x = x # conséquent
     else:

@@ -1,7 +1,6 @@
 
-def valeur_absolue(x):
-    """ Number -> Number
-    retourne la valeur absolue de x.
+def valeur_absolue(x : float) -> float:
+    """Retourne la valeur absolue de x.
     """
 
     if x >= 0:

@@ -4,6 +4,16 @@
 import ast
 import tokenize
 
+try:
+    from .type_ast import *
+except ImportError:
+    from type_ast import *
+
+try:
+    from .type_converter import *
+except ImportError:
+    from type_converter import *
+
 import os.path, sys
 
 main_path = os.path.dirname(os.path.realpath(__file__))
@@ -37,6 +47,9 @@ class Program:
         # global (read-only) variables
         self.global_vars = []
 
+        # type aliases (extracted from the global_vars)
+        self.type_aliases = []
+
         # other top level definitions
         self.other_top_defs = []
 
@@ -66,7 +79,7 @@ class Program:
     def build_from_ast(self, modast, filename=None, source=None):
         if filename is not None:
             self.filename = filename
-        
+
         if source is not None:
             self.source = source
 
@@ -75,10 +88,13 @@ class Program:
         self.ast = modast
 
         for node in modast.body:
-            #print(node._attributes)
+            #print(str(dir(node)))
             if isinstance(node, ast.Import):
                 imp_ast = Import(node)
                 self.imports[imp_ast.name] = imp_ast
+            elif isinstance(node, ast.ImportFrom):
+                if not check_typing_imports(node):
+                    self.other_top_defs.append(UnsupportedNode(node))
             elif isinstance(node, ast.FunctionDef):
                 fun_ast = FunctionDef(node)
                 if fun_ast.python101ready:
@@ -88,12 +104,42 @@ class Program:
             elif isinstance(node, ast.Assert):
                 assert_ast = TestCase(node)
                 self.test_cases.append(assert_ast)
-            elif isinstance(node, ast.Assign):
-                assign_ast = Assign(node)
-                self.global_vars.append(assign_ast)
+            elif isinstance(node, ast.AnnAssign) and node.value is None:
+                DeclareVar_ast = DeclareVar(node)
+                self.global_vars.append(DeclareVar_ast)
+            elif isinstance(node, ast.Assign) or isinstance(node, ast.AnnAssign):
+                if isinstance(node, ast.Assign) and not check_typevar_assign(node):
+                    assign_ast = Assign(node)
+                    self.global_vars.append(assign_ast)
             else:
-                #print("Unsupported instruction: " + node)
+                # print("Unsupported instruction: " + node)
                 self.other_top_defs.append(UnsupportedNode(node))
+
+ALLOWED_TYPING_IMPORTS = { 'Optional', 'Tuple', 'List', 'Dict', 'Set', 'TypeVar' }
+
+def check_typing_imports(node):
+    if node.module != "typing":
+        return False
+    for alias in node.names:
+        if alias.name not in ALLOWED_TYPING_IMPORTS:
+            return False
+    return True
+        
+def check_typevar_assign(node):
+    # TODO : more precise error checking
+    if len(node.targets) != 1:
+        return False
+    if node.targets[0].id not in PREDEFINED_TYPE_VARIABLES:
+        return False
+    if node.value.func.id != 'TypeVar':
+        return False
+    if len(node.value.args) != 1:
+        return False
+    if node.value.args[0].s != node.targets[0].id:
+        return False
+
+    return True
+        
 
 class UnsupportedNode:
     def __init__(self, node):
@@ -111,26 +157,32 @@ class FunctionDef:
     def __init__(self, node):
         self.ast = node
         self.name = self.ast.name
-        #print(astpp.dump(self.ast))
         self.python101ready = True
 
+        self.param_types = []
         self.parameters = []
         for arg_obj in self.ast.args.args:
             self.parameters.append(arg_obj.arg)
 
+        for arg_obj in self.ast.args.args:
+            self.param_types.append(arg_obj.annotation)
+
         first_instr = self.ast.body[0]
         next_instr_index = 0
+        self.docstring = None
         if isinstance(first_instr, ast.Expr) and isinstance(first_instr.value, ast.Str):
             self.docstring = first_instr.value.s
             next_instr_index = 1
             #print(self.docstring)
         else:
-            self.python101ready = False
+            # nothing to do ?
+            pass
 
         self.body = []
         for inner_node in self.ast.body[next_instr_index:]:
-            #print(astpp.dump(inner_node))
             self.body.append(parse_instruction(inner_node))
+
+        self.returns = self.ast.returns
 
 
 class TestCase:
@@ -156,11 +208,12 @@ class LHSVar:
 
     def __repr__(self):
         return "LHSVar({})".format(self.var_name)
-        
+
 class LHSTuple:
     def __init__(self, node, elements):
         self.ast = node
         self.elements = elements
+        #print(dir(node))
 
     def variables(self):
         vs = []
@@ -170,7 +223,7 @@ class LHSTuple:
 
     def arity(self):
         return len(self.elements)
-        
+
     def __str__(self):
         return ", ".join( ( str(elt) for elt in self.elements) )
 
@@ -187,26 +240,47 @@ def build_lhs_destruct(node):
         return LHSTuple(node, elements)
     else:
         return UnsupportedNode(node)
-        
+
 class Assign:
     def __init__(self, node):
+
         self.ast = node
 
-        self.target = build_lhs_destruct(self.ast.targets[0])
+        if isinstance(node, ast.AnnAssign):
+            self.type_annotation = self.ast.annotation
+            self.target = build_lhs_destruct(self.ast.target)
+
+        else:
+            self.target = build_lhs_destruct(self.ast.targets[0])
 
         self.expr = parse_expression(self.ast.value)
+
+class DeclareVar:
+    def __init__(self, node):
+        self.ast = node
+        self.type_annotation = self.ast.annotation
+        self.target = build_lhs_destruct(self.ast.target)
 
 class ContainerAssign:
     def __init__(self, target, expr):
         self.container_expr = parse_expression(target.value)
         self.container_index = parse_expression(target.slice.value)
         self.assign_expr = parse_expression(expr)
-        
+
+
 def parse_assign(node):
 
-    # dictionary (container) assignment
-    if node.targets and isinstance(node.targets[0], ast.Subscript):
-        return ContainerAssign(node.targets[0], node.value)
+    if isinstance(node, ast.AnnAssign) and node.value is None:
+        return DeclareVar(node)
+    else:
+
+        if isinstance(node, ast.AnnAssign):
+            if node.target and isinstance(node.target, ast.Subscript):
+                return ContainerAssign(node.target, node.value)
+        else:
+            # dictionary (container) assignment
+            if node.targets and isinstance(node.targets[0], ast.Subscript):
+                return ContainerAssign(node.targets[0], node.value)
 
     # other form of assigment
     assign = Assign(node)
@@ -227,7 +301,7 @@ class For:
             iinstr = parse_instruction(instr)
             self.body.append(iinstr)
 
-        
+
 class Return:
     def __init__(self, node):
         self.ast = node
@@ -281,19 +355,19 @@ def parse_with(node):
     if not isinstance(with_call, ast.Call):
         return UnsupportedNode(node)
     with_call = parse_expression(with_call)
-        
+
     if not node.items[0].optional_vars:
         return UnsupportedNode(node)
-        
+
     with_var = node.items[0].optional_vars.id
 
     with_body = []
     for instr in node.body:
         iinstr = parse_instruction(instr)
         with_body.append(iinstr)
-        
+
     return With(node, with_call, with_var, with_body)
-            
+
 def parse_expression_as_instruction(node):
     # XXX: do something here or way until typing for
     #      losing the returned value (except if None)
@@ -301,6 +375,7 @@ def parse_expression_as_instruction(node):
     return parse_expression(node.value)
 
 INSTRUCTION_CLASSES = {"Assign" : parse_assign
+                       , "AnnAssign" : parse_assign
                        , "Return" : parse_return
                        , "If" : If
                        , "While" : While
@@ -322,7 +397,7 @@ def parse_instruction(node):
 
 class Expr:
     pass
-    
+
 class ENum(Expr):
     def __init__(self, node, setval=None):
         self.ast = node
@@ -362,7 +437,7 @@ def parse_constant(node):
     raise ValueError("Constant not supported: {} (please report)".format(node.value))
 
 # XXX: this is a hack for Python>=3.8 because
-# they removed the type information in the constant parsing... 
+# they removed the type information in the constant parsing...
 def parse_constant_expr(node):
     if node.value is True:
         return ETrue(node)
@@ -401,12 +476,17 @@ class EVar(Expr):
 
 class ETuple(Expr):
     def __init__(self, node):
+        # print("tuple : " + str(dir(node)) + "\n")
+        # print("elts: " + str(dir(node.elts)))
+        # print("_attributes: " + str(dir(node._attributes)))
+        # print("_fields: " + str(dir(node._fields)))
+        # print("node : " + str(type(node)))
         self.ast = node
         self.elements = []
         for elem_node in node.elts:
             elem = parse_expression(elem_node)
             self.elements.append(elem)
-        
+
 class EAdd(Expr):
     def __init__(self, node, left, right):
         self.ast = node
@@ -436,7 +516,7 @@ class EFloorDiv(Expr):
         self.ast = node
         self.left = left
         self.right = right
-        
+
 class EMod(Expr):
     def __init__(self, node, left, right):
         self.ast = node
@@ -522,7 +602,7 @@ class ENot(Expr):
     def __init__(self, node, operand):
         self.ast = node
         self.operand = operand
-        
+
 UNOP_CLASSES = { "USub" : EUSub
                  , "Not" : ENot
 }
@@ -542,7 +622,7 @@ class ECompare(Expr):
         self.conds = conds
 
 def parse_compare(node):
-    #print(astpp.dump(node))
+    #print(.dump(node))
     left = node.left
     conds = []
     for (op, right) in zip(node.ops, node.comparators):
@@ -646,7 +726,7 @@ class ECall(Expr):
         #print("function receiver={}".format(self.receiver))
         #print("function name=", self.fun_name)
         self.arguments = []
- 
+
         for arg in self.ast.args:
             #print(astpp.dump(arg))
             earg = parse_expression(arg)
@@ -675,14 +755,34 @@ class ERange(Expr):
             self.stop = self.start
             self.start = None
 
+def parse_args(args):
+    eargs = []
+    for arg in args:
+        eargs.append(parse_expression(arg))
+    return eargs
 
 def parse_call(node):
     if isinstance(node.func, ast.Name) and node.func.id == 'range':
         return ERange(node)
+    elif isinstance(node.func, ast.Name) and node.func.id == 'min':
+        return EMin(node, parse_args(node.args))
+    elif isinstance(node.func, ast.Name) and node.func.id == 'max':
+        return EMax(node, parse_args(node.args))
     elif isinstance(node.func, (ast.Name, ast.Attribute)):
         return ECall(node)
     else:
         return UnsupportedNode(node)
+
+
+class EMin(Expr):
+    def __init__(self, node, args):
+        self.ast = node
+        self.args = args
+
+class EMax(Expr):
+    def __init__(self, node, args):
+        self.ast = node
+        self.args = args
 
 class EList(Expr):
     def __init__(self, node):
@@ -727,7 +827,7 @@ class Generator:
         self.conditions  = []
         for ifcond in self.ast.ifs:
             self.conditions.append(parse_expression(ifcond))
-        
+
 class EListComp(Expr):
     def __init__(self, node):
         self.ast = node
@@ -778,7 +878,7 @@ class EDictComp(Expr):
         for gen in node.generators:
             self.generators.append(Generator(gen))
 
-            
+
 EXPRESSION_CLASSES = { "Num" : ENum
                        , "Constant" : parse_constant_expr
                        , "Str" : EStr
@@ -835,6 +935,6 @@ if __name__ == "__main__":
         filename = sys.argv[1]
     else:
         filename = "../../examples/revstr.py"
-        
+
     prog1.build_from_file(filename)
-    print(astpp.dump(prog1.ast))
+    #print(astpp.dump(prog1.ast))

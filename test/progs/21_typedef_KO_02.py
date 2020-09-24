@@ -1,17 +1,15 @@
-##!FAIL: DuplicateTypeDefError[Personne]@14:0
+##!FAIL: DuplicateTypeDefError[Personne]@12:0
 
-# type Personne=tuple[str, str, int, bool]
+Personne = Tuple[str, str, int, bool]
 
-def est_majeure(p):
-    """Personne -> bool
-    
-    renvoie True si la personne est majeure, ou False sinon."""
+def est_majeure(p : Personne) -> bool:
+    """Renvoie True si la personne est majeure, ou False sinon."""
 
     nom, pre, age, mar = p
     
     return age >= 18
 
-#  type Personne = int
+Personne = int
 
 # jeu de tests
 assert est_majeure(('Itik', 'Paul', 17, False)) == False

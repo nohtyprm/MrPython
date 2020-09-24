@@ -1,17 +1,16 @@
-##!FAIL: DeclarationError[header-char]@14:4
+##!FAIL: NotUsedDeclarationWarning[q]@12:4
 
 import math
 
-def aire_triangle(a,b,c):
-    """ Number * Number * Number -> float
-    Hypothèse : (a>0) and (b>0) and (c>0)
-    Hypothèse : les côtés a, b et c définissent bien un triangle.
+def aire_triangle(a : float, b : float, c : float) -> float:
+    """Précondition : (a>0) and (b>0) and (c>0)
+    Précondition : les côtés a, b et c définissent bien un triangle.
 
     retourne l'aire du triangle dont les côtés sont de 
              longueurs a, b, et c."""
 
-
-    p = (a + b + c) / 2
+    q : float
+    p : float = (a + b + c) / 2
 
     return math.sqrt(p * (p - a) * (p - b) * (p - c))
 

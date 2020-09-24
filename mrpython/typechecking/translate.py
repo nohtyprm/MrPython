@@ -14,6 +14,8 @@ def set_translator_locale(locale_key):
 
 TRANSLATOR_DICT = {
     "Import problem" : { 'fr' : "Problème d'import"}
+    , "Warning you've initialzed in 2 differents ways the variable: '{}'" : {'fr' : "Vous avez initailisé de 2 façons différentes la variable : '{}'"}
+    , "Warning you've initialzed and not used the variable: '{}'" : {'fr' : "Attention, vous initialisez sans utiliser la variable : '{}'" }
     , "the module '{}' is not supported in Python101" : { 'fr' : "le module '{}' n'est pas disponible en Python101"}
     , "Signature problem" : { 'fr' : "Problème de signature"}
     , "I don't understand the signature of function '{}'" : { 'fr' : "je ne comprends pas la signature de la fonction '{}'"}
@@ -34,6 +36,8 @@ TRANSLATOR_DICT = {
     , "the {}-th argument in call to function '{}' is erroneous" : { 'fr' : "le {}-ième argument dans l'appel à '{}' est erroné"}
     , "Number problem" : { 'fr' : "Problème numérique"}
     , "this numeric value is not supported in Python 101: {} ({})" : { 'fr' : "cette valeur numérique n'est pas disponible en Python101 : {} ({})"}
+    , "Bad argument" : { 'fr' : "Mauvais argument"}
+    , "This argument is not numeric." : { 'fr' : "Cet argument n'est pas numérique."}
     , "Call problem" : { 'fr' : "Problème d'appel"}
     , "I don't know any function named '{}'" : { 'fr' : "je ne connais pas de fonction dont le nom est '{}'"}
     , "Incompatible types" : { 'fr' : "Types incompatibles"}
@@ -44,7 +48,7 @@ TRANSLATOR_DICT = {
     , "The two operands of the comparision should have the same type: '{}' vs. '{}'" : { 'fr' : "Les deux opérandes de la comparaison devraient être du même type: '{}' vs. '{}'"}
     , "Comparison issue" : { 'fr' : "Problème de comparaison"}
     , "The two operands of the comparison are only \"weakly\" compatibles: '{}' vs. '{}'" : { 'fr' : "Les types des deux opérandes de la comparaison ne sont qu'\"approximativement\" compatibles : '{}' vs. '{}'"}
-    
+
     , "Bad variable" : { 'fr' : "Problème de variable"}
     , "Bad indexing" : { 'fr' : "Problème d'indexation" }
     , "One can only index a sequence or a dictionnary, not a '{}'" : { 'fr' : "On ne peut indexer qu'une séquence ou un dictionnaire, pas un '{}'" }
@@ -68,6 +72,7 @@ TRANSLATOR_DICT = {
     , "The function '{}' should have `return` statement(s)" : { 'fr' : "Il n'y a aucun `return` dans la fonction '{}', ce n'est pas normal" }
     , 'Wrong definition' : { 'fr' : "Mauvaise définition" }
     , "The function '{}' has no correct specification." : { 'fr' : "La fonction '{}' n'est pas spécifée correctement." }
+    , "The function '{}' has no documentation." : { 'fr' : "La fonction '{}' n'a pas de documentation."}
     , 'Wrong statement' : { 'fr' : "Instruction non-supportée" }
     , "In Python 101 this statement cannot be done outside a function body (try expert mode for standard Python)"
     : { 'fr' : "En Python101 cette d'instruction ne peut apparaître en dehors du corps d'une fonction (essayez le mode expert pour faire du Python standard)" }
@@ -83,7 +88,7 @@ TRANSLATOR_DICT = {
     , "Forbidden use of parameter '{}' in assignment" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé dans une affectation (ou initialisation)" }
     , "Forbidden use of parameter '{}' in with construct" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé comme variable de la construction with" }
     , "the arguments of `range` are incorrect." : { 'fr' : 'les arguments de `range` sont incorrects.'  }
-    , "The iterator variable '{}' is already declared" : { 'fr' : "La variable d'itération '{}' est déjà déclarée" }
+    , "The iterator variable '{}' is already in use." : { 'fr' : "La variable d'itération '{}' est déjà utilisée." }
     , "The `with` variable '{}' is already declared" : { 'fr' : "La variable '{}' du `with` est déjà déclarée" }
     , "Forbidden use of parameter '{}' as iteration variable" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé comme variable d'itération" }
     , "Forbidden use of parameter '{}' as comprehension variable" : { 'fr' : "Le paramètre de nom `{}` ne peut être utilisé comme variable de compréhension" }
@@ -124,6 +129,23 @@ TRANSLATOR_DICT = {
     , "Not a variable type declaration : it is a type alias." : { 'fr' : "ce n'est pas une déclaration de variable mais une déclaration d'alias de type."}
     , "Empty tuple" : { 'fr' : "N-uplet vide"}
     , "Python 101 does not allow empty tuples, only in expert mode" : { 'fr' : "les n-uplets vides (0-uplets ?) ne sont pas autorisés en Python101."}
+    , "Missing return type" : { 'fr' : "Type de retour manquant" }
+    , "I don't find the return type for function: {}" : { 'fr' : "Je ne trouve pas de type de retour pour la fonction : {}" }
+    , "Missing variable declaration for variable: {}" : { 'fr' : "Il manque la déclaration de la variable: {}" }
+    , "Unused variable" : { 'fr' : "Variable inutilisée" }
+    , "The variable '{}' is declared but not used" : { 'fr' : "La variable '{}' est déclarée mais n'est pas utilisée."}
+    , "Does not understand the declared type." : { 'fr' : "Je ne comprends pas le type déclaré." }
+    , "Does not understand the declared container type." : { 'fr' : "Je ne comprends pas le type de conteneur déclaré." }
+    , "Parameter '{}': {}" : { 'fr' : "Paramètre '{}' : {}"}
+    , "Return type: {}" : { 'fr' : "Type de retour : {}"}
+    , "Type expression problem" : { 'fr' : "Problème d'expression de type"}
+    , "the `{}` type is deprecated, use `{}` instead" : { 'fr' : "le type `{}` n'est plus disponible, utiliser `{}` en remplacement" }
+    , "Unsupported container type: {}" : { 'fr' : "Ce type de contenant n'est pas supporté : {}" }
+    , "Does not understand the declared tuple type (missing element types)." : { 'fr' : "Je ne comprends pas le type n-uplet déclaré, il manque les types des éléments."}
+    , "A dictionnary type must have two arguments: the key type and the value type" : { 'fr' : "Un type dictionnaire doit avoir exactement deux arguments: le type des clés et le type des valeurs" }
+    , "Does not understand the declared dictionary type (missing key/value types)." : { 'fr' : "Je ne comprends pas le type dictionnaire déclaré : il manque le type des clés et/ou des valeurs" }
+    , "The colon ':' separator is not allower in dictionnary types, use ',' instead" : { 'fr' : "le séparateur ':' n'est pas autorisé dans les types dictionnaire, utiliser plutôt la virgule ','" }
+    , "Missing key,value types in dictionnary type" : { 'fr' : "Type dictionnaire incorrect : il manque le type des clés et des valeurs."}
 }
 
 def tr(msg):

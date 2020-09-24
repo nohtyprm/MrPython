@@ -1,11 +1,11 @@
 
-def valeur_absolue(x):
-    """ Number -> Number
-    retourne la valeur absolue de x.
+def valeur_absolue(x : float) -> float:
+    """Retourne la valeur absolue de x.
     """
 
-    # abs_x : Number
+    abs_x : float
     abs_x = 0
+    
     # stockage de la valeur absolue, le choix de 0 pour
     # l'initialisation est ici arbitraire
 

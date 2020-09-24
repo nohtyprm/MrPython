@@ -1,11 +1,9 @@
-##!FAIL: TypeDefParseError[Personne]@3:0
+##!FAIL: UnknownTypeAliasError[strstr]@3:11
 
-#type Personne=tuple[strstr, int, bool]
+Personne = Tuple[strstr, int, bool]
 
-def est_majeure(p):
-    """Personne -> bool
-    
-    renvoie True si la personne est majeure, ou False sinon."""
+def est_majeure(p : Personne) -> bool:
+    """Renvoie True si la personne est majeure, ou False sinon."""
 
     nom, pre, age, mar = p
     

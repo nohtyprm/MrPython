@@ -14,8 +14,22 @@ import PyParse
 import sys
 import Bindings
 
+from tincan import tracing_mrpython as tracing
+import re
+
 from HighlightingText import HighlightingText
 _py_version = ' (%s)' % platform.python_version()
+
+class Line:
+    def __init__(self, line_number, instruction, type):
+        self.line_number = line_number
+        self.instruction = instruction
+        self.type = type
+
+    def __str__(self):
+        return "line-number: " + str(self.line_number) + " instruction: '" + self.instruction + \
+               "'  instruction-type: " + self.type
+
 
 class PyEditor(HighlightingText):
     from IOBinding import  IOBinding, filesystemencoding, encoding
@@ -40,7 +54,6 @@ class PyEditor(HighlightingText):
             sys.ps1
         except AttributeError:
             sys.ps1 = ''
-
 
         # usetabs true  -> literal tab characters are used by indent and
         #                  dedent cmds, possibly mixed with spaces if
@@ -71,8 +84,6 @@ class PyEditor(HighlightingText):
         # else searches for a popular (if, def, ...) Python stmt.
         self.context_use_ps1 = False
 
-
-
         # When searching backwards for a reliable place to begin parsing,
         # first start num_context_lines[0] lines back, then
         # num_context_lines[1] lines back if that didn't work, and so on.
@@ -81,7 +92,7 @@ class PyEditor(HighlightingText):
         # Making the initial values larger slows things down more often.
         self.num_context_lines = 50, 500, 5000000
         self.per = per = self.Percolator(self)
-        self.undo = undo = self.UndoDelegator()
+        self.undo = undo = self.UndoDelegator(self)
         per.insertfilter(undo)
 
         self.undo_block_start = undo.undo_block_start
@@ -116,11 +127,29 @@ class PyEditor(HighlightingText):
         self.font = nametofont(self.cget('font')).copy()
         self.configure(font=self.font)
 
+        self.old_line = None
+
+        # Used for tracing keywords. Check send_keyword for more information.
+        self.typed_char = False  # True if user previously typed a character
+
     def apply_bindings(self,keydefs=None):
         self.bind("<<smart-backspace>>",self.smart_backspace_event)
         self.bind("<<newline-and-indent>>",self.newline_and_indent_event)
         self.bind("<<smart-indent>>",self.smart_indent_event)
-        
+        # bindings below are for tracing
+        self.bind("<<prev-move-cursor>>", self.prev_move_cursor_event)
+        self.bind("<<move-cursor>>", self.move_cursor_event)
+        self.bind('<KeyPress>', self.keypress_event)
+        self.bind("<<paste>>", self.paste_event)
+        self.bind("<<copy>>", self.copied_event)
+
+        # These should probably be added to config...
+        prev_move_cursor = ['<KeyPress-Left>', '<KeyPress-Right>', '<KeyPress-Up>', '<KeyPress-Down>',
+                            '<ButtonPress-1>']
+        move_cursor = ['<KeyRelease-Left>', '<KeyRelease-Right>', '<KeyRelease-Up>', '<KeyRelease-Down>',
+                       '<ButtonRelease-1>']
+        self.event_add("<<prev-move-cursor>>", *prev_move_cursor)
+        self.event_add("<<move-cursor>>", *move_cursor)
 
         #bindings keys
         if keydefs is None:
@@ -503,8 +532,14 @@ class PyEditor(HighlightingText):
             maxvalue=16)
 
     def smart_backspace_event(self, event):
+        tracing.user_is_typing()
+        self.typed_char = False
+        if self.old_line is None:
+            self.old_line = self.create_line(self.get_current_line_number())
+
         first, last = self.get_selection_indices()
         if first and last:
+            self.send_deletion(first, last)
             self.delete(first, last)
             self.mark_set("insert", first)
             return "break"
@@ -514,6 +549,8 @@ class PyEditor(HighlightingText):
         if chars == '':
             if self.compare("insert", ">", "1.0"):
                 # easy: delete preceding newline
+                self.send_update_changed_line(force_sending=True)
+                self.reset_line()
                 self.delete("insert-1c")
             else:
                 self.bell()     # at start of buffer
@@ -551,10 +588,21 @@ class PyEditor(HighlightingText):
 
 
     def newline_and_indent_event(self, event):
+        tracing.user_is_typing()
+        if self.old_line is None:
+            self.old_line = self.create_line(self.get_current_line_number())
+
+        # Trace last word if it's a keyword
+        if self.typed_char:
+            cursor = self.index("insert")
+            self.send_keyword(cursor)
+            self.typed_char = False
+
         first, last = self.get_selection_indices()
         self.undo_block_start()
         try:
             if first and last:
+                self.send_deletion(first, last)
                 self.delete(first, last)
                 self.mark_set("insert", first)
             line = self.get("insert linestart", "insert")
@@ -650,14 +698,17 @@ class PyEditor(HighlightingText):
         finally:
             self.see("insert")
             self.undo_block_stop()
+            self.send_update_changed_line(newline=True)
 
     def smart_indent_event(self, event):
+        tracing.user_is_typing()
         first, last = self.get_selection_indices()
         self.undo_block_start()
         try:
             if first and last:
                 if index2line(first) != index2line(last):
                     return self.indent_region_event(event)
+                self.send_deletion(first, last)
                 self.delete(first, last)
                 self.mark_set("insert", first)
             prefix = self.get("insert linestart", "insert")
@@ -752,6 +803,300 @@ class PyEditor(HighlightingText):
         lines = chars.split("\n")
         return head, tail, chars, lines
 
+        #
+    # Functions used for tracing
+    #
+    def get_current_line_number(self):
+        """Get the line number of the cursor"""
+        cursor = self.index("insert")
+        line = cursor.split('.')[0]
+        return int(line)
+
+    def get_current_instruction(self):
+        return self.get("insert linestart", "insert lineend")
+
+    def get_instruction(self, line_number):
+        return self.get(str(line_number) + ".0 linestart", str(line_number) + ".0 lineend")
+
+    def get_number_of_lines(self):
+        end = self.index("end-1c")
+        line = end.split('.')[0]
+        return int(line)
+
+    def is_multi_line_deletion(self, first, last):
+        return first.split('.')[0] != last.split('.')[0]
+
+    def maybe_get_function_name(self, line_number):
+        """Get the function name of instruction at position line_number"""
+        function_name = ""
+        if line_number < 1:
+            return function_name
+        instruction = self.get_instruction(line_number)
+        instruction = instruction.strip()
+        if instruction.startswith("def "):  # Check the first previous line starting with "def "
+            instruction = instruction[4:]
+            function_name = instruction.split('(')[0]
+            function_name = function_name.strip()
+            return function_name
+        return function_name
+
+    def get_previous_function(self, line_number):
+        """Get the name of the previous function defined before line_number"""
+        while line_number >= 1:
+            function_name = self.maybe_get_function_name(line_number)
+            if function_name:
+                return function_name
+            line_number -= 1
+        return "no function defined"
+
+    def add_context(self, extensions, line_number):
+        """Add extensions context"""
+        i = line_number
+        function_name = ""
+        incoherence_found = False
+        theme_number = None
+        exercise_number = None
+        if re.compile(r'\w+\s*=', ).match(self.get_instruction(line_number)) is not None:
+            function_name = "global var: no function defined"
+        while i >= 1:
+            instruction = self.get_instruction(i)
+            maybe_exercise_declaration = self.is_exercise_declaration(instruction)
+            maybe_function_def = self.is_function_definition(instruction)
+            if maybe_exercise_declaration is not None:
+                theme_number, exercise_number = maybe_exercise_declaration
+                incoherence_found = tracing.incoherence_found(function_name, theme_number, exercise_number) is not None
+                break
+            elif not function_name and maybe_function_def is not None:
+                function_name = maybe_function_def
+            i -= 1
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/filename"] = self.short_title()
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/line-number/function-name"] = function_name
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/line-number/line-number"] = line_number
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/line-number/theme-number-declared"] = theme_number
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/line-number/" \
+                   "exercise-number-declared"] = exercise_number
+        extensions["https://www.lip6.fr/mocah/invalidURI/extensions/line-number/" \
+                   "incoherence-between-exercise-function"] = incoherence_found
+
+    def is_function_definition(self, instruction):
+        pattern = re.compile(r'\s*def\s+(\w+)\(', re.IGNORECASE)
+        match = pattern.search(instruction)
+        if match:
+            function_name = match.group(1)
+            return function_name
+        return None
+
+    def is_exercise_declaration(self, instruction):
+        pattern = re.compile(r'\s*#\s*ex\D*(\d+)\D+(\d+)', re.IGNORECASE)
+
+        match = pattern.search(instruction)
+        if match:
+            theme_number = match.group(1)
+            exercise_number = match.group(2)
+            return int(theme_number), int(exercise_number)
+        return None
+
+    def is_under_signature(self, line_number):
+        while line_number > 1:
+            instruction = self.get_instruction(line_number)
+            if "'''" in instruction or '"""' in instruction:
+                if self.maybe_get_function_name(line_number - 1) != "":
+                    return True
+                break
+            elif "STRING" not in self.tag_names(str(line_number) + ".0"):
+                break
+            line_number -= 1
+        return False
+
+    def is_part_of_multistring(self, line_number):
+        beginning_index = str(line_number) + ".0"
+        beginning_tags = self.tag_names(beginning_index)
+        beginning_char = self.get(beginning_index)
+        if "STRING" in beginning_tags and beginning_char != "'" and beginning_char != '"':
+            return True
+        return False
+
+    def is_one_liner_signature(self, instruction):
+        pattern = re.compile(r'("""|\'\'\').*("""|\'\'\')')
+        return pattern.search(instruction) is not None
+
+    def is_comment_maybe_type_declaration(self, comment):
+        pattern = re.compile(r'\w+\s*:.*')
+        return pattern.search(comment) is not None
+
+    def is_comment_exercise_declaration(self, comment):
+        pattern = re.compile(r'ex\D*(\d+)\D+(\d+)', re.IGNORECASE)
+        return pattern.search(comment) is not None
+
+    def create_line(self, line_number):
+        """Create a Line object for the instruction at line_number."""
+        line_instruction = self.get_instruction(line_number)  # Content of the instruction
+        if "'''" in line_instruction or '"""' in line_instruction:  # Instruction is a beginning or end of multi-string
+            if self.is_one_liner_signature(line_instruction):
+                line_type = "signature-oneliner"
+            elif self.maybe_get_function_name(line_number - 1) != "":
+                line_type = "signature-beginning"
+            elif self.is_under_signature(line_number - 1):
+                line_type = "signature-ending"
+            else:
+                line_type = "multi-string"
+        elif self.is_part_of_multistring(line_number):  # Instruction is part of a multistring
+            if self.is_under_signature(line_number - 1):
+                line_type = "signature-middle"
+            else:
+                line_type = "multi-string"
+        else:
+            instruction_comment = line_instruction.split("#", 1)
+            comment_tags = self.tag_nextrange("COMMENT", str(line_number) + ".0 linestart",
+                                              str(line_number) + ".0 lineend")
+
+            if len(instruction_comment) >= 2 and len(comment_tags) != 0:
+                instruction, comment = instruction_comment[0].strip(), instruction_comment[1].strip()
+            else:
+                instruction, comment = instruction_comment[0].strip(), ""
+
+            if instruction and comment:
+                line_type = "instruction_and_comment"
+            elif instruction:
+                line_type = "instruction"
+            elif comment:
+                if self.is_comment_maybe_type_declaration(comment):
+                    line_type = "comment-maybe-type"
+                elif self.is_comment_exercise_declaration(comment):
+                    line_type = "comment-exercise"
+                else:
+                    line_type = "comment"
+            else:
+                line_type = "empty"
+        line = Line(line_number, line_instruction, line_type)
+        return line
+
+    def create_changed_line_extensions(self, old_line, new_line):
+        """Extensions for 'modified instruciton' statement"""
+        extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/line-number": old_line.line_number,
+                      "https://www.lip6.fr/mocah/invalidURI/extensions/old-instruction-type": old_line.type,
+                      "https://www.lip6.fr/mocah/invalidURI/extensions/old-instruction": old_line.instruction,
+                      "https://www.lip6.fr/mocah/invalidURI/extensions/new-instruction-type": new_line.type,
+                      "https://www.lip6.fr/mocah/invalidURI/extensions/new-instruction": new_line.instruction}
+        return extensions
+
+    def send_update_changed_line(self, newline=False, force_sending=False):
+        """Send a statement whenever a user modified an instruction.
+        force_sending is used to force the sending (program execution, backspace over previous line)"""
+        if self.old_line is None:
+            return
+        old_line = self.old_line
+        new_line = self.create_line(old_line.line_number)
+        cursor_line_number = self.get_current_line_number()
+        cursor_changed_line = old_line.line_number != cursor_line_number
+        # not_both_empty: Check if whether old_line, new_line or both are not empty spaces
+        not_both_empty = (old_line.instruction != "" and not old_line.instruction.isspace())
+        not_both_empty = not_both_empty or (new_line.instruction != "" and not new_line.instruction.isspace())
+        instruction_has_been_modified = old_line.instruction.strip() != new_line.instruction.strip()
+        if cursor_changed_line or force_sending:
+            if not_both_empty and instruction_has_been_modified:
+                if new_line.line_number == 1:
+                    tracing.check_modified_student_number(new_line.instruction)
+                extensions = self.create_changed_line_extensions(old_line, new_line)
+                self.add_context(extensions, old_line.line_number)
+                # print(extensions['https://www.lip6.fr/mocah/invalidURI/extensions/old-instruction'])
+                # print(extensions['https://www.lip6.fr/mocah/invalidURI/extensions/new-instruction'])
+                tracing.send_statement("modified", "instruction", extensions)
+            if newline:  # If newline, we want old_line to be considered empty
+                self.old_line = Line(cursor_line_number, "", "empty")
+            else:
+                self.old_line = self.create_line(cursor_line_number)
+
+    def reset_line(self):
+        """Used after an undo, a redo or a multi-line text deletion in order to
+        consistently trace modified instructions and keep them mutually exclusive
+        """
+        self.old_line = None
+
+    def send_keyword(self, end_word):
+        """We send a keyword when the tag 'KEYWORD' is in the tags of end_word.
+        end_word : the character of the last word
+        This function is called when self.typed_char is True and:
+        -a user types a non alphanum character (keypress_event). end_word is the character of the last word.
+        -a user types a newline (newline_and_indent_event).
+        end_word is the character of the previous instruction's last character.
+        -the cursor has been moved (prev_move_cursor_event and move_cursor_event)
+        end_word is the character of the previous cursor position.
+        We don't simply check all keypresses because we want to prevent cases where the user types something
+        like 'define' or 'assert'.
+        In these cases, the user typed the keywords 'def' or 'as' but we don't want to trace these.
+        self.typed_char is used to prevent sending the same keyword multiple times and
+        to only trace the keywords the user effectively typed.
+        """
+        if end_word == "1.0":  # Bug with select all
+            return
+        tags = self.tag_names(end_word)
+        if 'KEYWORD' in self.tag_names(end_word + "-1c"):
+            index1, index2 = self.tag_prevrange('KEYWORD', end_word)
+            keyword = self.get(index1, index2)
+            line_number = self.get_current_line_number()
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/keyword-typed": keyword,
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/filename": self.short_title()}
+            self.add_context(extensions, line_number)
+            tracing.send_statement("typed", "keyword", extensions)
+            # print("Keyword typed: " + keyword)
+
+    def send_deletion(self, first, last):
+        if self.is_multi_line_deletion(first, last):
+            self.reset_line()
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.get(first, last),
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": first,
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last}
+            self.add_context(extensions, int(first.split('.')[0]))
+            tracing.send_statement("deleted", "text", extensions)
+
+    def prev_move_cursor_event(self, event):
+        if self.typed_char:
+            self.send_keyword(self.index("insert"))
+            self.typed_char = False
+
+    def move_cursor_event(self, event):
+        self.send_update_changed_line()
+
+    def keypress_event(self, event):
+        """Used to check if user typed a keyword, deleted some selection
+        and to initialize old_line to check if user modified an instruction"""
+        tracing.user_is_typing()
+
+        keypress_is_char = len(event.char) >= 1
+        keypress_is_separator = keypress_is_char and event.char.isalnum() is False
+        first, last = self.get_selection_indices()
+        if self.typed_char and (keypress_is_separator or event.keysym == "space"):
+            self.send_keyword(self.index("insert"))
+        else:
+            self.typed_char = keypress_is_char
+
+        if keypress_is_char and first and last:
+            self.send_deletion(first, last)
+
+        if self.old_line is None:
+            self.old_line = self.create_line(self.get_current_line_number())
+
+    def paste_event(self, event):
+        """User pasted something"""
+        pasted_text = self.clipboard_get()
+        insert_index = self.index("insert")
+        if pasted_text != "":
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/text": pasted_text,
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/index": insert_index}
+            self.add_context(extensions, int(insert_index.split('.')[0]))
+            tracing.send_statement("inserted", "text", extensions)
+
+    def copied_event(self, event):
+        """User copied something"""
+        first, last = self.get_selection_indices()
+        if first and last:
+            extensions = {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.get(first, last),
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/first-index": first,
+                          "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last}
+            self.add_context(extensions, int(first.split('.')[0]))
+            tracing.send_statement("copied", "text", extensions)
+
 # "line.col" -> line, as an int
 def index2line(index):
     return int(float(index))
@@ -768,14 +1113,4 @@ def classifyws(s, tabwidth):
         else:
             break
     return raw, effective
-
-
-
-
-
-
-
-
-
-
 

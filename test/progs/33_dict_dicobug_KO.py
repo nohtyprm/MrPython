@@ -1,10 +1,10 @@
-##!FAIL: SlicingError[dict[alpha:beta]]@7:8
+##!FAIL: SlicingError[dict[K:V]]@7:9
 
-def dict_ajout(D, k, v):
-    """ dict[alpha:beta] * alpha * beta -> dict[alpha:beta]"""
+def dict_ajout(dico : Dict[K, V], k : K, v : V) -> Dict[K, V]:
+    """"""
 
-    # R : dict[alpha:beta]
-    R = D[:]
+    rd : Dict[K, V]
+    rd = dico[:]
 
-    R[k] = v
-    return R
+    rd[k] = v
+    return rd
