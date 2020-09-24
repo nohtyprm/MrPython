@@ -79,7 +79,7 @@ class CloseableNotebook(ttk.Notebook):
             old_tab_filename = self.get_filename(self.old_tab)
             #do the proper linking to the event
             self.close_current_editor()
-                        self.new_tab = self.select()
+            self.new_tab = self.select()
             if self.new_tab != "":
                 new_tab_filename = self.get_filename(self.new_tab)
             else:

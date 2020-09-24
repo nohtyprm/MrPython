@@ -803,25 +803,7 @@ class PyEditor(HighlightingText):
         lines = chars.split("\n")
         return head, tail, chars, lines
 
-# "line.col" -> line, as an int
-def index2line(index):
-    return int(float(index))
-
-def classifyws(s, tabwidth):
-    raw = effective = 0
-    for ch in s:
-        if ch == ' ':
-            raw = raw + 1
-            effective = effective + 1
-        elif ch == '\t':
-            raw = raw + 1
-            effective = (effective // tabwidth + 1) * tabwidth
-        else:
-            break
-    return raw, effective
-
-
-    #
+        #
     # Functions used for tracing
     #
     def get_current_line_number(self):
@@ -1114,3 +1096,21 @@ def classifyws(s, tabwidth):
                           "https://www.lip6.fr/mocah/invalidURI/extensions/last-index": last}
             self.add_context(extensions, int(first.split('.')[0]))
             tracing.send_statement("copied", "text", extensions)
+
+# "line.col" -> line, as an int
+def index2line(index):
+    return int(float(index))
+
+def classifyws(s, tabwidth):
+    raw = effective = 0
+    for ch in s:
+        if ch == ' ':
+            raw = raw + 1
+            effective = effective + 1
+        elif ch == '\t':
+            raw = raw + 1
+            effective = (effective // tabwidth + 1) * tabwidth
+        else:
+            break
+    return raw, effective
+
