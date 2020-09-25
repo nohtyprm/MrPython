@@ -49,7 +49,7 @@ class RemoteLRS(Base):
         'auth',
     ]
 
-    _props = []
+    _props = ['proxy_name', 'proxy_port']
 
     _props.extend(_props_req)
 
@@ -71,6 +71,8 @@ class RemoteLRS(Base):
         self._version = Version.latest
         self._endpoint = None
         self._auth = None
+        self.proxy_name = None
+        self.proxy_port = None
 
         if "username" in kwargs \
                 and kwargs["username"] is not None \
@@ -94,6 +96,13 @@ class RemoteLRS(Base):
             kwargs.pop("username")
             kwargs.pop("password")
             kwargs["auth"] = auth_string
+
+        if "proxy_name" in kwargs and kwargs["proxy_name"] is not None and kwargs["proxy_name"] != "":
+            self.proxy_name = kwargs["proxy_name"]
+            kwargs.pop("proxy_name")
+        if "proxy_port" in kwargs and kwargs["proxy_port"] is not None and kwargs["proxy_port"] != 0:
+            self.proxy_name = kwargs["proxy_port"]
+            kwargs.pop("proxy_port")
 
 
         super(RemoteLRS, self).__init__(*args, **kwargs)
@@ -126,9 +135,17 @@ class RemoteLRS(Base):
         parsed = urlparse(url)
 
         if parsed.scheme == "https":
-            web_req = http.client.HTTPSConnection(parsed.hostname, parsed.port,timeout=5, context=ssl._create_unverified_context())
+            if self.proxy_name != None and self.proxy_name != "":
+                web_req = http.client.HTTPSConnection(self.proxy_name, self.proxy_port, timeout=5, context=ssl._create_unverified_context())
+                web_req.set_tunnel(parsed.hostname)
+            else:
+                web_req = http.client.HTTPSConnection(parsed.hostname, parsed.port,timeout=5, context=ssl._create_unverified_context())
         else:
-            web_req = http.client.HTTPConnection(parsed.hostname, parsed.port,timeout=5, context=ssl._create_unverified_context())
+            if self.proxy_name != None and self.proxy_name != "":
+                web_req = http.client.HTTPConnection(self.proxy_name, self.proxy_port, timeout=5, context=ssl._create_unverified_context())
+                web_req.set_tunnel(parsed.hostname)
+            else:
+                web_req = http.client.HTTPConnection(parsed.hostname, parsed.port,timeout=5, context=ssl._create_unverified_context())
 
         path = parsed.path
         if parsed.query or parsed.path:
