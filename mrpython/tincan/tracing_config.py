@@ -2,12 +2,7 @@
 Contains and modify MrPython behaviour, filepaths for input/output, LRS properties,
 xAPI verbs and activities, error categories and mapping function_names->exercise
 """
-from tincan import (
-    Verb,
-    Activity,
-    LanguageMap,
-    ActivityDefinition,
-)
+from tincan import Verb, Activity, LanguageMap, ActivityDefinition
 from configHandler import MrPythonConf
 import os
 
@@ -25,6 +20,8 @@ lrs_endpoint = "https://lrsmocah.lip6.fr/data/xAPI"
 lrs_version = "1.0.1" # 1.0.1 | 1.0.0 | 0.95 | 0.9
 lrs_username = "8cba24cdc8d3306dd8cd917d586fb5972789efbc"
 lrs_password = "3c480cc7dac4b8556120a9f37467371f495d8210"
+proxy_name = ""
+proxy_port = 0
 
 # xAPI verbs and activites
 
