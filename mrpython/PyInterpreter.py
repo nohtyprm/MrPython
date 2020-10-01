@@ -1,6 +1,7 @@
 from StudentRunner import StudentRunner
 from FullRunner import FullRunner
 from translate import tr
+from RunReport import RunReport
 
 import multiprocessing as mp
 
@@ -27,8 +28,14 @@ class InterpreterProxy:
 
         def timer_callback():
             if self.comm.poll():
-                ok, report = self.comm.recv()
-                callback(ok, report)
+                try:
+                    ok, report = self.comm.recv()
+                    callback(ok, report)
+                except EOFError:
+                    self.kill()
+                    # report = RunReport()
+                    # report.add_execution_error('error', 'interpreter-stop')
+                    # callback(False, report)
             else:
                 self.root.after(RUN_POLL_DELAY, timer_callback)
             
