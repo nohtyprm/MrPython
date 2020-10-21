@@ -30,7 +30,7 @@ Il est aussi possible, sous windows, d'installer MrPython manuellement, voici le
    
  - procéder à l'installation
  
- ### Etape 2 : récupération des sources de MrPython
+### Etape 2 : récupération des sources de MrPython
  
  - récupérer les sources de MrPython : https://github.com/nohtyprm/MrPython/archive/master.zip
  
