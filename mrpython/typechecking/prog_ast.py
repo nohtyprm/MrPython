@@ -16,7 +16,7 @@ except ImportError:
 
 import os.path, sys
 
-import astpp
+# import typechecking.astpp
 
 main_path = os.path.dirname(os.path.realpath(__file__))
 found_path = False
