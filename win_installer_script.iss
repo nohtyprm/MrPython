@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "MrPython"
-#define MyAppVersion "4.0.1"
+#define MyAppVersion "4.0.3"
 #define MyAppPublisher "Frederic Peschanski"
 #define MyAppURL "https://github.com/nohtyprm/MrPython"
 #define MyAppExeName "Application.exe"
@@ -24,7 +24,7 @@ LicenseFile=C:\Users\Fredokun\Projets\MrPython\LICENSE.python
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-OutputBaseFilename=mrpython_4_0_1_install_FR
+OutputBaseFilename=mrpython_4_0_3_install_FR
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
