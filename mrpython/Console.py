@@ -10,6 +10,7 @@ import version
 from translate import tr
 import io
 import rpc
+import sys
 
 class ConsoleHistory:
     def __init__(self, history_capacity=100):

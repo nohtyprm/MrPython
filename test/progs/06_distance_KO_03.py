@@ -1,4 +1,4 @@
-##!FAIL: TypeComparisonError[tuple[float,float]/tuple[int,int,int]]@19:26
+##!FAIL: TypeComparisonError[tuple[float,float]/tuple[int,int,int]]@19:25
 
 import math # pour math.sqrt
 

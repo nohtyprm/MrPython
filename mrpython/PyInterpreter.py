@@ -1,6 +1,7 @@
 from StudentRunner import StudentRunner
 from FullRunner import FullRunner
 from translate import tr
+from RunReport import RunReport
 
 import multiprocessing as mp
 
@@ -9,6 +10,8 @@ import tkinter as tk
 import tokenize
 
 import sys
+
+import tempfile
 
 RUN_POLL_DELAY=250
 
@@ -27,8 +30,14 @@ class InterpreterProxy:
 
         def timer_callback():
             if self.comm.poll():
-                ok, report = self.comm.recv()
-                callback(ok, report)
+                try:
+                    ok, report = self.comm.recv()
+                    callback(ok, report)
+                except EOFError:
+                    self.kill()
+                    # report = RunReport()
+                    # report.add_execution_error('error', 'interpreter-stop')
+                    # callback(False, report)
             else:
                 self.root.after(RUN_POLL_DELAY, timer_callback)
             
@@ -103,63 +112,64 @@ class PyInterpreter:
     def run_evaluation(self, expr):
         """ Run the evaluation of expr """
 
-        output_file = open('interpreter_output', 'w+')
-        original_stdout = sys.stdout
-        sys.stdout = output_file
-        
-        runner = None
-        if self.mode == "student":
-            runner = StudentRunner(self.root, self.filename, expr)
-        else:
-            runner = FullRunner(self.filename, expr)
+        with tempfile.TemporaryFile(mode='w+', prefix='interpreter_output') as output_file:
 
-        ok = runner.evaluate(expr, self.locals)
-        report = runner.get_report()
-        begin_report = "=== " + tr("Evaluating: ") + "'" + expr + "' ===\n"
-        report.set_header(begin_report)
-        end_report = "\n" + ('=' * len(begin_report)) + "\n\n"
-        report.set_footer(end_report)
-
-        sys.stdout = original_stdout
-        output_file.close()
+            original_stdout = sys.stdout
+            sys.stdout = output_file
         
-        return (ok, report)
+            runner = None
+            if self.mode == "student":
+                runner = StudentRunner(self.root, self.filename, expr)
+            else:
+                runner = FullRunner(self.filename, expr)
+
+            ok = runner.evaluate(expr, self.locals)
+            report = runner.get_report()
+            begin_report = "=== " + tr("Evaluating: ") + "'" + expr + "' ===\n"
+            report.set_header(begin_report)
+            end_report = "\n" + ('=' * len(begin_report)) + "\n\n"
+            report.set_footer(end_report)
+            
+            sys.stdout = original_stdout
+        
+            return (ok, report)
 
     def execute(self):
         """ Execute the runner corresponding to the chosen Python mode """
         with tokenize.open(self.filename) as fp:
             source = fp.read()
 
-        output_file = open('interpreter_output', 'w+')
-        original_stdout = sys.stdout
-        sys.stdout = output_file
+        with tempfile.TemporaryFile(mode='w+', prefix="interpreter_output") as output_file:
+            original_stdout = sys.stdout
+            sys.stdout = output_file
             
-        runner = None
-        if self.mode == "student":
-            runner = StudentRunner(self.root, self.filename, source)
-        else:
-            runner = FullRunner(self.filename, source)
+            runner = None
+            if self.mode == "student":
+                runner = StudentRunner(self.root, self.filename, source)
+            else:
+                runner = FullRunner(self.filename, source)
 
-        ok = runner.execute(self.locals)
+            ok = runner.execute(self.locals)
 
-        report = runner.get_report()
-        import os
-        begin_report = "=== " + tr("Interpretation of: ") + "'" + os.path.basename(self.filename) + "' ===\n"
-        len_begin_report = len(begin_report)
+            report = runner.get_report()
+            import os
+            
+            begin_report = "=== " + tr("Interpretation of: ") + "'" + os.path.basename(self.filename) + "' ===\n"
+            len_begin_report = len(begin_report)
 
-        # enable?
-        # if self.mode == 'student':
-        #     begin_report += "# Automatic importation of graphic library\n"
-        #     begin_report += "from studentlib.gfx.image import (draw_line, draw_triangle, fill_triangle\n"
-        #     begin_report += "                                  , draw_ellipse, fill_ellipse\n"
-        #     begin_report += "                                  , overlay, underlay)\n"
-        #     begin_report += "from studentlib.gfx.img_canvas import show_image\n\n"
+            # enable?
+            # if self.mode == 'student':
+            #     begin_report += "# Automatic importation of graphic library\n"
+            #     begin_report += "from studentlib.gfx.image import (draw_line, draw_triangle, fill_triangle\n"
+            #     begin_report += "                                  , draw_ellipse, fill_ellipse\n"
+            #     begin_report += "                                  , overlay, underlay)\n"
+            #     begin_report += "from studentlib.gfx.img_canvas import show_image\n\n"
 
-        report.set_header(begin_report)
-        end_report = "\n" + ('=' * len_begin_report) + "\n\n"
-        report.set_footer(end_report)
+            report.set_header(begin_report)
+            end_report = "\n" + ('=' * len_begin_report) + "\n\n"
+            report.set_footer(end_report)
 
-        sys.stdout = original_stdout
-        output_file.close()
+            sys.stdout = original_stdout
+            
+            return (ok, report)
 
-        return (ok, report)

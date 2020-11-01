@@ -1,4 +1,4 @@
-##!FAIL: TupleTypeExpectationError[int]@11:5
+##!FAIL: TupleTypeExpectationError[int]@11:4
 
 def tuple_destruct(t : Tuple[int, int]) -> int:
     ''''''
