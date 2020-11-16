@@ -13,6 +13,7 @@ from tkinter.simpledialog import askstring
 from configHandler import MrPythonConf
 
 from codecs import BOM_UTF8
+from tincan import tracing_mrpython as tracing
 
 # Try setting the locale, so that we can find out
 # what encoding to use
@@ -321,10 +322,13 @@ class IOBinding:
         return reply
         
     def save(self, event):
+        tracing.user_is_interacting()
         if not self.filename:
             self.save_as(event)
         else:
             if self.writefile(self.filename):
+                tracing.send_statement("saved", "file",
+                                       {"https://www.lip6.fr/mocah/invalidURI/extensions/filename": os.path.basename(self.filename)})
                 self.set_saved(True)
                 try:
                     self.editwin.store_file_breaks()
@@ -338,6 +342,11 @@ class IOBinding:
         ### return "break"
 
     def save_as(self, event):
+        tracing.user_is_interacting()
+        if self.filename:
+            old_filename = self.filename
+        else:
+            old_filename = "Sans nom"
         filename = self.asksavefile()
         if filename:
             if self.writefile(filename):
@@ -348,6 +357,9 @@ class IOBinding:
                     self.editwin.store_file_breaks()
                 except AttributeError:
                     pass
+                tracing.send_statement("saved-as", "file",
+                                       {"https://www.lip6.fr/mocah/invalidURI/extensions/old-filename": os.path.basename(old_filename),
+                                        "https://www.lip6.fr/mocah/invalidURI/extensions/new-filename": os.path.basename(filename)})
         self.editwin.focus_set()
         self.updaterecentfileslist(filename)
         return "break"

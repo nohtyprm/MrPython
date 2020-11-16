@@ -3,6 +3,8 @@ from tkinter import *
 
 from Delegator import Delegator
 
+from tincan import tracing_mrpython as tracing
+
 #$ event <<redo>>
 #$ win <Control-y>
 #$ unix <Alt-z>
@@ -20,9 +22,10 @@ class UndoDelegator(Delegator):
 
     max_undo = 1000
 
-    def __init__(self):
+    def __init__(self, text = None):
         Delegator.__init__(self)
         self.reset_undo()
+        self.text = text  # PyEditor, make tracing behaviour consistent with undo/redo
 
     def setdelegate(self, delegate):
         if self.delegate is not None:
@@ -139,6 +142,12 @@ class UndoDelegator(Delegator):
             self.bell()
             return "break"
         cmd = self.undolist[self.pointer - 1]
+        if self.text is not None:
+            filename = self.text.short_title()
+            tracing.send_statement("undid", "sequence",
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/sequence-list": str(cmd),
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": filename})
+            self.text.reset_line()
         cmd.undo(self.delegate)
         self.pointer = self.pointer - 1
         self.can_merge = False
@@ -150,6 +159,12 @@ class UndoDelegator(Delegator):
             self.bell()
             return "break"
         cmd = self.undolist[self.pointer]
+        if self.text is not None:
+            filename = self.text.short_title()
+            tracing.send_statement("redid", "sequence",
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/sequence-list": str(cmd),
+                                    "https://www.lip6.fr/mocah/invalidURI/extensions/filename": filename})
+            self.text.reset_line()
         cmd.redo(self.delegate)
         self.pointer = self.pointer + 1
         self.can_merge = False

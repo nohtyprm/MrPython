@@ -10,7 +10,11 @@ import version
 from translate import tr
 import io
 import rpc
+
 import sys
+
+from tincan import tracing_mrpython as tracing
+
 
 class ConsoleHistory:
     def __init__(self, history_capacity=100):
@@ -113,6 +117,16 @@ class ReadOnlyText(Text):
         self.insert = self.redirector.register("insert", lambda *args, **kw: "break")
         self.delete = self.redirector.register("delete", lambda *args, **kw: "break")
 
+        self.bind("<<copy>>", self.copy_event)
+
+    def copy_event(self, event):
+        # Trace copy event in the output console
+        first = self.index("sel.first")
+        last = self.index("sel.last")
+        if first != "" and last != "":
+            tracing.send_statement("copied", "output-console",
+                                   {"https://www.lip6.fr/mocah/invalidURI/extensions/text": self.get(first, last)})
+
 class Console:
     """
     Interactive console of MrPython, consisting of two widgets : output and input
@@ -143,7 +157,7 @@ class Console:
 
 
 
-        self.output_console = ReadOnlyText(self.frame_output, height=15, 
+        self.output_console = ReadOnlyText(self.frame_output, height=15,
                                    yscrollcommand=self.scrollbar.set)
 
         self.hyperlinks = HyperlinkManager(self.output_console)
@@ -185,7 +199,7 @@ class Console:
         #sys.stdout = self.stdout
         #sys.stderr = self.stderr
         #sys.stdin = self.stdin
-        # The current Python mode 
+        # The current Python mode
         self.mode = "student"
 
         self.reading = False
@@ -239,14 +253,14 @@ class Console:
         tag = 'run'
         if not status:
             tag = 'error'
-            
+
         self.hyperlinks.reset()
 
         self.write(report.header, tags=(tag))
         #self.write("\n")
-        
+
         has_convention_error = False
-        
+
         for error in report.convention_errors:
             if error.severity == "error" and not has_convention_error:
                 self.write(tr("-----\nPython101 convention errors:\n-----\n"), tags='info')
@@ -276,7 +290,7 @@ class Console:
                 if error.severity == "error" and not has_execution_error:
                     self.write(tr("\n-----\nExecution errors (Python interpreter):\n-----\n"), tags='info')
                     has_execution_error = True
-                    
+
                 hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
                 self.write("\n")
                 self.write(str(error), tags=(error.severity, hyper, hyper_spec))
@@ -304,9 +318,25 @@ class Console:
                 self.write("==> " + tr("All the {} tests passed with success").format(report.nb_passed_tests), tags=('run'))
             elif report.nb_passed_tests == 1:
                 self.write("==> " + tr("Only one (successful) test found, it's probably not enough"), tags=('warning'))
+                report.add_convention_error("warning", tr("Missing tests"),
+                    details = tr("Only one (successful) test found, it's probably not enough"),
+                    class_name="OneTestWarning")  # Error added for future tracing
             else:
                 self.write("==> " + tr("There is no test! you have to write tests!"), tags=('error'))
-        
+                report.add_convention_error("error", tr("Missing tests"),
+                    details=tr("There is no test! you have to write tests!"),
+                    class_name="NoTestError")  # Error added for future tracing
+
+            # Check if user identified themselves for tracing
+            if exec_mode == 'exec' and self.mode == tr('student'):
+                tracing.check_modified_student_number(report.first_line)
+                if tracing.student_hash_uninitialized():  # User is not identified
+                    error_message = ("Numéro d'étudiant non initialisé.\n"
+                                     "Veuillez saisir votre ou vos numéros en premiere ligne au format:\n"
+                                     "'# numero' ou '# votre-numero binome-numero' \n")
+                    self.write("\n==> " + error_message, tags=('warning'))
+                    report.add_convention_error("warning", "Uninitialized student number", details=error_message,
+                                                class_name="UninitializedStudentNumberWarning")
         self.write(report.footer, tags=(tag))
 
     def evaluate_action(self, *args):
@@ -314,6 +344,9 @@ class Console:
         expr = self.input_console.get()
         if not expr:
             return
+        tracing.send_statement("started", "evaluation",
+                               {"https://www.lip6.fr/mocah/invalidURI/extensions/mode": tr(self.mode)})
+        tracing.user_is_interacting()
         local_interpreter = False
         if self.interpreter is None:
             self.interpreter = InterpreterProxy(self.app.root, self.app.mode, "<<console>>")
@@ -343,6 +376,7 @@ class Console:
 
             self.app.icon_widget.disable_icon_running()
             self.app.running_interpreter_callback = None
+            tracing.send_statement_evaluate(report, tr(self.mode), instruction=expr)
 
         # non-blocking call
         self.app.icon_widget.enable_icon_running()
@@ -373,7 +407,7 @@ class Console:
             bg = '#775F57'
         self.input_console.config(state=stat, background=bg)
         self.eval_button.config(state=stat)
-        
+
     def run(self, filename):
         """ Run the program in the current editor : execute, print results """
         # Reset the output first
@@ -384,17 +418,17 @@ class Console:
             self.interpreter.kill()
             self.app.running_interpreter_proxy = None
 
-            
+
         self.interpreter = InterpreterProxy(self.app.root, self.app.mode, filename)
         self.app.running_interpreter_proxy = self.interpreter
 
         callback_called = False
-        
+
         def callback(ok, report):
             # XXX: the ok is not trustable
             if report.has_compilation_error() or report.has_execution_error():
                 ok = False
-            
+
             nonlocal callback_called
             if callback_called:
                 return
@@ -410,14 +444,15 @@ class Console:
                 # kill the interpreter
                 self.interpreter.kill()
                 self.interpreter = None
-                self.app.running_interpreter_proxy = None            
+                self.app.running_interpreter_proxy = None
             else:
                 self.input_console.focus_set()
                 #self.switch_input_status(True)
 
             self.app.icon_widget.disable_icon_running()
             self.app.running_interpreter_callback = None
-                
+            tracing.send_statement_execute(report, tr(self.mode), filename=filename)
+
         # non-blocking call
         self.app.icon_widget.enable_icon_running()
         self.app.running_interpreter_callback = callback
