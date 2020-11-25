@@ -1,4 +1,3 @@
-
 AVAILABLE_LOCALE_KEYS = { 'fr', 'en' }
 
 TRANSLATOR_LOCALE_KEY = None
@@ -146,6 +145,9 @@ TRANSLATOR_DICT = {
     , "Does not understand the declared dictionary type (missing key/value types)." : { 'fr' : "Je ne comprends pas le type dictionnaire déclaré : il manque le type des clés et/ou des valeurs" }
     , "The colon ':' separator is not allower in dictionnary types, use ',' instead" : { 'fr' : "le séparateur ':' n'est pas autorisé dans les types dictionnaire, utiliser plutôt la virgule ','" }
     , "Missing key,value types in dictionnary type" : { 'fr' : "Type dictionnaire incorrect : il manque le type des clés et des valeurs."}
+    , "Wrong function name" : { 'fr' : "Nom de fonction incorrect"}
+    , "The function name '{}' is reserved in student mode" : { 'fr' : "Le nom de fonction '{}' n'est pas autorisé en mode étudiant."}
+
 }
 
 def tr(msg):

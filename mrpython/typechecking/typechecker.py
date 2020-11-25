@@ -294,9 +294,14 @@ def type_check_Program(prog):
 
     # third step : process each function to fill the global environment
     for (fun_name, fun_def) in prog.functions.items():
+        if fun_name in { "add", "append"
+                         , "triangle", "draw_triangle", "ellipse", "fill_ellipse"}:
+            ctx.add_type_error(ReservedFunctionNameError(fun_def, fun_def.ast.lineno, fun_def.ast.col_offset))
+            return ctx
+
         if fun_def.docstring is None:
             ctx.add_type_error(NoFunctionDocWarning(fun_def))
-        
+
         if fun_def.returns is None:
             ctx.add_type_error(MissingReturnTypeError(fun_def, fun_def.ast.lineno, fun_def.ast.col_offset))
             return ctx
@@ -305,7 +310,7 @@ def type_check_Program(prog):
         if not ok:
             ctx.add_type_error(TypeExprParseError(fun_def.ast.lineno, fun_def.ast.col_offset, fun_type_ast))
             return ctx
-            
+
         fun_type, unknown_alias = fun_type_ast.unalias(ctx.type_defs)
         if fun_type is None:
             ctx.add_type_error(UnknownTypeAliasError(fun_type_ast, unknown_alias, fun_def.ast.lineno, fun_def.ast.col_offset))
@@ -438,7 +443,7 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
     if not ok:
         ctx.add_type_error(TypeExprParseError(lineno, assign_target.ast.col_offset, decl_type))
         return None
-    
+
     declared_types = dict()
 
     if var_name == "_":
@@ -474,7 +479,7 @@ def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
                 return None
             else:
                 continue
-    
+
         decl_type, idk = ctx.declared_env[var_name]
         if decl_type is None:
             ctx.add_type_error(TypeExprParseError(lineno, assign_target.ast.col_offset, annotation.id))
@@ -498,7 +503,7 @@ def fetch_declared_mypy_types(ctx, declaration_target, annotation, strict = Fals
     if not ok:
         ctx.add_type_error(TypeExprParseError(lineno, declaration_target.ast.col_offset, decl_type))
         return None
-        
+
     declared_types = dict()
     if var_name == "_":
         ctx.add_type_error(DeclarationError(ctx.function_def, declaration_target, 'var-name', lineno, tr("The special variable '_' cannot be declared")))
@@ -566,11 +571,11 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
     return declared_types
 
 def check_linearized_tuple_type(working_var, working_type, declared_types, ctx, expr, strict=False):
-    
+
     if not isinstance(working_var, LHSTuple):
         #check if working_var is an instance of LHSVar
         if isinstance(working_var, LHSVar):
-            
+
             if working_var.var_name == '_': # just skip this check
                 return True
 
@@ -684,14 +689,14 @@ def type_check_Assign(assign, ctx, global_scope = False):
         var_type = ctx.local_env[var.var_name][0]
         if not var_type.type_compare(ctx, assign.expr, expr_type, raise_error=True):
             return False
-        
+
         # nothing else to do for actual assignment
         return True
 
     # here we consider an initialization and not an actual assignment
 
     # next fetch the declared types  (only required for mono-variables)
-    
+
     if declaration:
         if hasattr(assign, "type_annotation"):
             ctx.add_type_error( DuplicateMultiAssignError(lineno,var.var_name))
@@ -751,7 +756,7 @@ def type_check_For(for_node, ctx):
             ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
             return False
 
-            
+
     declared_types = fetch_assign_declared_mypy_types(ctx, for_node.target, True if for_node.target.arity() == 1 else False)
     if declared_types is None:
         if for_node.target.arity() == 1:
@@ -2770,7 +2775,6 @@ class WrongReturnTypeError(TypeError):
         report.add_convention_error('error', tr("Wrong return type"), self.ret_expr.ast.lineno, self.ret_expr.ast.col_offset
                                     , tr("The declared return type for function '{}' is '{}' but the return expression has incompatible type: {}").format(self.in_function.name, self.expected_type, self.ret_type))
 
-
 class UnknownFunctionError(TypeError):
     def __init__(self, in_function, call):
         self.in_function = in_function
@@ -3139,6 +3143,23 @@ class UnknownTypeAliasError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Type name error"), self.lineno, self.col_offset
                                     , tr("I don't find any definition for the type: {}").format(self.unknown_alias))
+
+
+class ReservedFunctionNameError(TypeError):
+    def __init__(self, fun_def, lineno, col_offset):
+        self.fun_def = fun_def
+        self.lineno = lineno
+        self.col_offset = col_offset
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "ReservedFunctionNameError[{}]@{}:{}".format(self.fun_def.name, self.lineno, self.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Wrong function name"), self.lineno, self.col_offset
+                                    , tr("The function name '{}' is reserved in student mode").format(self.fun_def.name))
 
 class MissingReturnTypeError(TypeError):
     def __init__(self, fun_def, lineno, col_offset):

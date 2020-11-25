@@ -17,7 +17,7 @@ from typechecking.type_ast import PREDEFINED_TYPE_VARIABLES
 
 def install_locals(locals):
     # install the gfx lib
-    
+
     #locals = { k:v for (k,v) in locs.items() }
     locals['draw_line'] = studentlib.gfx.image.draw_line
     locals['line'] = studentlib.gfx.image.draw_line
@@ -247,7 +247,7 @@ class StudentRunner:
         #print("funcalls = {}".format(funcalls))
 
         self.report.nb_defined_funs = len(defined_funs)
-        
+
         missing = defined_funs.difference(funcalls)
 
         if missing:
