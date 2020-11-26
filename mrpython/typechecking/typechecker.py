@@ -698,7 +698,7 @@ def type_check_Assign(assign, ctx, global_scope = False):
     # next fetch the declared types  (only required for mono-variables)
 
     if declaration:
-        if hasattr(assign, "type_annotation"):
+        if (not global_scope) and hasattr(assign, "type_annotation"):
             ctx.add_type_error( DuplicateMultiAssignError(lineno,var.var_name))
         # Assignation of variables that have already been declared
         declared_types = fetch_assign_declared_mypy_types(ctx, assign.target,True if assign.target.arity() == 1 else False )

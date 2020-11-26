@@ -1,4 +1,3 @@
-
 """The abstract syntax tree of programs."""
 
 import ast
@@ -107,10 +106,16 @@ class Program:
             elif isinstance(node, ast.AnnAssign) and node.value is None:
                 DeclareVar_ast = DeclareVar(node)
                 self.global_vars.append(DeclareVar_ast)
-            elif isinstance(node, ast.Assign) or isinstance(node, ast.AnnAssign):
-                if isinstance(node, ast.Assign) and not check_typevar_assign(node):
+            elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+                if not check_typevar_assign(node):
+                    if isinstance(node, ast.AnnAssign):
+                        # Type annotation with initialization
+                        DeclareVar_ast = DeclareVar(node)
+                        self.global_vars.append(DeclareVar_ast)
+                    # assignment is also a global variables
                     assign_ast = Assign(node)
                     self.global_vars.append(assign_ast)
+                # else do nothing for typevar declarations
             else:
                 # print("Unsupported instruction: " + node)
                 self.other_top_defs.append(UnsupportedNode(node))
@@ -124,9 +129,11 @@ def check_typing_imports(node):
         if alias.name not in ALLOWED_TYPING_IMPORTS:
             return False
     return True
-        
+
 def check_typevar_assign(node):
     # TODO : more precise error checking
+    if isinstance(node, ast.AnnAssign):
+        return False # TODO : handle this case more precisely, why not  T : TypeVar = TypeVar('T') ?
     if len(node.targets) != 1:
         return False
     if node.targets[0].id not in PREDEFINED_TYPE_VARIABLES:
@@ -139,7 +146,7 @@ def check_typevar_assign(node):
         return False
 
     return True
-        
+
 
 class UnsupportedNode:
     def __init__(self, node):
