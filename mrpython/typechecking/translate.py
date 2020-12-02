@@ -98,7 +98,7 @@ TRANSLATOR_DICT = {
     , "Bad iterator" : { 'fr' : "Problème d'itération" }
     , "Expecting an iterator of tuples" : { 'fr' : "J'attends un itérable de n-uplets" }
     , "Not an iterable type: {}" : { 'fr' : "Type non itérable: {}" }
-    , "Expecting precise type '{}' but found less precise type: {}" : { 'fr' : "J'attends le type précis '{}' mais le type de cette expression est moins précis: {}" }
+    , "Expecting type '{}' but found less precise type '{}' (the value could be None)" : { 'fr' : "J'attends le type '{}' mais le type de cette expression est moins précis : {}  (la valeur pourrait être None)" }
     , "Unhashable (mutable) element forbidden in set, element type is: {}" : { 'fr' : "Un ensemble ne peut contenir de valeur mutable (non-hashable), ici l'élément est de type: {}" }
     , "Unhashable (mutable) key in dictionary, key type is: {}" : { 'fr' : "Une clé de dictionnaire ne peut être mutable (non-hashable), ici la clé est de type: {}" }
     , "Bad set" : { 'fr' : "Problème d'ensemble" }

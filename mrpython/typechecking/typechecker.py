@@ -2745,7 +2745,7 @@ class OptionCoercionWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr("Imprecise typing"), self.expr.ast.lineno, self.expr.ast.col_offset
-                                    , tr("Expecting precise type '{}' but found less precise type: {}").format(self.expected_precise_type, self.expr_option_type))
+                                    , tr("Expecting type '{}' but found less precise type '{}' (the value could be None)").format(self.expected_precise_type, self.expr_option_type))
 
 
 class UnsupportedNumericTypeError(TypeError):

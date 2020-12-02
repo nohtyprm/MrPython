@@ -1,4 +1,3 @@
-
 """The abstract syntax tree of type expressions."""
 
 
@@ -27,7 +26,7 @@ class TypeAST:
 
     def unalias(self, type_defs):
         raise NotImplementedError("Method unalias is abstract")
-    
+
 class Anything(TypeAST):
     def __init__(self, annotation=None):
         super().__init__(annotation)
@@ -43,7 +42,7 @@ class Anything(TypeAST):
 
     def unalias(self, type_defs):
         return (self, None)
-    
+
     def __eq__(self, other):
         return isinstance(other, Anything)
 
@@ -77,7 +76,7 @@ class TypeAlias(TypeAST):
         unaliased_type.alias_name = self.alias_name
 
         return (unaliased_type, None)
-    
+
     def __eq__(self, other):
         return isinstance(other, BoolType)
 
@@ -86,7 +85,7 @@ class TypeAlias(TypeAST):
 
     def __repr__(self):
         return "TypeAlias({})".format(self.alias_name)
-    
+
 class FileType(TypeAST):
     def __init__(self, annotation=None):
         super().__init__(annotation)
@@ -102,7 +101,7 @@ class FileType(TypeAST):
 
     def unalias(self, type_defs):
         return (self, None)
-    
+
     def __eq__(self, other):
         return isinstance(other, FileType)
 
@@ -111,7 +110,7 @@ class FileType(TypeAST):
 
     def __repr__(self):
         return "FileType()"
-    
+
 
 class BoolType(TypeAST):
     def __init__(self, annotation=None):
@@ -128,7 +127,7 @@ class BoolType(TypeAST):
 
     def unalias(self, type_defs):
         return (self, None)
-    
+
     def __eq__(self, other):
         return isinstance(other, BoolType)
 
@@ -265,7 +264,7 @@ class ImageType(TypeAST):
     def __repr__(self):
         return "ImageType()"
 
-    
+
 class StrType(TypeAST):
     def __init__(self, annotation=None):
         super().__init__(annotation)
@@ -337,7 +336,7 @@ class TypeVariable(TypeAST):
 
     def unalias(self, type_defs):
         return (self, None)
-    
+
     def __str__(self):
         return '_' if self.var_name.startswith('_') else self.var_name
 
@@ -387,7 +386,7 @@ class TupleType(TypeAST):
                 return result
 
         return None
-    
+
     def size(self):
         return len(self.elem_types)
 
@@ -397,14 +396,14 @@ class TupleType(TypeAST):
             uelem_type, unknown_alias = elem_type.unalias(type_defs)
             if uelem_type is None:
                 return (None, unknown_alias)
-            
+
             nelem_types.append(uelem_type)
-            
+
         return (TupleType(nelem_types, self.annotation if self.annotated else None)
                 , None)
 
     def __str__(self):
-        return "tuple[{}]".format(",".join((str(et) for et in self.elem_types)))
+        return "Tuple[{}]".format(",".join((str(et) for et in self.elem_types)))
 
     def __repr__(self):
         return "TupleType([{}])".format(",".join((repr(et) for et in self.elem_types)))
@@ -451,7 +450,7 @@ class ListType(TypeAST):
             return result
 
         return None
-    
+
     def is_emptylist(self):
         return self.elem_type is None
 
@@ -495,7 +494,7 @@ class SetType(TypeAST):
     def fetch_unhashable(self):
         if self.elem_type is None:
             return None  # has no unhashable
-        
+
         result = self.elem_type.fetch_unhashable()
         if result is not None:
             return result
@@ -504,7 +503,7 @@ class SetType(TypeAST):
             return self # found a non-hashable set
 
         return None
-    
+
     def unalias(self, type_defs):
         uelem_type, unknown_alias = self.elem_type.unalias(type_defs)
         if uelem_type is None:
@@ -520,7 +519,7 @@ class SetType(TypeAST):
 
     def __repr__(self):
         return "SetType({})".format(repr(self.elem_type))
-    
+
 class DictType(TypeAST):
     def __init__(self, key_type=None, val_type=None, annotation=None):
         super().__init__(annotation)
@@ -536,7 +535,7 @@ class DictType(TypeAST):
     def rename_type_variables(self, rmap):
         if self.key_type is None:
             return self
-        
+
         nkey_type = self.key_type.rename_type_variables(rmap)
         nval_type = self.val_type.rename_type_variables(rmap)
         return DictType(nkey_type, nval_type, self.annotation)
@@ -544,18 +543,18 @@ class DictType(TypeAST):
     def subst(self, type_env):
         if self.key_type is None:
             return self
-        
+
         return DictType(self.key_type.subst(type_env)
                         , self.val_type.subst(type_env)
                         , self.annotation)
 
     def is_hashable(self):
         return False
-    
+
     def fetch_unhashable(self):
         if self.key_type is None:
             return None # no unhashable in an empty dictionary
-        
+
         result = self.key_type.fetch_unhashable()
         if result is not None:
             return result
@@ -566,13 +565,13 @@ class DictType(TypeAST):
 
         if not self.key_type.is_hashable():
             return self # dictionary has unhashable keys
-        
-        return None        
+
+        return None
 
     def unalias(self, type_defs):
         if self.key_type is None:
             return (self, None)
-        
+
         ukey_type, unknown_alias = self.key_type.unalias(type_defs)
         if ukey_type is None:
             return (None, unknown_alias)
@@ -584,7 +583,7 @@ class DictType(TypeAST):
                          , self.annotation if self.annotated else None)
                 , None)
 
-    
+
     def __eq__(self, other):
         return isinstance(other, DictType) and other.key_type == self.key_type \
             and other.val_type == self.val_type
@@ -673,7 +672,7 @@ class SequenceType(TypeAST):
         return (SequenceType(uelem_type, self.annotation if self.annotated else None)
                 , None)
 
-    
+
     def __eq__(self, other):
         return isinstance(other, SequenceType) and other.elem_type == self.elem_type
 
@@ -704,7 +703,7 @@ class OptionType(TypeAST):
 
         return (OptionType(uelem_type, self.annotation if self.annotated else None)
                 , None)
-    
+
     def is_hashable(self):
         return self.elem_type.is_hashable()
 
@@ -714,12 +713,12 @@ class OptionType(TypeAST):
             return result
 
         return None
-    
+
     def __eq__(self, other):
         return isinstance(other, OptionType) and other.elem_type == self.elem_type
 
     def __str__(self):
-        return "{} + NoneType".format(str(self.elem_type))
+        return "Optional[{}]".format(str(self.elem_type))
 
     def __repr__(self):
         return "OptionType({})".format(repr(self.elem_type))
@@ -783,11 +782,11 @@ class FunctionType:
         nret_type, unknown_alias = self.ret_type.unalias(type_defs)
         if nret_type is None:
             return (None, unknown_alias)
-        
+
         nfntype = FunctionType(nparam_types, self.ret_type, self.partial, self.annotation if self.annotated else None)
         nfntype.ret_type = nret_type
         return (nfntype, None)
-    
+
     def __str__(self):
         return "{} -> {}".format(" * ".join((str(pt) for pt in self.param_types))
                                  , "{}{}".format(str(self.ret_type if not self.partial else self.ret_type.elem_type), " + NoneType" if self.partial else ""))
