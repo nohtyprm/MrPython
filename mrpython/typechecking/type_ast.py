@@ -8,6 +8,7 @@ class TypeAST:
             self.annotation=annotation
         else:
             self.annotated=False
+            self.annotation = None
 
     def rename_type_variables(self, rmap):
         raise NotImplementedError("Type variable renaming not implemented for this node type (please report)\n  ==> {}".format(self))
