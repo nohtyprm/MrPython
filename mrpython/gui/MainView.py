@@ -1,8 +1,8 @@
-from PyEditorList import PyEditorList
-from PyIconWidget import PyIconWidget
-from Console import Console
-from PyEditorWidget import PyEditorWidget
-from StatusBar import StatusBar
+from .PyEditorList import PyEditorList
+from .PyIconWidget import PyIconWidget
+from .Console import Console
+from .PyEditorWidget import PyEditorWidget
+from .StatusBar import StatusBar
 from tkinter.ttk import *
 from tkinter import *
 import sys

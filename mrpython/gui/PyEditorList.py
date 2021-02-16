@@ -3,7 +3,7 @@ from tkinter import *
 from tkinter.ttk import *
 from tkinter.font import Font, nametofont
 import tkinter.messagebox as tkMessageBox
-from PyEditorFrame import PyEditorFrame
+from .PyEditorFrame import PyEditorFrame
 
 from CloseableNotebook import CloseableNotebook
 
