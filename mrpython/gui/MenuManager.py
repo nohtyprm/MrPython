@@ -1,5 +1,5 @@
 from tkinter import *
-from PyEditor import PyEditor
+from .PyEditor import PyEditor
 
 
 class MenuManager:

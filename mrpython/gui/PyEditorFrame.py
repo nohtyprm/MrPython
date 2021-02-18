@@ -6,9 +6,9 @@ Created on Fri Feb  1 11:38:21 2019
 @author: 3535008
 """
 
-from PyEditor import PyEditor
+from .PyEditor import PyEditor
 from tkinter import *
-from TextLineNumbers import TextLineNumbers
+from .TextLineNumbers import TextLineNumbers
 
 class PyEditorFrame(Frame):
     

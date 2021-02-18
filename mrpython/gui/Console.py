@@ -2,9 +2,9 @@ from platform import python_version
 from tkinter import *
 from tkinter.font import Font, nametofont
 from PyInterpreter import InterpreterProxy
-from WidgetRedirector import WidgetRedirector
+from .WidgetRedirector import WidgetRedirector
 
-from HyperlinkManager import HyperlinkManager
+from .HyperlinkManager import HyperlinkManager
 
 import version
 from translate import tr
@@ -118,8 +118,8 @@ class Console:
     Interactive console of MrPython, consisting of two widgets : output and input
     """
 
-    from ModifiedColorDelegator import ModifiedColorDelegator
-    from ModifiedUndoDelegator import ModifiedUndoDelegator
+    from .ModifiedColorDelegator import ModifiedColorDelegator
+    from .ModifiedUndoDelegator import ModifiedUndoDelegator
     from IdleHistory import History
 
     SHELL_TITLE = "Python " + python_version() + " Shell"
@@ -177,7 +177,7 @@ class Console:
         self.frame_input.columnconfigure(1, weight=1)
 
 	# Redirect the Python output, input and error stream to the console
-        import IOBinding
+        import gui.IOBinding as IOBinding
         self.stdin = PseudoInputFile(self, "error", IOBinding.encoding)
         self.stdout = PseudoOutputFile(self, "error", IOBinding.encoding)
         self.stderr = PseudoOutputFile(self, "error", IOBinding.encoding)

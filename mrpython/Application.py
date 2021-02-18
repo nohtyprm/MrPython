@@ -1,6 +1,6 @@
 from gui.MainView import MainView
 from tkinter import Tk, sys
-from PyEditor import PyEditor
+from gui.PyEditor import PyEditor
 import Bindings
 
 

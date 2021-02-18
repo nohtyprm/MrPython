@@ -5,7 +5,7 @@ from tkinter.font import Font, nametofont
 import tkinter.messagebox as tkMessageBox
 from .PyEditorFrame import PyEditorFrame
 
-from CloseableNotebook import CloseableNotebook
+from .CloseableNotebook import CloseableNotebook
 
 MODULE_PATH = os.path.dirname(__file__)
 

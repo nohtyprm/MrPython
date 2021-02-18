@@ -1,4 +1,4 @@
-from ColorDelegator import ColorDelegator
+from .ColorDelegator import ColorDelegator
 
 class ModifiedColorDelegator(ColorDelegator):
     "Extend base class: colorizer for the shell window itself"
