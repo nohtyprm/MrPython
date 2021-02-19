@@ -1,7 +1,7 @@
 from tkinter import *
 
 from translate import tr
-from tooltip import ToolTip
+from .tooltip import ToolTip
 
 import os
 MODULE_PATH = os.path.dirname(__file__)

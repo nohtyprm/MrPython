@@ -1,4 +1,4 @@
-from WidgetRedirector import WidgetRedirector
+from .WidgetRedirector import WidgetRedirector
 from Delegator import Delegator
 
 class Percolator:
