@@ -390,6 +390,7 @@ def type_check_FunctionDef(func_def, ctx):
     ctx.push_parent(func_def)
 
     ctx.nb_returns = 0  # counting the number of returns encountered
+    local_vars = set()  #save the checked local variables here
     for instr in func_def.body:
         if isinstance(instr, UnsupportedNode):
             ctx.add_type_error(UnsupportedNodeError(instr))
@@ -398,6 +399,12 @@ def type_check_FunctionDef(func_def, ctx):
             #ctx.pop_parent()
             ctx.unregister_function_def()
             return
+
+        if isinstance(instr, DeclareVar):
+            if instr.target.var_name in local_vars:
+                ctx.add_type_error(DuplicateMultiAssignError(instr.ast.lineno, instr.target.var_name))
+                return ctx
+            local_vars.add(instr.target.var_name)
 
         #print(repr(instr))
         instr.type_check(ctx)
