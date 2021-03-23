@@ -213,6 +213,11 @@ UnsupportedNode.type_check = type_check_UnsupportedNode
 def type_check_Program(prog):
     ctx = TypingContext(prog)
 
+    if len(prog.multi_declared_functions) != 0:
+        for fun_name in prog.multi_declared_functions:
+            ctx.add_type_error(DuplicateMultiFunDeclarationError(prog.multi_declared_functions[fun_name], fun_name))
+        return ctx
+
     # we do not type check a program with unsupported top-level nodes
     for top_def in prog.other_top_defs:
         if isinstance(top_def.ast, ast.FunctionDef):
@@ -2483,6 +2488,22 @@ class DuplicateMultiAssignError(TypeError):
 
     def is_fatal(self):
         return True
+
+class DuplicateMultiFunDeclarationError(TypeError):
+    def __init__(self, lineno, fun_name):
+        self.lineno = lineno
+        self.fun_name = fun_name
+
+    def fail_string(self):
+        return "DuplicateMultiFunDeclarationError[{}]@{}:{}".format(self.fun_name, self.lineno, 0)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Function definition problem"), self.lineno, 0
+                                    , details=tr("Function '{}' was defined multiple times").format(self.fun_name))
+
+    def is_fatal(self):
+        return True
+
 
 
 class AssertionInFunctionWarning(TypeError):

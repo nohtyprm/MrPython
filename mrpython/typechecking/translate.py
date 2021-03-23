@@ -25,6 +25,7 @@ TRANSLATOR_DICT = {
     , "this construction is not available in Python101 (try expert mode for standard Python)"
     : { 'fr' : "cette construction n'est pas disponible en Python101 (vous pouvez essayer le mode expert pour faire du Python standard)" }
     , "Declaration problem" : { 'fr' : 'Problème de déclaration'}
+    , "Function definition problem" : { 'fr' : 'Problème de définition de fonction'}
     , "Missing variable declaration" : { 'fr' : "La déclaration de variable est manquante." }
     , "Wrong variable name in declaration, it should be '{}'" : { 'fr' : "le nom de variable est erroné dans la déclaration, cela devrait être '{}'"}
     , "Missing ':' character before variable type declaration" : { 'fr' : "je ne comprends pas le type déclaré pour cette variable, il manque le caractère ':'"}
@@ -125,6 +126,7 @@ TRANSLATOR_DICT = {
     , "Call to '{}' may cause side effect" : {'fr' : "L'appel à la méthode '{}' risque d'avoir un effet de bord incontrôlé"}
     , "There is a risk of side effect as on the following parameter(s) {}" : {'fr' : "Il est possible qu'il y ait un effet de bord sur le(s) paramètre(s) suivant(s): {}"}
     , "Variable '{}' was declared multiple times" : { 'fr' : "La variable '{}' a été déclarée plusieurs fois"}
+    , "Function '{}' was defined multiple times" : { 'fr' : "La fonction '{}' a été définie plusieurs fois"}
     , "Not a variable type declaration : it is a type alias." : { 'fr' : "ce n'est pas une déclaration de variable mais une déclaration d'alias de type."}
     , "Empty tuple" : { 'fr' : "N-uplet vide"}
     , "Python 101 does not allow empty tuples, only in expert mode" : { 'fr' : "les n-uplets vides (0-uplets ?) ne sont pas autorisés en Python101."}
