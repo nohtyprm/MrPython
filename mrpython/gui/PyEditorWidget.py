@@ -1,5 +1,5 @@
 from tkinter import *
-from PyEditorList import PyEditorList
+from .PyEditorList import PyEditorList
 
 class PyEditorWidget(Frame):
     """

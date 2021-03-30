@@ -14,14 +14,14 @@ import PyParse
 import sys
 import Bindings
 
-from HighlightingText import HighlightingText
+from .HighlightingText import HighlightingText
 _py_version = ' (%s)' % platform.python_version()
 
 class PyEditor(HighlightingText):
-    from IOBinding import  IOBinding, filesystemencoding, encoding
-    from UndoDelegator import  UndoDelegator
-    from Percolator import Percolator
-    from ColorDelegator import  ColorDelegator
+    from .IOBinding import  IOBinding, filesystemencoding, encoding
+    from .UndoDelegator import  UndoDelegator
+    from .Percolator import Percolator
+    from .ColorDelegator import  ColorDelegator
 
     def __init__(self, parent, linewidget, open=False, filename=None):
 

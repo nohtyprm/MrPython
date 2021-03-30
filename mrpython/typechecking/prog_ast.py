@@ -52,6 +52,9 @@ class Program:
         # other top level definitions
         self.other_top_defs = []
 
+        #multi-declared functions
+        self.multi_declared_functions = dict()
+
         # metadata
         self.filename = None
         self.source = None
@@ -97,7 +100,10 @@ class Program:
             elif isinstance(node, ast.FunctionDef):
                 fun_ast = FunctionDef(node)
                 if fun_ast.python101ready:
-                    self.functions[fun_ast.name] = fun_ast
+                    if fun_ast.name in self.functions:
+                        self.multi_declared_functions[fun_ast.name] = node.lineno
+                    else:
+                        self.functions[fun_ast.name] = fun_ast
                 else:
                     self.other_top_defs.append(UnsupportedNode(node))
             elif isinstance(node, ast.Assert):
