@@ -174,6 +174,8 @@ class FunctionDef:
 
         self.param_types = []
         self.parameters = []
+
+        self.preconditions = []
         for arg_obj in self.ast.args.args:
             self.parameters.append(arg_obj.arg)
 
@@ -186,6 +188,12 @@ class FunctionDef:
         if isinstance(first_instr, ast.Expr) and isinstance(first_instr.value, ast.Str):
             self.docstring = first_instr.value.s
             next_instr_index = 1
+            splitedDocstring = self.docstring.splitlines()
+            for s in splitedDocstring:
+                if("Précondition" in s or "précondition" in s or "Precondition" in s or "precondition" in s):
+                    self.preconditions.append(s.split(":")[1])
+                elif ("Hypothese" in s or "Hypothèse" in s or "hypothese" in s or "hypothèse" in s):
+                    self.preconditions.append(s.split(":")[1]) 
             #print(self.docstring)
         else:
             # nothing to do ?
@@ -196,7 +204,6 @@ class FunctionDef:
             self.body.append(parse_instruction(inner_node))
 
         self.returns = self.ast.returns
-
 
 class TestCase:
     def __init__(self, node):
