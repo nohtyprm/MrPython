@@ -419,6 +419,8 @@ def type_check_FunctionDef(func_def, ctx):
             ctx.unregister_function_def()
             return
 
+    #Print preconditions
+    print(func_def.preconditions)
     if ctx.nb_returns == 0 and not isinstance(signature.ret_type, NoneTypeType):
         ctx.add_type_error(NoReturnInFunctionError(func_def))
 

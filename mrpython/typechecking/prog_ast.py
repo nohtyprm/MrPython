@@ -165,7 +165,6 @@ class Import:
         #print_ast_fields(self.ast)
         alias = self.ast.names[0]
         self.name = alias.name
-
 class FunctionDef:
     def __init__(self, node):
         self.ast = node
@@ -189,11 +188,24 @@ class FunctionDef:
             self.docstring = first_instr.value.s
             next_instr_index = 1
             splitedDocstring = self.docstring.splitlines()
+            i = 0
             for s in splitedDocstring:
-                if("Précondition" in s or "précondition" in s or "Precondition" in s or "precondition" in s):
-                    self.preconditions.append(s.split(":")[1])
-                elif ("Hypothese" in s or "Hypothèse" in s or "hypothese" in s or "hypothèse" in s):
-                    self.preconditions.append(s.split(":")[1]) 
+                if("précondition" in s.lower() or "precondition" in s.lower()):
+                    #preconditionNode = parse_expression(s.split(":")[1].strip())
+                    precondition = s.split(":")[1].strip()
+                    #self.preconditions.append(preconditionNode)
+                    if precondition == "":
+                        self.preconditions.append(splitedDocstring[i+1].strip())
+                    else:
+                        self.preconditions.append(precondition)
+                elif ("hypothese" in s.lower() or "hypothèse" in s.lower()):
+                    #preconditionNode = parse_expression(s.split(":")[1].strip())
+                    precondition = s.split(":")[1].strip()
+                    #self.preconditions.append(preconditionNode)
+                    if precondition == "":
+                        self.preconditions.append(splitedDocstring[i+1].strip())
+                    else:
+                        self.preconditions.append(precondition)
             #print(self.docstring)
         else:
             # nothing to do ?
