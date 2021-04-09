@@ -218,6 +218,7 @@ class FunctionDef:
                                 raise ValueError("Precondition not supported (please report): {}".format(precondition_ast))
                         except SyntaxError:
                             pass
+                i = i + 1
             #print(self.docstring)
         else:
             # nothing to do ?
