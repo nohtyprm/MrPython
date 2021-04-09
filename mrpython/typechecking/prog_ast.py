@@ -191,21 +191,33 @@ class FunctionDef:
             i = 0
             for s in splitedDocstring:
                 if("précondition" in s.lower() or "precondition" in s.lower()):
-                    #preconditionNode = parse_expression(s.split(":")[1].strip())
                     precondition = s.split(":")[1].strip()
-                    #self.preconditions.append(preconditionNode)
                     if precondition == "":
-                        self.preconditions.append(splitedDocstring[i+1].strip())
-                    else:
-                        self.preconditions.append(precondition)
+                        precondition = splitedDocstring[i+1].strip()
+                    if precondition != "":
+                        try:
+                            precondition_ast = ast.parse(precondition, mode="eval")
+                            if(hasattr(precondition_ast,"body")):
+                                precondition_node = parse_expression(precondition_ast.body)
+                                self.preconditions.append(precondition_node)
+                            else:
+                                raise ValueError("Precondition not supported (please report): {}".format(precondition_ast))
+                        except SyntaxError:
+                            pass
                 elif ("hypothese" in s.lower() or "hypothèse" in s.lower()):
-                    #preconditionNode = parse_expression(s.split(":")[1].strip())
                     precondition = s.split(":")[1].strip()
-                    #self.preconditions.append(preconditionNode)
                     if precondition == "":
-                        self.preconditions.append(splitedDocstring[i+1].strip())
-                    else:
-                        self.preconditions.append(precondition)
+                        precondition = splitedDocstring[i+1].strip()
+                    if precondition != "":
+                        try:
+                            precondition_ast = ast.parse(precondition, mode="eval")
+                            if(hasattr(precondition_ast,"body")):
+                                precondition_node = parse_expression(precondition_ast.body)
+                                self.preconditions.append(precondition_node)
+                            else:
+                                raise ValueError("Precondition not supported (please report): {}".format(precondition_ast))
+                        except SyntaxError:
+                            pass
             #print(self.docstring)
         else:
             # nothing to do ?
