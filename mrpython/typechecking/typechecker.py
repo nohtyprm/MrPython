@@ -394,9 +394,9 @@ def type_check_FunctionDef(func_def, ctx):
 
     for precondition in func_def.preconditions:
         precondition_type = type_expect(ctx, precondition, BoolType(), False)
-    if precondition_type is None:
-        ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx)))
-        func_def.preconditions.remove(precondition)
+        if precondition_type is None:
+            ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx)))
+            func_def.preconditions.remove(precondition)
 
     # Step 4 : type-check body
 
@@ -427,8 +427,6 @@ def type_check_FunctionDef(func_def, ctx):
             ctx.unregister_function_def()
             return
 
-    #Print preconditions
-    print(func_def.preconditions)
     if ctx.nb_returns == 0 and not isinstance(signature.ret_type, NoneTypeType):
         ctx.add_type_error(NoReturnInFunctionError(func_def))
 
@@ -2657,18 +2655,17 @@ class FunctionPreconditionWarning(TypeError):
         self.fun_def = fun_def
         self.precondition_type = precondition_type
 
-def is_fatal(self):
-    return False
+    def is_fatal(self):
+        return False
 
-def fail_string(self):
-    return "FunctionPreconditionWarning[{}]@{}:{}".format(str(self.fun_def.ast.name)
-                                                    , self.fun_def.ast.lineno
-                                                    , self.fun_def.ast.col_offset)
+    def fail_string(self):
+        return "FunctionPreconditionWarning[{}]@{}:{}".format(str(self.fun_def.ast.name)
+                                                        , self.fun_def.ast.lineno
+                                                        , self.fun_def.ast.col_offset)
 
-def report(self, report):
-    report.add_convention_error('warning', tr('Wrong definition'), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
-                                , tr("The precondition in'{}' should be a 'bool', not a '{}'.").format(self.fun_def.ast.name, self.precondition_type))
-
+    def report(self, report):
+        report.add_convention_error('warning', tr('Wrong definition'), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
+                                    , tr("The precondition in'{}' should be a 'bool', not a '{}'.").format(self.fun_def.ast.name, self.precondition_type))
 
 class NoFunctionDocWarning(TypeError):
     def __init__(self, fun_def):
