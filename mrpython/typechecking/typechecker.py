@@ -394,7 +394,6 @@ def type_check_FunctionDef(func_def, ctx):
 
     for precondition in func_def.preconditions:
         precondition_type = type_expect(ctx, precondition, BoolType(), False)
-        print(precondition_type)
     if precondition_type is None:
         ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx)))
         func_def.preconditions.remove(precondition)
@@ -2652,6 +2651,24 @@ class WrongFunctionDefError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr('Wrong definition'), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
                                     , tr("The function '{}' has no correct specification.").format(self.fun_def.ast.name))
+    
+class FunctionPreconditionWarning(TypeError):
+    def __init__(self, fun_def,precondition_type):
+        self.fun_def = fun_def
+        self.precondition_type = precondition_type
+
+def is_fatal(self):
+    return False
+
+def fail_string(self):
+    return "FunctionPreconditionWarning[{}]@{}:{}".format(str(self.fun_def.ast.name)
+                                                    , self.fun_def.ast.lineno
+                                                    , self.fun_def.ast.col_offset)
+
+def report(self, report):
+    report.add_convention_error('warning', tr('Wrong definition'), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
+                                , tr("The precondition in'{}' should be a 'bool', not a '{}'.").format(self.fun_def.ast.name, self.precondition_type))
+
 
 class NoFunctionDocWarning(TypeError):
     def __init__(self, fun_def):
