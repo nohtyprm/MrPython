@@ -4,6 +4,7 @@ import ast
 import tokenize
 import sys
 import traceback
+import os
 
 from translate import tr
 
@@ -175,6 +176,7 @@ class StudentRunner:
         code = None
         try:
             code = compile(self.source, self.filename, 'exec')
+            self.check_preconditions()
         except SyntaxError as err:
             self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=str(err))
             return False
@@ -277,6 +279,65 @@ class StudentRunner:
         #print("fatal_error = ", str(fatal_error))
         return not fatal_error
 
+    def check_preconditions(self):
+        f = open(self.filename+"tmp.py","w")
+        readed = ""
+        docs = False
+        now = False
+        inFunDef = False
+        funExitNow = False
+        preconditions = []
+        i = 0
+
+        for line in self.source.splitlines():
+            if "def " in line:
+                inFunDef = True
+            elif not line.startswith(" ") and inFunDef:
+                inFunDef = False
+                funExitNow = True
+            if "\"\"\"" in line:
+                if docs:
+                    docs = False
+                    now = True
+                else:
+                    docs = True
+            if docs:
+                if("précondition" in line.lower() or "precondition" in line.lower()):
+                    precondition = line.split(":")[1].strip()
+                    if precondition == "":
+                        precondition = self.source[i+1].strip()
+                    preconditions.append(precondition)
+            else:
+                if now:
+                    if len(preconditions) > 0:
+                        if len(preconditions) == 1:
+                            readed = readed + "    if " + preconditions[0] +":\n"
+                    else:
+                        readed = readed + "    if True:\n"
+                    now = False
+                    preconditions = []
+                else:
+                    if inFunDef:
+                        if "def " in line:
+                            readed = readed + line + "\n"
+                        else:
+                            readed = readed + "    " + line + "\n"
+                    else:
+                        if funExitNow:
+                            funExitNow = False
+                            readed = readed + "    else:\n        raise Exception(\"preconditionError\")\n" + line + "\n"
+                        else:
+                            readed = readed + line + "\n"
+            i = i + 1
+
+        #try:
+        #   basic_interpreter = InteractiveInterpreter(locals=locals)
+        #   code = compile(readed, f.name, 'exec')
+        #     result = basic_interpreter.runcode(code)
+        # except Exception as err:
+        #     if err == "preconditionError":
+        #         print("Problème préconditions !")
+        os.remove(f.name)
 
 class FunCallsVisitor(ast.NodeVisitor):
     def __init__(self):
