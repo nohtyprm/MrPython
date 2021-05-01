@@ -5,6 +5,7 @@ import tokenize
 import sys
 import traceback
 import os
+import copy
 
 from translate import tr
 
@@ -119,9 +120,9 @@ class StudentRunner:
 
     def _exec_or_eval(self, mode, code, globs, locs):
         assert mode=='exec' or mode=='eval'
-
         try:
             if mode=='exec':
+                self.check_preconditions()
                 result = exec(code, globs, locs)
             elif mode=='eval':
                 result = eval(code, globs, locs)
@@ -153,6 +154,14 @@ class StudentRunner:
                 filename, lineno, file_type, line = traceb[-1]
             self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno)
             return (True, None)
+        except PreconditionException:
+            a, b, tb = sys.exc_info()
+            lineno=None
+            traceb = traceback.extract_tb(tb)
+            if len(traceb) > 1:
+                filename, lineno, file_type, line = traceb[-1]
+            self.report.add_execution_error('error', tr("Precondition error"), lineno)
+            return (True, None)
         except Exception as err:
             a, b, tb = sys.exc_info() # Get the traceback object
             # Extract the information for the traceback corresponding to the error
@@ -176,7 +185,6 @@ class StudentRunner:
         code = None
         try:
             code = compile(self.source, self.filename, 'exec')
-            self.check_preconditions()
         except SyntaxError as err:
             self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=str(err))
             return False
@@ -280,64 +288,25 @@ class StudentRunner:
         return not fatal_error
 
     def check_preconditions(self):
-        f = open(self.filename+"tmp.py","w")
-        readed = ""
-        docs = False
-        now = False
-        inFunDef = False
-        funExitNow = False
-        preconditions = []
-        i = 0
+        try:
+            self.AST = FunctionDefVisitor().visit(self.AST)
+            #print(ast.dump(self.AST))
+            # print("\n\n\n")
+            # print(ast.dump(copy_ast))
+        except Exception as e:
+            print (e)
 
-        for line in self.source.splitlines():
-            if "def " in line:
-                inFunDef = True
-            elif not line.startswith(" ") and inFunDef:
-                inFunDef = False
-                funExitNow = True
-            if "\"\"\"" in line:
-                if docs:
-                    docs = False
-                    now = True
-                else:
-                    docs = True
-            if docs:
-                if("précondition" in line.lower() or "precondition" in line.lower()):
-                    precondition = line.split(":")[1].strip()
-                    if precondition == "":
-                        precondition = self.source[i+1].strip()
-                    preconditions.append(precondition)
-            else:
-                if now:
-                    if len(preconditions) > 0:
-                        if len(preconditions) == 1:
-                            readed = readed + "    if " + preconditions[0] +":\n"
-                    else:
-                        readed = readed + "    if True:\n"
-                    now = False
-                    preconditions = []
-                else:
-                    if inFunDef:
-                        if "def " in line:
-                            readed = readed + line + "\n"
-                        else:
-                            readed = readed + "    " + line + "\n"
-                    else:
-                        if funExitNow:
-                            funExitNow = False
-                            readed = readed + "    else:\n        raise Exception(\"preconditionError\")\n" + line + "\n"
-                        else:
-                            readed = readed + line + "\n"
-            i = i + 1
-
-        #try:
-        #   basic_interpreter = InteractiveInterpreter(locals=locals)
-        #   code = compile(readed, f.name, 'exec')
-        #     result = basic_interpreter.runcode(code)
-        # except Exception as err:
-        #     if err == "preconditionError":
-        #         print("Problème préconditions !")
-        os.remove(f.name)
+        try:
+            compiled = compile(self.AST, filename = "<ast>", mode="exec")
+            exec(compiled)
+        except Exception as e:
+            a, b, tb = sys.exc_info()
+            lineno=None
+            traceb = traceback.extract_tb(tb)
+            if len(traceb) > 1:
+                filename, lineno, file_type, line = traceb[-1]
+            self.report.add_execution_error('error', tr("Precondition error"), lineno)
+            return (True, None)
 
 class FunCallsVisitor(ast.NodeVisitor):
     def __init__(self):
@@ -351,3 +320,47 @@ class FunCallsVisitor(ast.NodeVisitor):
             #print("Function name = {}".format(node.func.id))
             self.funcalls.add(node.func.id)
         self.visit_children(node)
+
+
+class PreconditionException(Exception):
+     def __init__(self,lineno,offset=None):
+         self.lineno = lineno
+         self.offset = offset
+
+from typechecking.typechecker import preconditions
+
+class FunctionDefVisitor(ast.NodeTransformer):
+    def visit_FunctionDef(self, node):
+        node_exception = ast.Raise(exc=ast.Call(id='PreconditionException', ctx=ast.Load(),lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset),args=[],keywords=[], lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
+        if len(preconditions[node.name]) == 0:
+            return ast.copy_location(node,node)
+        elif len(preconditions[node.name]) == 1:
+            left = preconditions[node.name][0].ast.left
+            left.lineno = node.lineno
+            left.col_offset = node.col_offset
+            left.end_lineno = node.lineno
+            left.end_col_offset = node.end_col_offset
+            
+            comparators = preconditions[node.name][0].ast.comparators[0]
+            comparators.lineno = node.lineno
+            comparators.col_offset = node.col_offset
+            comparators.end_lineno = node.lineno
+            comparators.end_col_offset = node.end_col_offset
+            
+            precondition_node = ast.Compare(left,preconditions[node.name][0].ast.ops, [comparators], lineno= node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
+            #assert_node = ast.Assert(precondition_node,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
+            if_node = ast.If(precondition_node,node.body,[node_exception],lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
+        # else:
+        #     preconditions_ast = []
+        #     for precondition in preconditions[node.name]:
+        #         preconditions_ast.append(precondition.ast)
+        #     and_op = ast.BinOp(ast.And,preconditions_ast)
+        #     if_node = ast.If(and_op,node.body,node_exception)
+        new_body = node.body
+        #new_body.insert(0,assert_node)
+        new_body.insert(0,if_node)
+        node_res = ast.FunctionDef(node.name,node.args,new_body,node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
+    
+        print(ast.dump(node_res))
+        return ast.copy_location(node_res,node)
+        

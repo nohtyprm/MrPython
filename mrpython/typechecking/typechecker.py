@@ -26,6 +26,8 @@ else:
 
     from .side_effects_utils import *
 
+preconditions = dict()
+
 class TypeError:
     def is_fatal(self):
         raise NotImplementedError("is_fatal is an abstract method")
@@ -397,7 +399,7 @@ def type_check_FunctionDef(func_def, ctx):
         if precondition_type is None:
             ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx)))
             func_def.preconditions.remove(precondition)
-
+    preconditions[func_def.name] = func_def.preconditions
     # Step 4 : type-check body
 
     ctx.push_parent(func_def)
