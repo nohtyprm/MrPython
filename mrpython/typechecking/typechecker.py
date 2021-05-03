@@ -393,13 +393,15 @@ def type_check_FunctionDef(func_def, ctx):
     ctx.register_function_def(func_def, signature.partial)
 
     # step 3 : type-check preconditions 
-
-    for precondition in func_def.preconditions:
+    preconditions_ok = []
+    for (precondition,precondition_ast) in func_def.preconditions:
         precondition_type = type_expect(ctx, precondition, BoolType(), False)
         if precondition_type is None:
             ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx)))
-            func_def.preconditions.remove(precondition)
-    preconditions[func_def.name] = func_def.preconditions
+            func_def.preconditions.remove((precondition,precondition_ast))
+        else:
+            preconditions_ok.append(precondition_ast.body)
+    preconditions[func_def.name] = preconditions_ok
     # Step 4 : type-check body
 
     ctx.push_parent(func_def)
