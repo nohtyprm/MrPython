@@ -199,7 +199,7 @@ class FunctionDef:
                             precondition_ast = ast.parse(precondition, mode="eval")
                             if(hasattr(precondition_ast,"body")):
                                 precondition_node = parse_expression(precondition_ast.body)
-                                self.preconditions.append(precondition_node)
+                                self.preconditions.append((precondition_node,precondition_ast))
                             else:
                                 raise ValueError("Precondition not supported (please report): {}".format(precondition_ast))
                         except SyntaxError:
