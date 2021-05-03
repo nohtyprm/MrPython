@@ -58,26 +58,28 @@ class StudentRunner:
     Runs a code under the student mode
     """
 
-    def __init__(self, tk_root, filename, source):
+    def __init__(self, tk_root, filename, source, check_tk=True):
         self.filename = filename
         self.source = source
+        self.AST = None
         self.report = RunReport()
         self.tk_root = tk_root
         self.running = True
 
-        ## This is a hack so let's check...
-        try:
-            self.tk_root.nametowidget('.')
-        except e:
-            raise ValueError("TK Root is not set (please report)")
-
+        if check_tk:
+            ## This is a hack so let's check...
+            try:
+                self.tk_root.nametowidget('.')
+            except:
+                raise ValueError("TK Root is not set (please report)")
+            
 
     def get_report(self):
         """ Return the report """
         return self.report
 
 
-    def execute(self, locals):
+    def execute(self, locals, capture_stdout=True):
         """ Run the file : customized parsing for checking rules,
             compile and execute """
         # Compile the code and get the AST from it, which will be used for all
@@ -103,9 +105,12 @@ class StudentRunner:
         ret_val = True
         if not self.check_rules(self.report):
             ret_val = False
-            self.run(locals) # we still run the code even if there is a convention error
+            self.run(locals, capture_stdout) # we still run the code even if there is a convention error
         else:
-            ret_val = self.run(locals) # Run the code if it passed all the convention tests
+            visitor = FunctionDefVisitor()
+            self.AST = visitor.visit(self.AST)
+            ast.fix_missing_locations(self.AST)
+            ret_val = self.run(locals, capture_stdout) # Run the code if it passed all the convention tests
             if ret_val:
                 self.report.nb_passed_tests = self.nb_asserts
 
@@ -122,13 +127,13 @@ class StudentRunner:
         assert mode=='exec' or mode=='eval'
         try:
             if mode=='exec':
-                print(ast.dump(self.AST))
-                self.AST = FunctionDefVisitor().visit(self.AST)
-                ast.fix_missing_locations(self.AST)
-                print(ast.dump(self.AST))
-                visitor = AstVisitor()
-                for node in self.AST.body:
-                    visitor.visit(node)
+                #print(ast.dump(self.AST))
+                #self.AST = FunctionDefVisitor().visit(self.AST)
+                #ast.fix_missing_locations(self.AST)
+                #print(ast.dump(self.AST))
+                # visitor = AstVisitor()
+                # for node in self.AST.body:
+                #     visitor.visit(node)
                 #compiled = compile(self.AST, filename = "<string>", mode="exec")
                 result = exec(code, globs, locs)
             elif mode=='eval':
@@ -187,12 +192,15 @@ class StudentRunner:
         return (True, result)
 
 
-    def run(self, locals):
+    def run(self, locals, capture_stdout=True):
         """ Run the code, add the execution errors to the rapport, if any """
         locals = install_locals(locals)
         code = None
         try:
-            code = compile(self.source, self.filename, 'exec')
+            try:
+                code = compile(self.AST, self.filename, 'exec')
+            except Exception as e:
+                print(e)
         except SyntaxError as err:
             self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=str(err))
             return False
@@ -207,9 +215,10 @@ class StudentRunner:
         #    return False
 
         # if no error get the output
-        sys.stdout.seek(0)
-        result = sys.stdout.read()
-        self.report.set_output(result)
+        if capture_stdout:
+            sys.stdout.seek(0)
+            result = sys.stdout.read()
+            self.report.set_output(result)
 
         return ok
 
@@ -344,3 +353,18 @@ class FunctionDefVisitor(ast.NodeTransformer):
         ast.fix_missing_locations(node_res)
         return node_res
         
+if __name__ == "__main__":
+    # for testing purpose only
+    runner = StudentRunner(None, "toto.py","""
+def f(a : int, b : int) -> int:
+    \"\"\"
+    précondition :
+        a > b and a > 0
+    \"\"\"
+    return a - b
+
+print(f(2,1))
+""", check_tk=False)
+
+    runner.execute(dict(), capture_stdout=False)
+
