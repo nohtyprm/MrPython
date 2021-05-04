@@ -304,28 +304,36 @@ class FunCallsVisitor(ast.NodeVisitor):
 from typechecking.typechecker import preconditions
 
 preconditionsLineno = []
+
 class FunctionDefVisitor(ast.NodeTransformer):
     def visit_FunctionDef(self, node):
         if len(preconditions[node.name]) == 0:
             return node
+        else:
+            ast_name = ast.Name(id="Exception", ctx=ast.Load())
+            ast_call = ast.Call(func=ast_name, args=[], keywords=[], cause = None)
+            
+            ast_asserts = []
+            ast_exceptions = []
 
-        precondition_node = preconditions[node.name][0]
-        preconditionsLineno.append(precondition_node.lineno)
-        ast_name = ast.Name(id="Exception", ctx=ast.Load())
-        ast_call = ast.Call(func=ast_name, args=[], keywords=[], cause = None)
-        node_exception = ast.Raise(exc=ast_call,cause=None, lineno = precondition_node.lineno)
+            for precondition_node in preconditions[node.name]:
+                lineno = precondition_node.lineno
+                preconditionsLineno.append(lineno)
 
-        assert_node = ast.Assert(precondition_node)
-        assert_node.lineno = precondition_node.lineno
+                assert_node = ast.Assert(precondition_node)
+                assert_node.lineno = lineno
+                ast_asserts.append(assert_node)
 
-        handler = ast.ExceptHandler(type=ast_name, name=None, body=[node_exception])
-        try_node = ast.Try(body=[assert_node],handlers=[handler], orelse=node.body, finalbody=[])
-        node_res = ast.FunctionDef(node.name,node.args,[try_node],node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
+                node_exception = ast.Raise(exc=ast_call,cause=None, lineno = lineno)
+                ast_exceptions.append(node_exception)
 
-        #if_node = ast.If(precondition_node,node.body,[node_exception])
-        #node_res = ast.FunctionDef(node.name,node.args,[if_node],node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
-        
-        return node_res
+            handler = ast.ExceptHandler(type=ast_name, name=None, body=ast_exceptions)
+            try_node = ast.Try(body=ast_asserts,handlers=[handler], orelse=node.body, finalbody=[])
+            node_res = ast.FunctionDef(node.name,node.args,[try_node],node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
+
+            return node_res
+
+
         
 if __name__ == "__main__":
     # for testing purpose only

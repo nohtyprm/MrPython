@@ -402,7 +402,7 @@ def type_check_FunctionDef(func_def, ctx):
         else:
             body = precondition_ast.body
             body.lineno = precondition_ast.lineno
-            preconditions_ok.append(precondition_ast.body)
+            preconditions_ok.append(body)
     preconditions[func_def.name] = preconditions_ok
     
     # Step 4 : type-check body
