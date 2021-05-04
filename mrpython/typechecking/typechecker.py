@@ -395,14 +395,19 @@ def type_check_FunctionDef(func_def, ctx):
     # step 3 : type-check preconditions 
     preconditions_ok = []   #List of parsed preconditions
     for (precondition, precondition_ast) in func_def.preconditions:
+        initCtxErrorsLen = len(ctx.type_errors)
         precondition_type = type_expect(ctx, precondition, BoolType(), False)
-        if precondition_type is None:
-            ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx)))
-            func_def.preconditions.remove((precondition,precondition_ast))
+        if (len(ctx.type_errors) - initCtxErrorsLen) != 0:
+            while (len(ctx.type_errors) - initCtxErrorsLen) != 0:
+                poped = ctx.type_errors.pop().var
+            ctx.add_type_error(UndefinedVarInPreconditionWarning(func_def, poped, precondition_ast.lineno))
         else:
-            body = precondition_ast.body
-            body.lineno = precondition_ast.lineno
-            preconditions_ok.append(body)
+            if precondition_type is None:
+                ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx), precondition_ast.lineno))
+            else:
+                body = precondition_ast.body
+                body.lineno = precondition_ast.lineno
+                preconditions_ok.append(body)
     preconditions[func_def.name] = preconditions_ok
     
     # Step 4 : type-check body
@@ -2657,21 +2662,39 @@ class WrongFunctionDefError(TypeError):
                                     , tr("The function '{}' has no correct specification.").format(self.fun_def.ast.name))
     
 class FunctionPreconditionWarning(TypeError):
-    def __init__(self, fun_def,precondition_type):
+    def __init__(self, fun_def, precondition_type, lineno):
         self.fun_def = fun_def
         self.precondition_type = precondition_type
+        self.lineno = lineno
 
     def is_fatal(self):
         return False
 
     def fail_string(self):
         return "FunctionPreconditionWarning[{}]@{}:{}".format(str(self.fun_def.ast.name)
-                                                        , self.fun_def.ast.lineno
+                                                        , self.lineno
                                                         , self.fun_def.ast.col_offset)
 
     def report(self, report):
-        report.add_convention_error('warning', tr('Wrong definition'), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
+        report.add_convention_error('warning', tr('Wrong definition'), self.lineno, self.fun_def.ast.col_offset
                                     , tr("The precondition in'{}' should be a 'bool', not a '{}'.").format(self.fun_def.ast.name, self.precondition_type))
+
+class UndefinedVarInPreconditionWarning(TypeError):
+    def __init__(self, fun_def, var, lineno):
+        self.fun_def = fun_def
+        self.var = var
+        self.lineno = lineno
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "UndefinedVarInPreconditionWarning[{} in {}]@{}:{}".format(self.var.id,str(self.fun_def.ast.name),self.lineno, self.fun_def.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Undefined variable"), self.lineno, self.fun_def.ast.col_offset
+                                    , details=tr("The variable '{}' in the precondition is undefined.").format(self.var.name))
+
 
 class NoFunctionDocWarning(TypeError):
     def __init__(self, fun_def):

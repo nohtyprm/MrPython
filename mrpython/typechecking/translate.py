@@ -71,8 +71,10 @@ TRANSLATOR_DICT = {
     , "Return problem" : { 'fr' : "Problème de retour" }
     , "The function '{}' should have `return` statement(s)" : { 'fr' : "Il n'y a aucun `return` dans la fonction '{}', ce n'est pas normal" }
     , 'Wrong definition' : { 'fr' : "Mauvaise définition" }
+    , 'Undefined variable' : { 'fr' : "Variable indéfinie" }
     , "The function '{}' has no correct specification." : { 'fr' : "La fonction '{}' n'est pas spécifée correctement." }
     , "The precondition in'{}' should be a 'bool', not a '{}'." : { 'fr' : "La precondition dans la fonction '{}' doit être un 'bool', non pas un '{}'."}
+    , "The variable '{}' in the precondition is undefined." : { 'fr' : "La variable {} dans la précondition n'est pas définie."}
     , "The function '{}' has no documentation." : { 'fr' : "La fonction '{}' n'a pas de documentation."}
     , 'Wrong statement' : { 'fr' : "Instruction non-supportée" }
     , "In Python 101 this statement cannot be done outside a function body (try expert mode for standard Python)"

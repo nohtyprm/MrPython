@@ -225,7 +225,6 @@ class FunctionDef:
                         except SyntaxError:
                             pass
                 i = i + 1
-            #print(self.docstring)
         else:
             # nothing to do ?
             pass
