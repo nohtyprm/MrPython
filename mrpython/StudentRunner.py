@@ -154,7 +154,10 @@ class StudentRunner:
             traceb = traceback.extract_tb(tb)
             if len(traceb) > 1:
                 filename, lineno, file_type, line = traceb[-1]
-            self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno)
+            if lineno in preconditionsLineno:
+                self.report.add_execution_error('error', tr("Precondition error (False)"), lineno)
+            else:
+                self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno)
             return (True, None)
         except Exception as err:
             a, b, tb = sys.exc_info() # Get the traceback object
@@ -310,11 +313,12 @@ class FunctionDefVisitor(ast.NodeTransformer):
         if len(preconditions[node.name]) == 0:
             return node
         else:
-            ast_name = ast.Name(id="Exception", ctx=ast.Load())
-            ast_call = ast.Call(func=ast_name, args=[], keywords=[], cause = None)
-            
-            ast_asserts = []
-            ast_exceptions = []
+            node_name = ast.Name(id="Exception", ctx=ast.Load())
+            node_call = ast.Call(func=node_name, args=[], keywords=[], cause = None)
+            node_exception = ast.Raise(exc=node_call,cause=None)
+            handler = ast.ExceptHandler(type=node_name, name=None, body=[node_exception])
+
+            ast_try = []
 
             for precondition_node in preconditions[node.name]:
                 lineno = precondition_node.lineno
@@ -322,17 +326,17 @@ class FunctionDefVisitor(ast.NodeTransformer):
 
                 assert_node = ast.Assert(precondition_node)
                 assert_node.lineno = lineno
-                ast_asserts.append(assert_node)
+                
+                try_node = ast.Try(body=[assert_node],handlers=[handler], orelse=[], finalbody=[])
+                try_node.lineno = lineno
+                ast_try.append(try_node)
 
-                node_exception = ast.Raise(exc=ast_call,cause=None, lineno = lineno)
-                ast_exceptions.append(node_exception)
+            for i in range(len(ast_try) - 1):
+                ast_try[i].orelse = ast_try[i+1].body
+            ast_try[i+1].orelse = node.body
 
-            handler = ast.ExceptHandler(type=ast_name, name=None, body=ast_exceptions)
-            try_node = ast.Try(body=ast_asserts,handlers=[handler], orelse=node.body, finalbody=[])
-            node_res = ast.FunctionDef(node.name,node.args,[try_node],node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
-
+            node_res = ast.FunctionDef(node.name,node.args,ast_try,node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
             return node_res
-
 
         
 if __name__ == "__main__":
@@ -349,4 +353,3 @@ print(f(2,1))
 """, check_tk=False)
 
     runner.execute(dict(), capture_stdout=False)
-
