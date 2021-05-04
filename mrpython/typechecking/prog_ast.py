@@ -197,9 +197,10 @@ class FunctionDef:
                     if precondition != "":
                         try:
                             precondition_ast = ast.parse(precondition, mode="eval")
+                            precondition_ast.lineno = first_instr.lineno + i
                             if(hasattr(precondition_ast,"body")):
                                 precondition_node = parse_expression(precondition_ast.body)
-                                self.preconditions.append((precondition_node,precondition_ast))
+                                self.preconditions.append((precondition_node, precondition_ast))
                             else:
                                 raise ValueError("Precondition not supported (please report): {}".format(precondition_ast))
                         except SyntaxError:

@@ -107,9 +107,7 @@ class StudentRunner:
             ret_val = False
             self.run(locals, capture_stdout) # we still run the code even if there is a convention error
         else:
-            visitor = FunctionDefVisitor()
-            self.AST = visitor.visit(self.AST)
-            ast.fix_missing_locations(self.AST)
+            self.add_FunctionPreconditions()
             ret_val = self.run(locals, capture_stdout) # Run the code if it passed all the convention tests
             if ret_val:
                 self.report.nb_passed_tests = self.nb_asserts
@@ -127,14 +125,6 @@ class StudentRunner:
         assert mode=='exec' or mode=='eval'
         try:
             if mode=='exec':
-                #print(ast.dump(self.AST))
-                #self.AST = FunctionDefVisitor().visit(self.AST)
-                #ast.fix_missing_locations(self.AST)
-                #print(ast.dump(self.AST))
-                # visitor = AstVisitor()
-                # for node in self.AST.body:
-                #     visitor.visit(node)
-                #compiled = compile(self.AST, filename = "<string>", mode="exec")
                 result = exec(code, globs, locs)
             elif mode=='eval':
                 result = eval(code, globs, locs)
@@ -166,15 +156,6 @@ class StudentRunner:
                 filename, lineno, file_type, line = traceb[-1]
             self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno)
             return (True, None)
-        except PreconditionException:
-            # "a, b, tb = sys.exc_info()
-            # lineno=None
-            # traceb = traceback.extract_tb(tb)
-            # if len(traceb) > 1:
-            #     filename, lineno, file_type, line = traceb[-1]
-            # self.report.add_execution_error('error', tr("Precondition error"), lineno)"
-            print("ICI")
-            return (True, None)
         except Exception as err:
             a, b, tb = sys.exc_info() # Get the traceback object
             # Extract the information for the traceback corresponding to the error
@@ -184,7 +165,10 @@ class StudentRunner:
             traceb = traceback.extract_tb(tb)
             if len(traceb) > 1:
                 filename, lineno, file_type, line = traceb[-1]
-            self.report.add_execution_error('error', a.__name__, lineno, details=str(err))
+            if lineno in preconditionsLineno:
+                self.report.add_execution_error('error', tr("Precondition error (False)"), lineno)
+            else:
+                self.report.add_execution_error('error', a.__name__, lineno, details=str(err))
             return (False, None)
         finally:
             self.running = False
@@ -197,17 +181,13 @@ class StudentRunner:
         locals = install_locals(locals)
         code = None
         try:
-            try:
-                code = compile(self.AST, self.filename, 'exec')
-            except Exception as e:
-                print(e)
+            code = compile(self.AST, self.filename, 'exec')
         except SyntaxError as err:
             self.report.add_compilation_error('error', tr("Syntax error"), err.lineno, err.offset, details=str(err))
             return False
         except Exception as err:
             typ, exc, tb = sys.exc_info()
             self.report.add_compilation_error('error', str(typ), err.lineno, err.offset, details=str(err))
-
             return False
 
         (ok, result) = self._exec_or_eval('exec', code, locals, locals)
@@ -304,6 +284,10 @@ class StudentRunner:
         #print("fatal_error = ", str(fatal_error))
         return not fatal_error
 
+    def add_FunctionPreconditions(self):
+        self.AST = FunctionDefVisitor().visit(self.AST)
+        ast.fix_missing_locations(self.AST)
+
 class FunCallsVisitor(ast.NodeVisitor):
     def __init__(self):
         self.funcalls = set()
@@ -317,40 +301,30 @@ class FunCallsVisitor(ast.NodeVisitor):
             self.funcalls.add(node.func.id)
         self.visit_children(node)
 
-class AstVisitor(ast.NodeVisitor):
-    def __init__(self):
-        self.i = 0
-
-    def visit_children(self, node):
-        super(AstVisitor, self).generic_visit(node)
-
-    def visit(self, node):
-        if not (hasattr(node, "lineno")):
-            print(ast.dump(node))
-        self.visit_children(node)
-
-
-class PreconditionException(Exception):
-     def __init__(self,lineno=0,offset=None):
-         self.lineno = lineno
-         self.offset = offset
-
 from typechecking.typechecker import preconditions
 
+preconditionsLineno = []
 class FunctionDefVisitor(ast.NodeTransformer):
     def visit_FunctionDef(self, node):
         if len(preconditions[node.name]) == 0:
             return node
-        ast_name = ast.Name(id="PreconditionException", ctx=ast.Load())
-        node_exception = ast.Raise(exc=ast_name,cause=None)
+
         precondition_node = preconditions[node.name][0]
-        assert_node = ast.Assert(precondition_node,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
-        ast_exception = ast.Name(id="Exception", ctx=ast.Load())
-        handler = ast.ExceptHandler(type=ast_exception, name=None, body=[node_exception])
-        try_node = ast.Try(body=[assert_node],handlers=[handler], orelse=[], finalbody=[node.body])
-        #if_node = ast.If(precondition_node,[node.body],[node_exception])
+        preconditionsLineno.append(precondition_node.lineno)
+        ast_name = ast.Name(id="Exception", ctx=ast.Load())
+        ast_call = ast.Call(func=ast_name, args=[], keywords=[], cause = None)
+        node_exception = ast.Raise(exc=ast_call,cause=None, lineno = precondition_node.lineno)
+
+        assert_node = ast.Assert(precondition_node)
+        assert_node.lineno = precondition_node.lineno
+
+        handler = ast.ExceptHandler(type=ast_name, name=None, body=[node_exception])
+        try_node = ast.Try(body=[assert_node],handlers=[handler], orelse=node.body, finalbody=[])
         node_res = ast.FunctionDef(node.name,node.args,[try_node],node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
-        ast.fix_missing_locations(node_res)
+
+        #if_node = ast.If(precondition_node,node.body,[node_exception])
+        #node_res = ast.FunctionDef(node.name,node.args,[if_node],node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
+        
         return node_res
         
 if __name__ == "__main__":

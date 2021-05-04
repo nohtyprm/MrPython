@@ -26,7 +26,7 @@ else:
 
     from .side_effects_utils import *
 
-preconditions = dict()
+preconditions = dict()      #Dictionnary to save all the function preconditions
 
 class TypeError:
     def is_fatal(self):
@@ -393,17 +393,19 @@ def type_check_FunctionDef(func_def, ctx):
     ctx.register_function_def(func_def, signature.partial)
 
     # step 3 : type-check preconditions 
-    preconditions_ok = []
-    for (precondition,precondition_ast) in func_def.preconditions:
+    preconditions_ok = []   #List of parsed preconditions
+    for (precondition, precondition_ast) in func_def.preconditions:
         precondition_type = type_expect(ctx, precondition, BoolType(), False)
         if precondition_type is None:
             ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx)))
             func_def.preconditions.remove((precondition,precondition_ast))
         else:
+            body = precondition_ast.body
+            body.lineno = precondition_ast.lineno
             preconditions_ok.append(precondition_ast.body)
     preconditions[func_def.name] = preconditions_ok
+    
     # Step 4 : type-check body
-
     ctx.push_parent(func_def)
 
     ctx.nb_returns = 0  # counting the number of returns encountered
