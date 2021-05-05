@@ -333,7 +333,7 @@ class FunctionDefVisitor(ast.NodeTransformer):
 
             for i in range(len(ast_try) - 1):
                 ast_try[i].orelse = ast_try[i+1].body
-            ast_try[i+1].orelse = node.body
+            ast_try[len(ast_try) - 1].orelse = node.body
 
             node_res = ast.FunctionDef(node.name,node.args,ast_try,node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
             return node_res

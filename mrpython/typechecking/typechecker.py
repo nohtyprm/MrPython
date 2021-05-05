@@ -424,6 +424,7 @@ def type_check_FunctionDef(func_def, ctx):
             ctx.unregister_function_def()
             return
 
+        #we abort the type-checking of this function if a local var is declared multiple times
         if isinstance(instr, DeclareVar):
             if instr.target.var_name in local_vars:
                 ctx.add_type_error(DuplicateMultiAssignError(instr.ast.lineno, instr.target.var_name))
