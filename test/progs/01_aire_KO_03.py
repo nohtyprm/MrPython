@@ -3,7 +3,7 @@
 import math
 
 def aire_triangle(a : float, b : float) -> float:
-    """Précondition : (a>0) and (b>0) and (c>0)
+    """Précondition : (a>0) and (b>0)
     Précondition : les côtés a, b et c définissent bien un triangle.
 
     Retourne l'aire du triangle dont les côtés sont de 

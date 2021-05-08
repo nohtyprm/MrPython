@@ -1,4 +1,4 @@
-from UndoDelegator import UndoDelegator
+from .UndoDelegator import UndoDelegator
 class ModifiedUndoDelegator(UndoDelegator):
     "Extend base class: forbid insert/delete before the I/O mark"
 

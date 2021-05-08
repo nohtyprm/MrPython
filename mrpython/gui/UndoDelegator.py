@@ -337,7 +337,7 @@ class CommandSequence(Command):
         return self.depth
 
 def _undo_delegator(parent):
-    from Percolator import Percolator
+    from .Percolator import Percolator
     root = Tk()
     root.title("Test UndoDelegator")
     width, height, x, y = list(map(int, re.split('[x+]', parent.geometry())))
