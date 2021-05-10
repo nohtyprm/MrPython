@@ -398,9 +398,18 @@ def type_check_FunctionDef(func_def, ctx):
         initCtxErrorsLen = len(ctx.type_errors)
         precondition_type = type_expect(ctx, precondition, BoolType(), False)
         if (len(ctx.type_errors) - initCtxErrorsLen) != 0:
-            while (len(ctx.type_errors) - initCtxErrorsLen) != 0:
-                poped = ctx.type_errors.pop().var
-            ctx.add_type_error(UndefinedVarInPreconditionWarning(func_def, poped, precondition_ast.lineno))
+            for i in range(len(ctx.type_errors)):
+                #To delete the undefined var problem in preconditions
+                if(isinstance(ctx.type_errors[i],UnknownVariableError)):
+                    poped = ctx.type_errors[i]
+                    ctx.type_errors.remove(poped)
+                    ctx.add_type_error(UndefinedVarInPreconditionWarning(func_def, poped.var, precondition_ast.lineno))
+                #Catch all potential errors in precondition
+                else:
+                    poped = ctx.type_errors[i]
+                    ctx.type_errors.remove(poped)
+                    ctx.add_type_error(ErrorInPreconditionWarning(func_def, precondition_ast.lineno))
+
         else:
             if precondition_type is None:
                 ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx), precondition_ast.lineno))
@@ -2678,7 +2687,7 @@ class FunctionPreconditionWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr('Wrong definition'), self.lineno, self.fun_def.ast.col_offset
-                                    , tr("The precondition in'{}' should be a 'bool', not a '{}'.").format(self.fun_def.ast.name, self.precondition_type))
+                                    , tr("The precondition in '{}' should be a 'bool', not a '{}'.").format(self.fun_def.ast.name, self.precondition_type))
 
 class UndefinedVarInPreconditionWarning(TypeError):
     def __init__(self, fun_def, var, lineno):
@@ -2695,6 +2704,21 @@ class UndefinedVarInPreconditionWarning(TypeError):
     def report(self, report):
         report.add_convention_error('warning', tr("Undefined variable"), self.lineno, self.fun_def.ast.col_offset
                                     , details=tr("The variable '{}' in the precondition is undefined.").format(self.var.name))
+
+class ErrorInPreconditionWarning(TypeError):
+    def __init__(self, fun_def, lineno):
+        self.fun_def = fun_def
+        self.lineno = lineno
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "ErrorInPreconditionWarning[{} in {}]@{}:{}".format(self.var.id,str(self.fun_def.ast.name),self.lineno, self.fun_def.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Syntax error"), self.lineno, self.fun_def.ast.col_offset
+                                    , details=tr("There is an error in the function '{}' precondition.").format(self.fun_def.name))
 
 
 class NoFunctionDocWarning(TypeError):

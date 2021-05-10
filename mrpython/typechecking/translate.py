@@ -70,10 +70,12 @@ TRANSLATOR_DICT = {
     , "This expression is in instruction position, the computed value is lost" : { 'fr' : "Cette expression est placée en position d'instruction, la valeur calculée est perdue" }
     , "Return problem" : { 'fr' : "Problème de retour" }
     , "The function '{}' should have `return` statement(s)" : { 'fr' : "Il n'y a aucun `return` dans la fonction '{}', ce n'est pas normal" }
-    , 'Wrong definition' : { 'fr' : "Mauvaise définition" }
-    , 'Undefined variable' : { 'fr' : "Variable indéfinie" }
+    , "Wrong definition" : { 'fr' : "Mauvaise définition" }
+    , "Undefined variable" : { 'fr' : "Variable indéfinie" }
+    , "Syntax error" : { 'fr' : "Erreur de syntaxe" }
     , "The function '{}' has no correct specification." : { 'fr' : "La fonction '{}' n'est pas spécifée correctement." }
-    , "The precondition in'{}' should be a 'bool', not a '{}'." : { 'fr' : "La precondition dans la fonction '{}' doit être un 'bool', non pas un '{}'."}
+    , "The precondition in'{}' should be a 'bool', not a '{}'." : { 'fr' : "La précondition dans la fonction '{}' doit être un 'bool', non pas un '{}'."}
+    , "There is an error in the function '{}' precondition." : { 'fr' : "La précondition de la fonction '{}' contient une erreur."}
     , "The variable '{}' in the precondition is undefined." : { 'fr' : "La variable {} dans la précondition n'est pas définie."}
     , "The function '{}' has no documentation." : { 'fr' : "La fonction '{}' n'a pas de documentation."}
     , 'Wrong statement' : { 'fr' : "Instruction non-supportée" }
