@@ -2,11 +2,11 @@ import sys
 import glob
 import os.path
 
-sys.path.append("../")
+sys.path.append("../mrpython")
 
-import mrpython.typechecking.prog_ast as prog_ast
-import mrpython.typechecking.typechecker as typechecker
-import mrpython.StudentRunner as studentRunner
+import typechecking.prog_ast as prog_ast
+import typechecking.typechecker as typechecker
+import StudentRunner as studentRunner
 
 TESTPROG_PATH = "./progs"
 
