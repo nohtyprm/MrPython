@@ -397,7 +397,7 @@ def type_check_FunctionDef(func_def, ctx):
     for (precondition, precondition_ast) in func_def.preconditions:
         initCtxErrorsLen = len(ctx.type_errors)
         precondition_type = type_expect(ctx, precondition, BoolType(), False)
-        if (len(ctx.type_errors) - initCtxErrorsLen) != 0:
+        if len(ctx.type_errors) != initCtxErrorsLen:
             for i in range(len(ctx.type_errors)):
                 #To delete the undefined var problem in preconditions
                 if(isinstance(ctx.type_errors[i],UnknownVariableError)):
