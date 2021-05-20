@@ -1,7 +1,10 @@
+##!FAIL: Erreur: ligne 7
 
 def valeur_absolue(x : float) -> float:
-    """Retourne la valeur absolue de x.
-       Precondition : x > 0
+    """
+        Retourne la valeur absolue de x.
+        Precondition :
+                    x != 0
     """
 
     abs_x : float
@@ -21,4 +24,3 @@ assert valeur_absolue(3) == 3
 assert valeur_absolue(-3) == 3
 assert valeur_absolue(1.5 - 2.5) == valeur_absolue(2.5 - 1.5)
 assert valeur_absolue(0) == 0
-assert valeur_absolue(-0) == 0

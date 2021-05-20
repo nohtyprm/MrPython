@@ -1,27 +1,19 @@
-#! /usr/bin/env python3
-import glob
-
-import os
 import sys
-import inspect
+import glob
+import os.path
 
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir+"/mrpython") 
-sys.path.insert(0, parentdir+"/mrpython/typechecking") 
+sys.path.append("../mrpython")
 
-
-import prog_ast      as prog_ast
-import typechecker  as typechecker
+import typechecking.prog_ast as prog_ast
+import typechecking.typechecker as typechecker
 import StudentRunner as studentRunner
 
-TESTPROG_PATH = "../test/progs"
+TESTPROG_PATH = "./progs"
 
 nb_tests_pass = 0
 nb_tests_fail = 0
 nb_tests_abort = 0
 nb_tests = 0
-
 
 def testWithoutPreconditionError(prog_filename, prog_name, prog):
     global nb_tests_pass, nb_tests_fail

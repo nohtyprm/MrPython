@@ -1,7 +1,6 @@
-
 def fact(n : int) -> int:
     """Retourne la factorielle de n.
-       Precondition : n < 0
+       Precondition : n >= 0
     """
 
     acc : int # accumulateur

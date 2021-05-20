@@ -1,7 +1,8 @@
+##!FAIL: Erreur: ligne 5
 
-def prec_longueur(l : Iterable[T]) -> int:
+def longueur(l : Iterable[T]) -> int:
     """Retourne la longueur de L
-       Précondition : l == []
+       Précondition : l != []
     """
 
     long : int
@@ -9,7 +10,6 @@ def prec_longueur(l : Iterable[T]) -> int:
 
     e : T
     for e in l:
-        print(e)
         long = long + 1
 
     return long
@@ -19,9 +19,9 @@ assert longueur([1, 2, 3, 4]) == 4
 assert longueur([]) == 0
 
 
-def prec_list_length(ll : Iterable[Iterable[T]]) -> List[int]:
+def liste_longeurs(ll : Iterable[Iterable[T]]) -> List[int]:
     """Retourne la liste des longueurs de listes de L
-       Précondition : len(ll) == 0
+       Précondition : len(ll) != 0
     """
 
     lr : List[int]
@@ -33,9 +33,8 @@ def prec_list_length(ll : Iterable[Iterable[T]]) -> List[int]:
 
     return lr
 
-assert list_length([[], [1], [1, 2], [1, 2, 3], [1, 2, 3, 4]]) == [0, 1, 2, 3, 4]
-assert list_length([]) == []
-assert list_length([[longueur([])], [longueur([1])], [longueur([1, 2])]
+assert liste_longeurs([[3], [1], [1, 2], [1, 2, 3], [1, 2, 3, 4]]) == [1, 1, 2, 3, 4]
+assert liste_longeurs([[longueur([1])], [longueur([1])], [longueur([1, 2])]
                     , [longueur([1, 2, 3])]
                     , [longueur([1, 2, 3, 4])]]) == [1, 1, 1, 1, 1]
 

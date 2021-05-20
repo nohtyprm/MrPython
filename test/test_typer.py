@@ -91,7 +91,7 @@ if __name__ == "__main__":
         prog_files = glob.glob("{}/*.py".format(TESTPROG_PATH))
 
     for prog_file in prog_files:
-           test_prog(prog_file)
+        test_prog(prog_file)
 
     print("-----")
     print("Summary: {} test cases".format(nb_tests))

@@ -1,7 +1,8 @@
 
 def prec_renverse(l : Sequence[T]) -> List[T]:
     """
-    Precondition : l == []
+        Precondition :
+                len(l) > 0
     """
 
     lr : List[T]  # liste résultat
@@ -18,5 +19,4 @@ def prec_renverse(l : Sequence[T]) -> List[T]:
 
 # Jeu de tests
 assert prec_renverse([1, 2, 3, 4, 5]) == [5, 4, 3, 2, 1]
-assert prec_renverse([]) == []
 assert prec_renverse("toto") == ["o", "t", "o", "t"]

@@ -17,4 +17,4 @@ def distance(p1 : Tuple[float, float], p2 : Tuple[float, float]) -> float:
 
 # Jeu de tests
 assert distance( (0, 0), (1, 1) ) == math.sqrt(2)
-assert distance( (2, 2), (2, 2) ) == 0.0
+assert distance( (2, 2), (3, 3) ) == math.sqrt(2)
