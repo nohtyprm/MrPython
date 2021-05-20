@@ -10,7 +10,7 @@ def aire_triangle(a : float, b : float, c : float) -> float:
              longueurs a, b, et c."""
 
     p : float
-    p = (a + b + p) / 2
+   
 
     return math.sqrt(p * (p - a) * (p - b) * (p - c))
 
