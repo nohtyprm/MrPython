@@ -52,6 +52,9 @@ class Program:
         # other top level definitions
         self.other_top_defs = []
 
+        #multi-declared functions
+        self.multi_declared_functions = dict()
+
         # metadata
         self.filename = None
         self.source = None
@@ -97,7 +100,10 @@ class Program:
             elif isinstance(node, ast.FunctionDef):
                 fun_ast = FunctionDef(node)
                 if fun_ast.python101ready:
-                    self.functions[fun_ast.name] = fun_ast
+                    if fun_ast.name in self.functions:
+                        self.multi_declared_functions[fun_ast.name] = node.lineno
+                    else:
+                        self.functions[fun_ast.name] = fun_ast
                 else:
                     self.other_top_defs.append(UnsupportedNode(node))
             elif isinstance(node, ast.Assert):
@@ -159,7 +165,6 @@ class Import:
         #print_ast_fields(self.ast)
         alias = self.ast.names[0]
         self.name = alias.name
-
 class FunctionDef:
     def __init__(self, node):
         self.ast = node
@@ -168,6 +173,8 @@ class FunctionDef:
 
         self.param_types = []
         self.parameters = []
+
+        self.preconditions = []
         for arg_obj in self.ast.args.args:
             self.parameters.append(arg_obj.arg)
 
@@ -180,7 +187,48 @@ class FunctionDef:
         if isinstance(first_instr, ast.Expr) and isinstance(first_instr.value, ast.Str):
             self.docstring = first_instr.value.s
             next_instr_index = 1
-            #print(self.docstring)
+            splitedDocstring = self.docstring.splitlines()
+            i = 0
+            for s in splitedDocstring:
+                if("précondition" in s.lower() or "precondition" in s.lower()):
+                    j = 0
+                    splitedLine = s.split(":")
+                    if len(splitedLine) > 1:
+                        precondition = splitedLine[1].strip()
+                        if precondition == "":
+                            precondition = splitedDocstring[i+1].strip()
+                            j = 1
+                        if precondition != "":
+                            try:
+                                precondition_ast = ast.parse(precondition, mode="eval")
+                                precondition_ast.lineno = first_instr.lineno + i + j
+                                if(hasattr(precondition_ast,"body")):
+                                    precondition_node = parse_expression(precondition_ast.body)
+                                    self.preconditions.append((precondition_node, precondition_ast))
+                                else:
+                                    raise ValueError("Precondition not supported (please report): {}".format(precondition_ast))
+                            except SyntaxError:
+                                pass
+                elif ("hypothese" in s.lower() or "hypothèse" in s.lower()):
+                    j = 0
+                    splitedLine = s.split(":")
+                    if len(splitedLine) > 1:
+                        precondition = splitedLine[1].strip()
+                        if precondition == "":
+                            precondition = splitedDocstring[i+1].strip()
+                            j = 1
+                        if precondition != "":
+                            try:
+                                precondition_ast = ast.parse(precondition, mode="eval")
+                                precondition_ast.lineno = first_instr.lineno + i + j
+                                if(hasattr(precondition_ast,"body")):
+                                    precondition_node = parse_expression(precondition_ast.body)
+                                    self.preconditions.append((precondition_node, precondition_ast))
+                                else:
+                                    raise ValueError("Precondition not supported (please report): {}".format(precondition_ast))
+                            except SyntaxError:
+                                pass
+                i = i + 1
         else:
             # nothing to do ?
             pass
@@ -190,7 +238,6 @@ class FunctionDef:
             self.body.append(parse_instruction(inner_node))
 
         self.returns = self.ast.returns
-
 
 class TestCase:
     def __init__(self, node):

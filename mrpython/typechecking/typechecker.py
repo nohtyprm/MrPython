@@ -13,7 +13,6 @@ if __name__ == "__main__":
 
     from prog_ast import *
     from type_ast import *
-    from type_parser import (type_expression_parser, function_type_parser, var_type_parser, type_def_parser)
     from type_converter import *
 
     from translate import tr
@@ -21,12 +20,13 @@ if __name__ == "__main__":
 else:
     from .prog_ast import *
     from .type_ast import *
-    from .type_parser import (type_expression_parser, function_type_parser, var_type_parser, type_def_parser)
     from .type_converter import *
 
     from .translate import tr
 
     from .side_effects_utils import *
+
+preconditions = dict()      #Dictionnary to save all the function preconditions
 
 class TypeError:
     def is_fatal(self):
@@ -215,6 +215,11 @@ UnsupportedNode.type_check = type_check_UnsupportedNode
 def type_check_Program(prog):
     ctx = TypingContext(prog)
 
+    if len(prog.multi_declared_functions) != 0:
+        for fun_name in prog.multi_declared_functions:
+            ctx.add_type_error(DuplicateMultiFunDeclarationError(prog.multi_declared_functions[fun_name], fun_name))
+        return ctx
+
     # we do not type check a program with unsupported top-level nodes
     for top_def in prog.other_top_defs:
         if isinstance(top_def.ast, ast.FunctionDef):
@@ -286,8 +291,8 @@ def type_check_Program(prog):
             ctx.register_import(REGISTERED_IMPORTS[import_name])
             # HACK : import the math.pi constant  (the only constant)
             if import_name == "math":
-                ctx.local_env['math.pi'] = (type_expression_parser('float').content, "global")
-                ctx.local_env['math.e'] = (type_expression_parser('float').content, "global")
+                ctx.local_env['math.pi'] = (FloatType(), "global")
+                ctx.local_env['math.e'] = (FloatType(), "global")
         else:
             ctx.add_type_error(UnsupportedImportError(import_name, prog.imports[import_name]))
             return ctx
@@ -387,11 +392,38 @@ def type_check_FunctionDef(func_def, ctx):
     ctx.register_return_type(signature.ret_type)
     ctx.register_function_def(func_def, signature.partial)
 
-    # Step 3 : type-check body
+    # step 3 : type-check preconditions 
+    preconditions_ok = []   #List of parsed preconditions
+    for (precondition, precondition_ast) in func_def.preconditions:
+        initCtxErrorsLen = len(ctx.type_errors)
+        precondition_type = type_expect(ctx, precondition, BoolType(), False)
+        if len(ctx.type_errors) != initCtxErrorsLen:
+            for i in range(len(ctx.type_errors)):
+                #To delete the undefined var problem in preconditions
+                if(isinstance(ctx.type_errors[i],UnknownVariableError)):
+                    poped = ctx.type_errors[i]
+                    ctx.type_errors.remove(poped)
+                    ctx.add_type_error(UndefinedVarInPreconditionWarning(func_def, poped.var, precondition_ast.lineno))
+                #Catch all potential errors in precondition
+                else:
+                    poped = ctx.type_errors[i]
+                    ctx.type_errors.remove(poped)
+                    ctx.add_type_error(ErrorInPreconditionWarning(func_def, precondition_ast.lineno))
 
+        else:
+            if precondition_type is None:
+                ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx), precondition_ast.lineno))
+            else:
+                body = precondition_ast.body
+                body.lineno = precondition_ast.lineno
+                preconditions_ok.append(body)
+    preconditions[func_def.name] = preconditions_ok
+    
+    # Step 4 : type-check body
     ctx.push_parent(func_def)
 
     ctx.nb_returns = 0  # counting the number of returns encountered
+    local_vars = set()  #save the checked local variables here
     for instr in func_def.body:
         if isinstance(instr, UnsupportedNode):
             ctx.add_type_error(UnsupportedNodeError(instr))
@@ -400,6 +432,13 @@ def type_check_FunctionDef(func_def, ctx):
             #ctx.pop_parent()
             ctx.unregister_function_def()
             return
+
+        #we abort the type-checking of this function if a local var is declared multiple times
+        if isinstance(instr, DeclareVar):
+            if instr.target.var_name in local_vars:
+                ctx.add_type_error(DuplicateMultiAssignError(instr.ast.lineno, instr.target.var_name))
+                return ctx
+            local_vars.add(instr.target.var_name)
 
         #print(repr(instr))
         instr.type_check(ctx)
@@ -2294,66 +2333,67 @@ DictType.type_compare = type_compare_DictType
 ######################################
 
 BUILTINS_IMPORTS = {
-    'len' : function_type_parser("Iterable[α] -> int").content
-    ,'abs' : function_type_parser("float -> float").content
-    ,'print' : function_type_parser("Ω -> NoneType").content
-    ,'min' : function_type_parser("float * float -> float").content
-    ,'max' : function_type_parser("float * float -> float").content
+    'len' : FunctionType([IterableType(TypeVariable('α'))], IntType())
+    ,'abs' : FunctionType([FloatType()], FloatType())
+    ,'print' : FunctionType([Anything()], NoneTypeType())
+    ,'min' : FunctionType([FloatType(), FloatType()], FloatType())
+    ,'max' : FunctionType([FloatType(), FloatType()], FloatType())
     # ,'range' : function_type_parser("int * int -> Iterable[int]").content  # range is an expression now
-    , 'int' : function_type_parser("Ω -> int").content
-    , 'float' : function_type_parser("Ω -> float").content
-    , 'str' : function_type_parser("Ω -> str").content
-    , 'ord' : function_type_parser("str -> int").content
-    , 'chr' : function_type_parser("int -> str").content
-    , 'round' : function_type_parser("Number -> int").content
-    , '.append' : function_type_parser("list[α] * α -> NoneType").content
+    , 'int' : FunctionType([Anything()], IntType())
+    , 'float' : FunctionType([Anything()], FloatType())
+    , 'str' : FunctionType([Anything()], StrType())
+    , 'ord' : FunctionType([StrType()], IntType())
+    , 'chr' : FunctionType([IntType()], StrType())
+    , 'round' : FunctionType([NumberType()], IntType())
+    , '.append' : FunctionType([ListType(TypeVariable('α')),TypeVariable('α')], NoneTypeType())
     # images   ... TODO: the type system is not precise enough (for now)
-    , 'draw_line' : function_type_parser("float * float * float * float * Ω -> Image").content
-    , 'overlay' : function_type_parser("Image * Image * Ω -> Image").content
-    , 'underlay' : function_type_parser("Image * Image * Ω -> Image").content
-    , 'fill_triangle' : function_type_parser("float * float * float * float * float * float * Ω -> Image").content
-    , 'draw_triangle' : function_type_parser("float * float * float * float * float * float * Ω -> Image").content
-    , 'draw_ellipse' : function_type_parser("float * float * float * float * Ω -> Image").content
-    , 'fill_ellipse' : function_type_parser("float * float * float * float * Ω -> Image").content
-    , 'show_image' : function_type_parser("Image -> NoneType").content
+    , 'draw_line' :  FunctionType([FloatType(), FloatType(), FloatType(), FloatType(), Anything()], ImageType())
+    , 'overlay' : FunctionType([ImageType(), ImageType(), Anything()], ImageType())
+    , 'underlay' : FunctionType([ImageType(), ImageType(), Anything()], ImageType())
+    , 'fill_triangle' : FunctionType([FloatType(), FloatType(), FloatType(), FloatType(), FloatType(),FloatType(), Anything()], ImageType())
+    , 'draw_triangle' : FunctionType([FloatType(), FloatType(), FloatType(), FloatType(), FloatType(),FloatType(), Anything()], ImageType())
+    , 'draw_ellipse' : FunctionType([FloatType(), FloatType(), FloatType(), FloatType(), Anything()], ImageType())
+    , 'fill_ellipse' : FunctionType([FloatType(), FloatType(), FloatType(), FloatType(), Anything()], ImageType())
+    , 'show_image' : FunctionType([ImageType()], NoneTypeType())
     # fichiers
-    , 'open' : function_type_parser("str * str -> FILE").content
-    , '.readlines' : function_type_parser("FILE -> list[str]").content
-    , '.read' : function_type_parser("FILE -> str").content
-    , '.write' : function_type_parser("FILE * str -> NoneType").content
+    , 'open' : FunctionType([StrType(),StrType()], FileType())
+    , '.readlines' : FunctionType([FileType()], ListType(StrType()))
+    , '.read' : FunctionType([FileType()], StrType())
+    , '.write' : FunctionType([FileType(),StrType()], NoneTypeType())
     # ensembles
-    , 'set' : function_type_parser(" -> emptyset").content
-    , '.add' : function_type_parser("set[α] * α -> NoneType").content
-    , '.remove' : function_type_parser("set[α] * α -> NoneType").content
+    , 'set' : FunctionType([], SetType())
+    , '.add' : FunctionType([SetType(TypeVariable('α')),TypeVariable('α')], NoneTypeType())
+    , '.remove' : FunctionType([SetType(TypeVariable('α')),TypeVariable('α')], NoneTypeType())
     # dictionnaires
-    , 'dict' : function_type_parser(" -> emptydict").content
-    , '.items' : function_type_parser(" dict[α:β] -> Iterable[tuple[α,β]]").content
-    , '.keys' : function_type_parser(" dict[α:β] -> Set[α]]").content
+    , 'dict' : FunctionType([], DictType())
+    , '.items' : FunctionType([DictType(key_type = TypeVariable('α'),val_type = TypeVariable('β'))], IterableType(TupleType([TypeVariable('α'),TypeVariable('β')])))
+    , '.keys' : FunctionType([DictType(TypeVariable('α'),TypeVariable('β'))], SetType(TypeVariable('α')))
     # iterables
-    , 'zip' : function_type_parser(" Iterable[α] * Iterable[β] -> Iterable[tuple[α,β]]").content
+    , 'zip' :  FunctionType([IterableType(TypeVariable('α')),IterableType(TypeVariable('β'))], IterableType(TupleType([TypeVariable('α'),TypeVariable('β')])))
 }
 
 MATH_IMPORTS = {
-    'math.sqrt' : function_type_parser("float -> float").content
-    , 'math.floor' : function_type_parser("float -> int").content
-    , 'math.ceil' : function_type_parser("float -> int").content
-    , 'math.sin' : function_type_parser("float -> float").content
-    , 'math.cos' : function_type_parser("float -> float").content
-    , 'math.tan' : function_type_parser("float -> float").content
-    , 'math.cosh' : function_type_parser("float -> float").content
-    , 'math.sinh' : function_type_parser("float -> float").content
-    , 'math.tanh' : function_type_parser("float -> float").content
-    , 'math.acos' : function_type_parser("float -> float").content
-    , 'math.asin' : function_type_parser("float -> float").content
-    , 'math.atan' : function_type_parser("float -> float").content
-    , 'math.acosh' : function_type_parser("float -> float").content
-    , 'math.asinh' : function_type_parser("float -> float").content
-    , 'math.atanh' : function_type_parser("float -> float").content}
+    'math.sqrt' : FunctionType([FloatType()], FloatType())
+    , 'math.floor' : FunctionType([FloatType()], IntType())
+    , 'math.ceil' : FunctionType([FloatType()], IntType())
+    , 'math.sin' : FunctionType([FloatType()], FloatType())
+    , 'math.cos' : FunctionType([FloatType()], FloatType())
+    , 'math.tan' : FunctionType([FloatType()], FloatType())
+    , 'math.cosh' : FunctionType([FloatType()], FloatType())
+    , 'math.sinh' : FunctionType([FloatType()], FloatType())
+    , 'math.tanh' : FunctionType([FloatType()], FloatType())
+    , 'math.acos' : FunctionType([FloatType()], FloatType())
+    , 'math.asin' : FunctionType([FloatType()], FloatType())
+    , 'math.atan' : FunctionType([FloatType()], FloatType())
+    , 'math.acosh' : FunctionType([FloatType()], FloatType())
+    , 'math.asinh' : FunctionType([FloatType()], FloatType())
+    , 'math.atanh' : FunctionType([FloatType()], FloatType())
+    }
 
 
 RANDOM_IMPORTS = {
-    'random.random' : function_type_parser("-> float").content
-    , 'random.seed' : function_type_parser("int -> NoneType").content
+    'random.random' : FunctionType([], FloatType())
+    , 'random.seed' : FunctionType([IntType()], NoneTypeType())
 }
 
 REGISTERED_IMPORTS = {
@@ -2477,6 +2517,22 @@ class DuplicateMultiAssignError(TypeError):
 
     def is_fatal(self):
         return True
+
+class DuplicateMultiFunDeclarationError(TypeError):
+    def __init__(self, lineno, fun_name):
+        self.lineno = lineno
+        self.fun_name = fun_name
+
+    def fail_string(self):
+        return "DuplicateMultiFunDeclarationError[{}]@{}:{}".format(self.fun_name, self.lineno, 0)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Function definition problem"), self.lineno, 0
+                                    , details=tr("Function '{}' was defined multiple times").format(self.fun_name))
+
+    def is_fatal(self):
+        return True
+
 
 
 class AssertionInFunctionWarning(TypeError):
@@ -2614,6 +2670,56 @@ class WrongFunctionDefError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr('Wrong definition'), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
                                     , tr("The function '{}' has no correct specification.").format(self.fun_def.ast.name))
+    
+class FunctionPreconditionWarning(TypeError):
+    def __init__(self, fun_def, precondition_type, lineno):
+        self.fun_def = fun_def
+        self.precondition_type = precondition_type
+        self.lineno = lineno
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "FunctionPreconditionWarning[{}]@{}:{}".format(str(self.fun_def.ast.name)
+                                                        , self.lineno
+                                                        , self.fun_def.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr('Wrong definition'), self.lineno, self.fun_def.ast.col_offset
+                                    , tr("The precondition in '{}' should be a 'bool', not a '{}'.").format(self.fun_def.ast.name, self.precondition_type))
+
+class UndefinedVarInPreconditionWarning(TypeError):
+    def __init__(self, fun_def, var, lineno):
+        self.fun_def = fun_def
+        self.var = var
+        self.lineno = lineno
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "UndefinedVarInPreconditionWarning[{} in {}]@{}:{}".format(self.var.id,str(self.fun_def.ast.name),self.lineno, self.fun_def.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Undefined variable"), self.lineno, self.fun_def.ast.col_offset
+                                    , details=tr("The variable '{}' in the precondition is undefined.").format(self.var.name))
+
+class ErrorInPreconditionWarning(TypeError):
+    def __init__(self, fun_def, lineno):
+        self.fun_def = fun_def
+        self.lineno = lineno
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "ErrorInPreconditionWarning[in {}]@{}:{}".format(str(self.fun_def.ast.name),self.lineno, self.fun_def.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Syntax error"), self.lineno, self.fun_def.ast.col_offset
+                                    , details=tr("There is an error in the function '{}' precondition.").format(self.fun_def.name))
+
 
 class NoFunctionDocWarning(TypeError):
     def __init__(self, fun_def):

@@ -25,6 +25,7 @@ TRANSLATOR_DICT = {
     , "this construction is not available in Python101 (try expert mode for standard Python)"
     : { 'fr' : "cette construction n'est pas disponible en Python101 (vous pouvez essayer le mode expert pour faire du Python standard)" }
     , "Declaration problem" : { 'fr' : 'Problème de déclaration'}
+    , "Function definition problem" : { 'fr' : 'Problème de définition de fonction'}
     , "Missing variable declaration" : { 'fr' : "La déclaration de variable est manquante." }
     , "Wrong variable name in declaration, it should be '{}'" : { 'fr' : "le nom de variable est erroné dans la déclaration, cela devrait être '{}'"}
     , "Missing ':' character before variable type declaration" : { 'fr' : "je ne comprends pas le type déclaré pour cette variable, il manque le caractère ':'"}
@@ -69,8 +70,13 @@ TRANSLATOR_DICT = {
     , "This expression is in instruction position, the computed value is lost" : { 'fr' : "Cette expression est placée en position d'instruction, la valeur calculée est perdue" }
     , "Return problem" : { 'fr' : "Problème de retour" }
     , "The function '{}' should have `return` statement(s)" : { 'fr' : "Il n'y a aucun `return` dans la fonction '{}', ce n'est pas normal" }
-    , 'Wrong definition' : { 'fr' : "Mauvaise définition" }
+    , "Wrong definition" : { 'fr' : "Mauvaise définition" }
+    , "Undefined variable" : { 'fr' : "Variable indéfinie" }
+    , "Syntax error" : { 'fr' : "Erreur de syntaxe" }
     , "The function '{}' has no correct specification." : { 'fr' : "La fonction '{}' n'est pas spécifée correctement." }
+    , "The precondition in'{}' should be a 'bool', not a '{}'." : { 'fr' : "La précondition dans la fonction '{}' doit être un 'bool', non pas un '{}'."}
+    , "There is an error in the function '{}' precondition." : { 'fr' : "La précondition de la fonction '{}' contient une erreur."}
+    , "The variable '{}' in the precondition is undefined." : { 'fr' : "La variable {} dans la précondition n'est pas définie."}
     , "The function '{}' has no documentation." : { 'fr' : "La fonction '{}' n'a pas de documentation."}
     , 'Wrong statement' : { 'fr' : "Instruction non-supportée" }
     , "In Python 101 this statement cannot be done outside a function body (try expert mode for standard Python)"
@@ -125,6 +131,7 @@ TRANSLATOR_DICT = {
     , "Call to '{}' may cause side effect" : {'fr' : "L'appel à la méthode '{}' risque d'avoir un effet de bord incontrôlé"}
     , "There is a risk of side effect as on the following parameter(s) {}" : {'fr' : "Il est possible qu'il y ait un effet de bord sur le(s) paramètre(s) suivant(s): {}"}
     , "Variable '{}' was declared multiple times" : { 'fr' : "La variable '{}' a été déclarée plusieurs fois"}
+    , "Function '{}' was defined multiple times" : { 'fr' : "La fonction '{}' a été définie plusieurs fois"}
     , "Not a variable type declaration : it is a type alias." : { 'fr' : "ce n'est pas une déclaration de variable mais une déclaration d'alias de type."}
     , "Empty tuple" : { 'fr' : "N-uplet vide"}
     , "Python 101 does not allow empty tuples, only in expert mode" : { 'fr' : "les n-uplets vides (0-uplets ?) ne sont pas autorisés en Python101."}
