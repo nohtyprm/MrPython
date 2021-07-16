@@ -168,8 +168,6 @@ class StudentRunner:
             traceb = traceback.extract_tb(tb)
             if len(traceb) > 1:
                 filename, lineno, file_type, line = traceb[-1]
-            if lineno in preconditionsLineno:
-                self.report.add_execution_error('error', tr("Precondition error (False)"), lineno)
             else:
                 self.report.add_execution_error('error', a.__name__, lineno, details=str(err))
             return (False, None)
@@ -313,29 +311,14 @@ class FunctionDefVisitor(ast.NodeTransformer):
         if len(preconditions[node.name]) == 0:
             return node
         else:
-            node_name = ast.Name(id="Exception", ctx=ast.Load())
-            node_call = ast.Call(func=node_name, args=[], keywords=[], cause = None)
-            node_exception = ast.Raise(exc=node_call,cause=None)
-            handler = ast.ExceptHandler(type=node_name, name=None, body=[node_exception])
-
-            ast_try = []
-
+            ast_asserts = []
             for precondition_node in preconditions[node.name]:
                 lineno = precondition_node.lineno
                 preconditionsLineno.append(lineno)
-
                 assert_node = ast.Assert(precondition_node)
                 assert_node.lineno = lineno
-                
-                try_node = ast.Try(body=[assert_node],handlers=[handler], orelse=[], finalbody=[])
-                try_node.lineno = lineno
-                ast_try.append(try_node)
-
-            for i in range(len(ast_try) - 1):
-                ast_try[i].orelse = ast_try[i+1].body
-            ast_try[len(ast_try) - 1].orelse = node.body
-
-            node_res = ast.FunctionDef(node.name,node.args,ast_try,node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
+                ast_asserts.append(assert_node)
+            node_res = ast.FunctionDef(node.name,node.args,ast_asserts+node.body,node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
             return node_res
 
         
