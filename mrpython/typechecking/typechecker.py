@@ -2699,7 +2699,7 @@ class UndefinedVarInPreconditionWarning(TypeError):
         return False
 
     def fail_string(self):
-        return "UndefinedVarInPreconditionWarning[{} in {}]@{}:{}".format(self.var.id,str(self.fun_def.ast.name),self.lineno, self.fun_def.ast.col_offset)
+        return "UndefinedVarInPreconditionWarning[{} in {}]@{}:{}".format(self.var.name,str(self.fun_def.ast.name),self.lineno, self.fun_def.ast.col_offset)
 
     def report(self, report):
         report.add_convention_error('warning', tr("Undefined variable"), self.lineno, self.fun_def.ast.col_offset
