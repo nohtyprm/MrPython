@@ -1043,18 +1043,23 @@ def ContainerAssign_type_check(cassign, ctx):
     if container_type is None:
         return False
 
-    if not isinstance(container_type, DictType):
+    if isinstance(container_type, DictType):
+        if container_type.key_type is None:
+            ctx.add_type_error(ContainerAssignEmptyError(cassign))
+        return False
+        key_type = container_type.key_type
+        val_type = container_type.val_type
+    elif isinstance(container_type, ListType):
+        key_type = IntType()
+        val_type = container_type.elem_type
+    else:
         ctx.add_type_error(ContainerAssignTypeError(cassign, container_type))
         return False
 
-    if container_type.key_type is None:
-        ctx.add_type_error(ContainerAssignEmptyError(cassign))
+    if not type_expect(ctx, cassign.container_index, key_type, raise_error=True):
         return False
 
-    if not type_expect(ctx, cassign.container_index, container_type.key_type, raise_error=True):
-        return False
-
-    if not type_expect(ctx, cassign.assign_expr, container_type.val_type, raise_error=True):
+    if not type_expect(ctx, cassign.assign_expr, val_type, raise_error=True):
         return False
 
     return True
