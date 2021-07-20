@@ -68,12 +68,14 @@ def type_converter(annotation):
     #import astpp
     #print(astpp.dump(annotation))
 
+    #import pdb ; pdb.set_trace()
     # Special case for function types (HOF)
-    if hasattr(annotation, "func") and annotation.func.id == "Callable":
-        if len(annotation.args) != 2:
+    if hasattr(annotation, "value") and annotation.value.id == "Callable":
+        sig = annotation.slice.value.elts
+        if len(sig) != 2:
             return (False, tr("Callable format error, expect 2 arguments"))
 
-        return callable_type_converter(annotation, annotation.args[0].elts, annotation.args[1])
+        return callable_type_converter(annotation, sig[0].elts, sig[1])
     
     # Special case for None/NoneType
     if hasattr(annotation, "value") and annotation.value == None:

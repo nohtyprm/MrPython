@@ -1401,6 +1401,11 @@ def type_infer_EVar(var, ctx):
     if var.name in ctx.local_env:
         var_type, _ = ctx.local_env[var.name]
         return var_type
+
+    # or maybe the variable is a global function (HOF)
+    if var.name in ctx.global_env:
+        return ctx.global_env[var.name]
+
     # or the variable is unknown
     ctx.add_type_error(UnknownVariableError(ctx.function_def, var))
     return None
@@ -2017,6 +2022,32 @@ def type_compare_Anything(expected_type, ctx, expr, expr_type, raise_error=True)
     return True
 
 Anything.type_compare = type_compare_Anything
+
+def type_compare_FunctionType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if not isinstance(expr_type, FunctionType):
+        if raise_error:
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a Function")))
+
+        return False
+
+    expected_param_types = expected_type.param_types
+    expr_param_types = expr_type.param_types
+    if len(expected_param_types) != len(expr_param_types):
+        if raise_error:
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Wrong arity")))
+        return False
+
+
+    for (expected_param_type, expr_param_type) in zip(expected_param_types, expr_param_types):
+        if not expected_param_type.type_compare(ctx, expr, expr_param_type, raise_error):
+            return False
+
+    if not expected_type.ret_type.type_compare(ctx, expr, expr_type.ret_type, raise_error):
+        return False
+
+    return True
+
+FunctionType.type_compare = type_compare_FunctionType
 
 def check_option_type(cause_fn, expected_precise_type, ctx, expr, expr_option_type, raise_error=True):
     # precondition 1: expected type is not an option type
