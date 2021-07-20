@@ -1037,7 +1037,6 @@ def type_check_With(ewith, ctx):
 
 With.type_check = type_check_With
 
-
 def ContainerAssign_type_check(cassign, ctx):
     container_type = cassign.container_expr.type_infer(ctx)
     if container_type is None:
@@ -1061,6 +1060,10 @@ def ContainerAssign_type_check(cassign, ctx):
 
     if not type_expect(ctx, cassign.assign_expr, val_type, raise_error=True):
         return False
+
+    (has_side_effect, protected_var) = cassign.side_effect(container_type, ctx)
+    if has_side_effect:
+        ctx.add_type_error(SideEffectContainerWarning(ctx.function_def,cassign,"assign", cassign.container_expr, protected_var))
 
     return True
 
@@ -3510,6 +3513,24 @@ class SideEffectWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr("Call to '{}' may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
+                                    , tr("There is a risk of side effect as on the following parameter(s) {}").format(self.protected_var))
+
+class SideEffectContainerWarning(TypeError):
+    def __init__(self, in_function, expr, fun_name, receiver, protected_var):
+        self.in_function = in_function
+        self.receiver = receiver
+        self.fun_name = fun_name
+        self.expr = expr
+        self.protected_var = protected_var
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "SideEffectContainerWarning[{}]@{}:{}".format(self.fun_name, self.expr.ast.lineno, self.expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Assignment may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
                                     , tr("There is a risk of side effect as on the following parameter(s) {}").format(self.protected_var))
 
 class CallNotNoneWarning(TypeError):
