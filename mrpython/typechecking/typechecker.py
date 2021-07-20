@@ -1037,25 +1037,33 @@ def type_check_With(ewith, ctx):
 
 With.type_check = type_check_With
 
-
 def ContainerAssign_type_check(cassign, ctx):
     container_type = cassign.container_expr.type_infer(ctx)
     if container_type is None:
         return False
 
-    if not isinstance(container_type, DictType):
+    if isinstance(container_type, DictType):
+        if container_type.key_type is None:
+            ctx.add_type_error(ContainerAssignEmptyError(cassign))
+        return False
+        key_type = container_type.key_type
+        val_type = container_type.val_type
+    elif isinstance(container_type, ListType):
+        key_type = IntType()
+        val_type = container_type.elem_type
+    else:
         ctx.add_type_error(ContainerAssignTypeError(cassign, container_type))
         return False
 
-    if container_type.key_type is None:
-        ctx.add_type_error(ContainerAssignEmptyError(cassign))
+    if not type_expect(ctx, cassign.container_index, key_type, raise_error=True):
         return False
 
-    if not type_expect(ctx, cassign.container_index, container_type.key_type, raise_error=True):
+    if not type_expect(ctx, cassign.assign_expr, val_type, raise_error=True):
         return False
 
-    if not type_expect(ctx, cassign.assign_expr, container_type.val_type, raise_error=True):
-        return False
+    (has_side_effect, protected_var) = cassign.side_effect(container_type, ctx)
+    if has_side_effect and not ctx.function_def.procedure:
+        ctx.add_type_error(SideEffectContainerWarning(ctx.function_def,cassign,"assign", cassign.container_expr, protected_var))
 
     return True
 
@@ -1557,7 +1565,7 @@ def type_infer_ECall(call, ctx):
             return None
 
     (has_side_effect, protected_var) = call.side_effect(ctx)
-    if has_side_effect:
+    if has_side_effect and not ctx.function_def.procedure:
         ctx.add_type_error(SideEffectWarning(ctx.function_def,call,call.fun_name, call.receiver, protected_var))
 
     return nret_type
@@ -3505,6 +3513,24 @@ class SideEffectWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr("Call to '{}' may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
+                                    , tr("There is a risk of side effect as on the following parameter(s) {}").format(self.protected_var))
+
+class SideEffectContainerWarning(TypeError):
+    def __init__(self, in_function, expr, fun_name, receiver, protected_var):
+        self.in_function = in_function
+        self.receiver = receiver
+        self.fun_name = fun_name
+        self.expr = expr
+        self.protected_var = protected_var
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "SideEffectContainerWarning[{}]@{}:{}".format(self.fun_name, self.expr.ast.lineno, self.expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Assignment may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
                                     , tr("There is a risk of side effect as on the following parameter(s) {}").format(self.protected_var))
 
 class CallNotNoneWarning(TypeError):

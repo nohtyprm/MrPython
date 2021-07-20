@@ -233,6 +233,14 @@ class FunctionDef:
             # nothing to do ?
             pass
 
+        # check for procedure déclaration
+        self.procedure = False
+        if self.docstring:
+            docstr = self.docstring.lower()
+            if docstr.find("***procédure***")!=-1 or docstr.find("***procedure***")!=-1\
+            or docstr.find("***proc***")!=-1:
+                self.procedure = True
+
         self.body = []
         for inner_node in self.ast.body[next_instr_index:]:
             self.body.append(parse_instruction(inner_node))
@@ -316,7 +324,8 @@ class DeclareVar:
         self.target = build_lhs_destruct(self.ast.target)
 
 class ContainerAssign:
-    def __init__(self, target, expr):
+    def __init__(self, node, target, expr):
+        self.ast = node
         self.container_expr = parse_expression(target.value)
         self.container_index = parse_expression(target.slice.value)
         self.assign_expr = parse_expression(expr)
@@ -330,11 +339,11 @@ def parse_assign(node):
 
         if isinstance(node, ast.AnnAssign):
             if node.target and isinstance(node.target, ast.Subscript):
-                return ContainerAssign(node.target, node.value)
+                return ContainerAssign(node, node.target, node.value)
         else:
             # dictionary (container) assignment
             if node.targets and isinstance(node.targets[0], ast.Subscript):
-                return ContainerAssign(node.targets[0], node.value)
+                return ContainerAssign(node, node.targets[0], node.value)
 
     # other form of assigment
     assign = Assign(node)

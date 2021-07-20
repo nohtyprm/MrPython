@@ -234,10 +234,24 @@ def side_effect_ECall(call, ctx):
 
     return (is_side_effect, protected_var)
 
-
-
-
 ECall.side_effect = side_effect_ECall
+
+
+def side_effect_ContainerAssign(assign, ctype, ctx):
+    is_side_effect = False
+    protected_var = set()
+
+    aliases_extended = assign.container_expr.alias(ctx)
+
+    #variables potentially impacted
+    for alias in aliases_extended:
+        if alias.is_protected(ctx):
+            is_side_effect = True
+            protected_var.add(alias.ref)
+            
+    return (is_side_effect, protected_var)
+
+ContainerAssign.side_effect = side_effect_ContainerAssign
 
 def linearize(ctx, lhs_expr, aliases):
     if isinstance(lhs_expr, LHSVar):
