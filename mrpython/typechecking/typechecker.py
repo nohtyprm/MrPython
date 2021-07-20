@@ -1062,7 +1062,7 @@ def ContainerAssign_type_check(cassign, ctx):
         return False
 
     (has_side_effect, protected_var) = cassign.side_effect(container_type, ctx)
-    if has_side_effect:
+    if has_side_effect and not ctx.function_def.procedure:
         ctx.add_type_error(SideEffectContainerWarning(ctx.function_def,cassign,"assign", cassign.container_expr, protected_var))
 
     return True
@@ -1565,7 +1565,7 @@ def type_infer_ECall(call, ctx):
             return None
 
     (has_side_effect, protected_var) = call.side_effect(ctx)
-    if has_side_effect:
+    if has_side_effect and not ctx.function_def.procedure:
         ctx.add_type_error(SideEffectWarning(ctx.function_def,call,call.fun_name, call.receiver, protected_var))
 
     return nret_type

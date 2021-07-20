@@ -1,6 +1,7 @@
 
 def incrementer(l : List[int]) -> None:
-    """Incrémente tous les éléments de la liste l.
+    """***procédure***
+    Incrémente tous les éléments de la liste l.
     """
     i : int
     for i in range(len(l)):

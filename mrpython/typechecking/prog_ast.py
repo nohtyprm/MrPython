@@ -233,6 +233,14 @@ class FunctionDef:
             # nothing to do ?
             pass
 
+        # check for procedure déclaration
+        self.procedure = False
+        if self.docstring:
+            docstr = self.docstring.lower()
+            if docstr.find("***procédure***")!=-1 or docstr.find("***procedure***")!=-1\
+            or docstr.find("***proc***")!=-1:
+                self.procedure = True
+
         self.body = []
         for inner_node in self.ast.body[next_instr_index:]:
             self.body.append(parse_instruction(inner_node))
