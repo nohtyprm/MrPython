@@ -165,6 +165,7 @@ class Import:
         #print_ast_fields(self.ast)
         alias = self.ast.names[0]
         self.name = alias.name
+
 class FunctionDef:
     def __init__(self, node):
         self.ast = node

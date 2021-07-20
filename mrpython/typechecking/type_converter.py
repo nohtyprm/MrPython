@@ -49,10 +49,32 @@ def mk_dict_type(dict_value, annotation):
     else:
         return (False, tr("Does not understand the declared dictionary type (missing key/value types)."))
         
+
+def funtype_converter(annot, param_annots, ret_annot):
+    param_types = []
+    for param_annot in param_annots:
+        ok, ty = type_converter(param_annot)
+        if not ok:
+            return ok, ty
+        param_types.append(ty)
+
+    ok, ret_type = type_converter(ret_annot)
+    if not ok:
+        return ok, ret_type
+
+    return (True, FunctionType(param_types, ret_type, partial=False, annotation=annot))
+
 def type_converter(annotation):
     #import astpp
     #print(astpp.dump(annotation))
 
+    # Special case for function types (HOF)
+    if hasattr(annotation, "func") and annotation.func.id == "Callable":
+        if len(annotation.args) != 2:
+            return (False, tr("Callable format error, expect 2 arguments"))
+
+        return funtype_converter(annotation, annotation.args[0].elts, annotation.args[1])
+    
     # Special case for None/NoneType
     if hasattr(annotation, "value") and annotation.value == None:
         return (True, NoneTypeType(annotation))

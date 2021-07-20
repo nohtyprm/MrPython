@@ -724,7 +724,7 @@ class OptionType(TypeAST):
     def __repr__(self):
         return "OptionType({})".format(repr(self.elem_type))
 
-class FunctionType:
+class FunctionType(TypeAST):
     def __init__(self, param_types, ret_type, partial=False, annotation=None):
         if annotation:
             self.annotated=True
