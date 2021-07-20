@@ -50,7 +50,7 @@ def mk_dict_type(dict_value, annotation):
         return (False, tr("Does not understand the declared dictionary type (missing key/value types)."))
         
 
-def funtype_converter(annot, param_annots, ret_annot):
+def callable_type_converter(annot, param_annots, ret_annot):
     param_types = []
     for param_annot in param_annots:
         ok, ty = type_converter(param_annot)
@@ -73,7 +73,7 @@ def type_converter(annotation):
         if len(annotation.args) != 2:
             return (False, tr("Callable format error, expect 2 arguments"))
 
-        return funtype_converter(annotation, annotation.args[0].elts, annotation.args[1])
+        return callable_type_converter(annotation, annotation.args[0].elts, annotation.args[1])
     
     # Special case for None/NoneType
     if hasattr(annotation, "value") and annotation.value == None:

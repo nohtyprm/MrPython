@@ -1486,24 +1486,35 @@ def type_infer_narynum(args, ctx):
 ENone.type_infer = type_infer_ENone
 
 def type_infer_ECall(call, ctx):
+
     # step 1 : fetch the signature of the called function
     if call.full_fun_name in ctx.global_env:
         method_call = False
+        hof_call = False
         signature = ctx.global_env[call.full_fun_name]
         arguments = call.arguments
     elif "." + call.fun_name in { ".append", ".readlines", ".read", ".write", ".add", ".remove", ".items", ".keys" }: #XXX: needed ? and not call.multi_receivers:
         method_call = True
+        hof_call = False
         signature = ctx.global_env["." + call.fun_name]
         arguments = []
         arguments.append(call.receiver)
         arguments.extend(call.arguments)
+    elif call.full_fun_name in ctx.function_def.parameters:
+        # handling of HOF
+        hof_call = True
+        method_call = False
+        param_idx = ctx.function_def.parameters.index(call.full_fun_name)
+        signature = ctx.global_env[ctx.function_def.name].param_types[param_idx]
+        arguments = call.arguments
     else:
         ctx.add_type_error(UnknownFunctionError(ctx.function_def, call))
         return None
 
     # step 1bis : we rename the type parameters to avoid any nameclash
     rename_map = {}
-    signature = signature.rename_type_variables(rename_map)
+    if not hof_call:
+        signature = signature.rename_type_variables(rename_map)
     #print("rename_map = {}".format(rename_map))
     #print(repr(signature))
 
