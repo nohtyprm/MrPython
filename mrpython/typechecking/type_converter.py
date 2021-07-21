@@ -70,7 +70,7 @@ def type_converter(annotation):
 
     #import pdb ; pdb.set_trace()
     # Special case for function types (HOF)
-    if hasattr(annotation, "value") and annotation.value.id == "Callable":
+    if hasattr(annotation, "value") and hasattr(annotation.value, "id") and annotation.value.id == "Callable":
         sig = annotation.slice.value.elts
         if len(sig) != 2:
             return (False, tr("Callable format error, expect 2 arguments"))
