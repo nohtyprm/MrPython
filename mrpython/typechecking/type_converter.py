@@ -1,3 +1,6 @@
+
+import ast
+
 try:
     from .type_ast import *
     from .translate import tr
@@ -5,7 +8,8 @@ except ImportError:
     from type_ast import *
     from translate import tr
 
-def mk_container_type(container_id, element_value, annotation):    
+def mk_container_type(container_id, element_value, annotation): 
+    #import pdb ; pdb.set_trace()
     ok, element_type = type_converter(element_value)
     if not ok:
         return (False, element_type)
@@ -103,25 +107,37 @@ def type_converter(annotation):
         else:
             return (True, TypeAlias(annotation.id, annotation))
     elif hasattr(annotation, "slice"):
-        # import astpp
-        # print("type annot = {}".format(astpp.dump(annotation)))
+        #import astpp
+        #print("type annot = {}".format(astpp.dump(annotation)))
         if hasattr(annotation.value, "id"):
+            #import pdb ; pdb.set_trace()
             container_id = annotation.value.id
-            if container_id == "Tuple" and hasattr(annotation.slice, "value"):
-                return mk_tuple_type(annotation.slice.value, annotation)
+            container_detail = fetch_container_detail(annotation)
+            if container_id == "Tuple":
+                return mk_tuple_type(container_detail, annotation)
             elif container_id == "Dict":
                 if hasattr(annotation.slice, "lower") or hasattr(annotation.slice, "upper"):
                     return (False, tr("The colon ':' separator is not allower in dictionnary types, use ',' instead"))
                 elif hasattr(annotation.slice, "value"):
-                    return mk_dict_type(annotation.slice.value, annotation)
+                    return mk_dict_type(container_detail, annotation)
                 else:
                     return (False, tr("Missing key,value types in dictionnary type")) 
             else:
-                return mk_container_type(container_id, annotation.slice.value, annotation)
+                return mk_container_type(container_id, container_detail, annotation)
         
         return (False, tr("Does not understand the declared container type."))
     else:
         return (False, tr("Does not understand the declared type."))
+
+def fetch_container_detail(annotation):
+    if isinstance(annotation.slice, ast.Index):
+        # Python <= 3.8
+        return annotation.slice.value
+    elif isinstance(annotation.slice, (ast.Subscript, ast.Tuple)):
+        # Python >= 3.9
+        return annotation.slice
+
+    raise ValueError("wrong annotation (please report)")
 
 def check_if_roughly_type_expr(annotation):
     ### XXX : this is *very* rough !
