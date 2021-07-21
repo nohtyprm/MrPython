@@ -877,8 +877,18 @@ class Slicing(Expr):
         if node.slice.step is not None:
             self.step = parse_expression(node.slice.step)
 
-def parse_subscript(node):
+def ast_is_indexing(node):
     if isinstance(node.slice, ast.Index):
+        # python <= 3.8
+        return True
+    if isinstance(node.slice, ast.Constant):
+        # python >= 3.9
+        return True
+
+    return False
+
+def parse_subscript(node):
+    if ast_is_indexing(node):
         return Indexing(node)
     else:
         return Slicing(node)
