@@ -2040,9 +2040,13 @@ def type_compare_FunctionType(expected_type, ctx, expr, expr_type, raise_error=T
 
     for (expected_param_type, expr_param_type) in zip(expected_param_types, expr_param_types):
         if not expected_param_type.type_compare(ctx, expr, expr_param_type, raise_error):
+            if raise_error:
+                ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Error for function parameter")))
             return False
 
     if not expected_type.ret_type.type_compare(ctx, expr, expr_type.ret_type, raise_error):
+        if raise_error:
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Error for function return type")))
         return False
 
     return True
