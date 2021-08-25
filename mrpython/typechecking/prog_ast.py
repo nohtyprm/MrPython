@@ -326,9 +326,18 @@ class DeclareVar:
 
 class ContainerAssign:
     def __init__(self, node, target, expr):
+        #import pdb ; pdb.set_trace()
         self.ast = node
         self.container_expr = parse_expression(target.value)
-        self.container_index = parse_expression(target.slice.value)
+        if isinstance(target.slice, ast.Index):
+            # Python <= 3.8 < 3.9
+            self.container_index = parse_expression(target.slice.value)
+        elif isinstance(target.slice, ast.Name):
+            # Python >= 3.9
+            self.container_index = parse_expression(target.slice)
+        else:
+            raise ValueError("Cannot parse AST (please report)")
+        
         self.assign_expr = parse_expression(expr)
 
 

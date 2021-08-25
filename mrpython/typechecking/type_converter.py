@@ -133,7 +133,7 @@ def fetch_container_detail(annotation):
     if isinstance(annotation.slice, ast.Index):
         # Python <= 3.8  for lists, ...
         return annotation.slice.value
-    elif isinstance(annotation.slice, (ast.Subscript, ast.Tuple, ast.Slice)):
+    elif isinstance(annotation.slice, (ast.Subscript, ast.Tuple, ast.Slice, ast.Name)):
         # Python >= 3.9  or >= 3.8 (for dicts)
         return annotation.slice
 
