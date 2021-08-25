@@ -119,7 +119,6 @@ def type_converter(annotation):
         #import astpp
         #print("type annot = {}".format(astpp.dump(annotation)))
         if hasattr(annotation.value, "id"):
-            #import pdb ; pdb.set_trace()
             container_id = annotation.value.id
             container_detail = fetch_container_detail(annotation)
             if container_id == "Tuple":
@@ -127,10 +126,7 @@ def type_converter(annotation):
             elif container_id == "Dict":
                 if hasattr(annotation.slice, "lower") or hasattr(annotation.slice, "upper"):
                     return (False, tr("The colon ':' separator is not allower in dictionnary types, use ',' instead"))
-                elif hasattr(annotation.slice, "value"):
-                    return mk_dict_type(container_detail, annotation)
-                else:
-                    return (False, tr("Missing key,value types in dictionnary type")) 
+                return mk_dict_type(container_detail, annotation)
             else:
                 return mk_container_type(container_id, container_detail, annotation)
         

@@ -327,7 +327,6 @@ class DeclareVar:
 class ContainerAssign:
     def __init__(self, node, target, expr):
         self.ast = node
-        import astpp ; print(astpp.dump(target))
         self.container_expr = parse_expression(target.value)
         if isinstance(target.slice, ast.Index):
             # Python <= 3.8 < 3.9
