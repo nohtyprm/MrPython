@@ -326,7 +326,6 @@ class DeclareVar:
 
 class ContainerAssign:
     def __init__(self, node, target, expr):
-        #import pdb ; pdb.set_trace()
         self.ast = node
         self.container_expr = parse_expression(target.value)
         if isinstance(target.slice, ast.Index):
@@ -860,7 +859,6 @@ class EMax(Expr):
 class EList(Expr):
     def __init__(self, node):
         self.ast = node
-        #print(astpp.dump(node))
         self.elements = []
         for elt in node.elts:
             elt_expr = parse_expression(elt)
@@ -873,7 +871,7 @@ class Indexing(Expr):
         if isinstance(node.slice, ast.Index):
             # Python <= 3.8 < 3.8
             self.index = parse_expression(node.slice.value)
-        elif isinstance(node.slice, (ast.Name, ast.Constant)):
+        elif isinstance(node.slice, (ast.Name, (ast.Constant, ast.Tuple))):
             # Python >= 3.9
             self.index = parse_expression(node.slice)
         else:
@@ -897,7 +895,7 @@ def ast_is_indexing(node):
     if isinstance(node.slice, ast.Index):
         # python <= 3.8
         return True
-    if isinstance(node.slice, (ast.Constant, ast.Name)):
+    if isinstance(node.slice, (ast.Constant, ast.Name, ast.Tuple)):
         # python >= 3.9
         return True
 
