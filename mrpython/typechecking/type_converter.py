@@ -131,10 +131,10 @@ def type_converter(annotation):
 
 def fetch_container_detail(annotation):
     if isinstance(annotation.slice, ast.Index):
-        # Python <= 3.8
+        # Python <= 3.8  for lists, ...
         return annotation.slice.value
-    elif isinstance(annotation.slice, (ast.Subscript, ast.Tuple)):
-        # Python >= 3.9
+    elif isinstance(annotation.slice, (ast.Subscript, ast.Tuple, ast.Slice)):
+        # Python >= 3.9  or >= 3.8 (for dicts)
         return annotation.slice
 
     raise ValueError("wrong annotation (please report)")
