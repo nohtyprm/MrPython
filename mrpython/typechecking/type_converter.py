@@ -73,9 +73,18 @@ def type_converter(annotation):
     #print(astpp.dump(annotation))
 
     #import pdb ; pdb.set_trace()
+
     # Special case for function types (HOF)
     if hasattr(annotation, "value") and hasattr(annotation.value, "id") and annotation.value.id == "Callable":
-        sig = annotation.slice.value.elts
+        if isinstance(annotation.slice, ast.Index) and hasattr(annotation.slice, "value"):
+            # Python <= 3.8 < 3.9
+            sig = annotation.slice.value.elts
+        elif isinstance(annotation.slice, ast.Tuple):
+            # Python >= 3.9
+            sig = annotation.slice.elts
+        else:
+            raise ValueError("Wrong AST (please report)")
+            
         if len(sig) != 2:
             return (False, tr("Callable format error, expect 2 arguments"))
 
