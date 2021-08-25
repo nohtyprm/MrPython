@@ -870,8 +870,15 @@ class Indexing(Expr):
     def __init__(self, node):
         self.ast = node
         self.subject = parse_expression(node.value)
-        self.index = parse_expression(node.slice.value)
-
+        if isinstance(node.slice, ast.Index):
+            # Python <= 3.8 < 3.8
+            self.index = parse_expression(node.slice.value)
+        elif isinstance(node.slice, (ast.Name, ast.Constant)):
+            # Python >= 3.9
+            self.index = parse_expression(node.slice)
+        else:
+            raise ValueError("Wrong AST (please report)")
+        
 class Slicing(Expr):
     def __init__(self, node):
         self.ast = node
@@ -890,7 +897,7 @@ def ast_is_indexing(node):
     if isinstance(node.slice, ast.Index):
         # python <= 3.8
         return True
-    if isinstance(node.slice, ast.Constant):
+    if isinstance(node.slice, (ast.Constant, ast.Name)):
         # python >= 3.9
         return True
 
