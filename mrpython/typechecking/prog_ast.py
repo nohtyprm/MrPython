@@ -328,7 +328,13 @@ class ContainerAssign:
     def __init__(self, node, target, expr):
         self.ast = node
         self.container_expr = parse_expression(target.value)
-        self.container_index = parse_expression(target.slice.value)
+        if isinstance(target.slice, ast.Index):
+            # Python <= 3.8 < 3.9
+            self.container_index = parse_expression(target.slice.value)
+        else:
+            # Python >= 3.9
+            self.container_index = parse_expression(target.slice)
+        
         self.assign_expr = parse_expression(expr)
 
 
@@ -851,7 +857,6 @@ class EMax(Expr):
 class EList(Expr):
     def __init__(self, node):
         self.ast = node
-        #print(astpp.dump(node))
         self.elements = []
         for elt in node.elts:
             elt_expr = parse_expression(elt)
@@ -861,8 +866,14 @@ class Indexing(Expr):
     def __init__(self, node):
         self.ast = node
         self.subject = parse_expression(node.value)
-        self.index = parse_expression(node.slice.value)
+        if isinstance(node.slice, ast.Index):
+            # Python <= 3.8 < 3.8
+            self.index = parse_expression(node.slice.value)
+        else:
+            # Python >= 3.9
+            self.index = parse_expression(node.slice)
 
+        
 class Slicing(Expr):
     def __init__(self, node):
         self.ast = node
@@ -878,11 +889,15 @@ class Slicing(Expr):
             self.step = parse_expression(node.slice.step)
 
 def parse_subscript(node):
-    if isinstance(node.slice, ast.Index):
-        return Indexing(node)
+    if hasattr(node, "slice"):
+        if hasattr(node.slice, "lower") \
+        and hasattr(node.slice, "upper"):
+            return Slicing(node)
+        else:
+            return Indexing(node)
     else:
-        return Slicing(node)
-
+        raise ValueError("Wrong subscript AST (please report)")
+        
 class Generator:
     def __init__(self, generator):
         self.ast = generator
