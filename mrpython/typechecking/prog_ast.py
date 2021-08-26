@@ -331,11 +331,9 @@ class ContainerAssign:
         if isinstance(target.slice, ast.Index):
             # Python <= 3.8 < 3.9
             self.container_index = parse_expression(target.slice.value)
-        elif isinstance(target.slice, (ast.Name, ast.Constant)):
+        else:
             # Python >= 3.9
             self.container_index = parse_expression(target.slice)
-        else:
-            raise ValueError("Cannot parse AST (please report)")
         
         self.assign_expr = parse_expression(expr)
 
