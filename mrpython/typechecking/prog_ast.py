@@ -871,11 +871,10 @@ class Indexing(Expr):
         if isinstance(node.slice, ast.Index):
             # Python <= 3.8 < 3.8
             self.index = parse_expression(node.slice.value)
-        elif isinstance(node.slice, (ast.Name, (ast.Constant, ast.Tuple))):
+        else:
             # Python >= 3.9
             self.index = parse_expression(node.slice)
-        else:
-            raise ValueError("Wrong AST (please report)")
+
         
 class Slicing(Expr):
     def __init__(self, node):
@@ -891,22 +890,16 @@ class Slicing(Expr):
         if node.slice.step is not None:
             self.step = parse_expression(node.slice.step)
 
-def ast_is_indexing(node):
-    if isinstance(node.slice, ast.Index):
-        # python <= 3.8
-        return True
-    if isinstance(node.slice, (ast.Constant, ast.Name, ast.Tuple)):
-        # python >= 3.9
-        return True
-
-    return False
-
 def parse_subscript(node):
-    if ast_is_indexing(node):
-        return Indexing(node)
+    if hasattr(node, "slice"):
+        if hasattr(node.slice, "lower") \
+        and hasattr(node.slice, "upper"):
+            return Slicing(node)
+        else:
+            return Indexing(node)
     else:
-        return Slicing(node)
-
+        raise ValueError("Wrong subscript AST (please report)")
+        
 class Generator:
     def __init__(self, generator):
         self.ast = generator
