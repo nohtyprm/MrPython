@@ -1,12 +1,27 @@
 MrPython authors:
 ----------------
 
-Frederic Peschanski - Main developer and Maintainer
-Jordhan Leoture - extracted code from IDLE
-Alexandre Doussot / Christian Trublerau - type annotations parsing
-Matthieu Eyraud / Fatemeh Hamissi - GUI fixes
-Matthieu Eyraud - Side effect analysis
-Quentin Piotrowski / Pierre-Octave Velly - early support for pep484 annotations
+Frederic Peschanski 
+  - Main developer and Maintainer
 
+Jordhan Leoture 
+  - extracted code from IDLE
+
+Alexandre Doussot / Christian Trublerau 
+  - type annotations parsing
+
+Matthieu Eyraud / Fatemeh Hamissi 
+  - GUI fixes
+
+Matthieu Eyraud 
+  - Side effect analysis
+
+Quentin Piotrowski / Pierre-Octave Velly 
+  - early support for pep484 annotations
+
+Walid Sadat / Koceila Azzoug / Malick Lay Sy 
+  - GUI cleanup, precondition checking, bug fixes 
+
+====
 MrPython is based on IDLE, cf. IDLE_info/CREDITS.txt
 

@@ -1,4 +1,3 @@
-
 """The abstract syntax tree of programs."""
 
 import ast
@@ -52,6 +51,9 @@ class Program:
         # other top level definitions
         self.other_top_defs = []
 
+        #multi-declared functions
+        self.multi_declared_functions = dict()
+
         # metadata
         self.filename = None
         self.source = None
@@ -97,7 +99,10 @@ class Program:
             elif isinstance(node, ast.FunctionDef):
                 fun_ast = FunctionDef(node)
                 if fun_ast.python101ready:
-                    self.functions[fun_ast.name] = fun_ast
+                    if fun_ast.name in self.functions:
+                        self.multi_declared_functions[fun_ast.name] = node.lineno
+                    else:
+                        self.functions[fun_ast.name] = fun_ast
                 else:
                     self.other_top_defs.append(UnsupportedNode(node))
             elif isinstance(node, ast.Assert):
@@ -106,10 +111,16 @@ class Program:
             elif isinstance(node, ast.AnnAssign) and node.value is None:
                 DeclareVar_ast = DeclareVar(node)
                 self.global_vars.append(DeclareVar_ast)
-            elif isinstance(node, ast.Assign) or isinstance(node, ast.AnnAssign):
-                if isinstance(node, ast.Assign) and not check_typevar_assign(node):
+            elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+                if not check_typevar_assign(node):
+                    if isinstance(node, ast.AnnAssign):
+                        # Type annotation with initialization
+                        DeclareVar_ast = DeclareVar(node)
+                        self.global_vars.append(DeclareVar_ast)
+                    # assignment is also a global variables
                     assign_ast = Assign(node)
                     self.global_vars.append(assign_ast)
+                # else do nothing for typevar declarations
             else:
                 # print("Unsupported instruction: " + node)
                 self.other_top_defs.append(UnsupportedNode(node))
@@ -123,9 +134,11 @@ def check_typing_imports(node):
         if alias.name not in ALLOWED_TYPING_IMPORTS:
             return False
     return True
-        
+
 def check_typevar_assign(node):
     # TODO : more precise error checking
+    if isinstance(node, ast.AnnAssign):
+        return False # TODO : handle this case more precisely, why not  T : TypeVar = TypeVar('T') ?
     if len(node.targets) != 1:
         return False
     if node.targets[0].id not in PREDEFINED_TYPE_VARIABLES:
@@ -138,7 +151,7 @@ def check_typevar_assign(node):
         return False
 
     return True
-        
+
 
 class UnsupportedNode:
     def __init__(self, node):
@@ -160,6 +173,8 @@ class FunctionDef:
 
         self.param_types = []
         self.parameters = []
+
+        self.preconditions = []
         for arg_obj in self.ast.args.args:
             self.parameters.append(arg_obj.arg)
 
@@ -172,17 +187,65 @@ class FunctionDef:
         if isinstance(first_instr, ast.Expr) and isinstance(first_instr.value, ast.Str):
             self.docstring = first_instr.value.s
             next_instr_index = 1
-            #print(self.docstring)
+            splitedDocstring = self.docstring.splitlines()
+            i = 0
+            for s in splitedDocstring:
+                if("précondition" in s.lower() or "precondition" in s.lower()):
+                    j = 0
+                    splitedLine = s.split(":")
+                    if len(splitedLine) > 1:
+                        precondition = splitedLine[1].strip()
+                        if precondition == "":
+                            precondition = splitedDocstring[i+1].strip()
+                            j = 1
+                        if precondition != "":
+                            try:
+                                precondition_ast = ast.parse(precondition, mode="eval")
+                                precondition_ast.lineno = first_instr.lineno + i + j
+                                if(hasattr(precondition_ast,"body")):
+                                    precondition_node = parse_expression(precondition_ast.body)
+                                    self.preconditions.append((precondition_node, precondition_ast))
+                                else:
+                                    raise ValueError("Precondition not supported (please report): {}".format(precondition_ast))
+                            except SyntaxError:
+                                pass
+                elif ("hypothese" in s.lower() or "hypothèse" in s.lower()):
+                    j = 0
+                    splitedLine = s.split(":")
+                    if len(splitedLine) > 1:
+                        precondition = splitedLine[1].strip()
+                        if precondition == "":
+                            precondition = splitedDocstring[i+1].strip()
+                            j = 1
+                        if precondition != "":
+                            try:
+                                precondition_ast = ast.parse(precondition, mode="eval")
+                                precondition_ast.lineno = first_instr.lineno + i + j
+                                if(hasattr(precondition_ast,"body")):
+                                    precondition_node = parse_expression(precondition_ast.body)
+                                    self.preconditions.append((precondition_node, precondition_ast))
+                                else:
+                                    raise ValueError("Precondition not supported (please report): {}".format(precondition_ast))
+                            except SyntaxError:
+                                pass
+                i = i + 1
         else:
             # nothing to do ?
             pass
+
+        # check for procedure déclaration
+        self.procedure = False
+        if self.docstring:
+            docstr = self.docstring.lower()
+            if docstr.find("***procédure***")!=-1 or docstr.find("***procedure***")!=-1\
+            or docstr.find("***proc***")!=-1:
+                self.procedure = True
 
         self.body = []
         for inner_node in self.ast.body[next_instr_index:]:
             self.body.append(parse_instruction(inner_node))
 
         self.returns = self.ast.returns
-
 
 class TestCase:
     def __init__(self, node):
@@ -261,9 +324,16 @@ class DeclareVar:
         self.target = build_lhs_destruct(self.ast.target)
 
 class ContainerAssign:
-    def __init__(self, target, expr):
+    def __init__(self, node, target, expr):
+        self.ast = node
         self.container_expr = parse_expression(target.value)
-        self.container_index = parse_expression(target.slice.value)
+        if isinstance(target.slice, ast.Index):
+            # Python <= 3.8 < 3.9
+            self.container_index = parse_expression(target.slice.value)
+        else:
+            # Python >= 3.9
+            self.container_index = parse_expression(target.slice)
+        
         self.assign_expr = parse_expression(expr)
 
 
@@ -275,11 +345,11 @@ def parse_assign(node):
 
         if isinstance(node, ast.AnnAssign):
             if node.target and isinstance(node.target, ast.Subscript):
-                return ContainerAssign(node.target, node.value)
+                return ContainerAssign(node, node.target, node.value)
         else:
             # dictionary (container) assignment
             if node.targets and isinstance(node.targets[0], ast.Subscript):
-                return ContainerAssign(node.targets[0], node.value)
+                return ContainerAssign(node, node.targets[0], node.value)
 
     # other form of assigment
     assign = Assign(node)
@@ -786,7 +856,6 @@ class EMax(Expr):
 class EList(Expr):
     def __init__(self, node):
         self.ast = node
-        #print(astpp.dump(node))
         self.elements = []
         for elt in node.elts:
             elt_expr = parse_expression(elt)
@@ -796,8 +865,14 @@ class Indexing(Expr):
     def __init__(self, node):
         self.ast = node
         self.subject = parse_expression(node.value)
-        self.index = parse_expression(node.slice.value)
+        if isinstance(node.slice, ast.Index):
+            # Python <= 3.8 < 3.8
+            self.index = parse_expression(node.slice.value)
+        else:
+            # Python >= 3.9
+            self.index = parse_expression(node.slice)
 
+        
 class Slicing(Expr):
     def __init__(self, node):
         self.ast = node
@@ -813,11 +888,15 @@ class Slicing(Expr):
             self.step = parse_expression(node.slice.step)
 
 def parse_subscript(node):
-    if isinstance(node.slice, ast.Index):
-        return Indexing(node)
+    if hasattr(node, "slice"):
+        if hasattr(node.slice, "lower") \
+        and hasattr(node.slice, "upper"):
+            return Slicing(node)
+        else:
+            return Indexing(node)
     else:
-        return Slicing(node)
-
+        raise ValueError("Wrong subscript AST (please report)")
+        
 class Generator:
     def __init__(self, generator):
         self.ast = generator

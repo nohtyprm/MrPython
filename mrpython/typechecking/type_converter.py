@@ -1,3 +1,6 @@
+
+import ast
+
 try:
     from .type_ast import *
     from .translate import tr
@@ -5,7 +8,8 @@ except ImportError:
     from type_ast import *
     from translate import tr
 
-def mk_container_type(container_id, element_value, annotation):    
+def mk_container_type(container_id, element_value, annotation): 
+    #import pdb ; pdb.set_trace()
     ok, element_type = type_converter(element_value)
     if not ok:
         return (False, element_type)
@@ -49,10 +53,43 @@ def mk_dict_type(dict_value, annotation):
     else:
         return (False, tr("Does not understand the declared dictionary type (missing key/value types)."))
         
+
+def callable_type_converter(annot, param_annots, ret_annot):
+    param_types = []
+    for param_annot in param_annots:
+        ok, ty = type_converter(param_annot)
+        if not ok:
+            return ok, ty
+        param_types.append(ty)
+
+    ok, ret_type = type_converter(ret_annot)
+    if not ok:
+        return ok, ret_type
+
+    return (True, FunctionType(param_types, ret_type, partial=False, annotation=annot))
+
 def type_converter(annotation):
     #import astpp
     #print(astpp.dump(annotation))
 
+    #import pdb ; pdb.set_trace()
+
+    # Special case for function types (HOF)
+    if hasattr(annotation, "value") and hasattr(annotation.value, "id") and annotation.value.id == "Callable":
+        if isinstance(annotation.slice, ast.Index) and hasattr(annotation.slice, "value"):
+            # Python <= 3.8 < 3.9
+            sig = annotation.slice.value.elts
+        elif isinstance(annotation.slice, ast.Tuple):
+            # Python >= 3.9
+            sig = annotation.slice.elts
+        else:
+            raise ValueError("Wrong AST (please report)")
+            
+        if len(sig) != 2:
+            return (False, tr("Callable format error, expect 2 arguments"))
+
+        return callable_type_converter(annotation, sig[0].elts, sig[1])
+    
     # Special case for None/NoneType
     if hasattr(annotation, "value") and annotation.value == None:
         return (True, NoneTypeType(annotation))
@@ -79,25 +116,33 @@ def type_converter(annotation):
         else:
             return (True, TypeAlias(annotation.id, annotation))
     elif hasattr(annotation, "slice"):
-        # import astpp
-        # print("type annot = {}".format(astpp.dump(annotation)))
+        #import astpp
+        #print("type annot = {}".format(astpp.dump(annotation)))
         if hasattr(annotation.value, "id"):
             container_id = annotation.value.id
-            if container_id == "Tuple" and hasattr(annotation.slice, "value"):
-                return mk_tuple_type(annotation.slice.value, annotation)
+            container_detail = fetch_container_detail(annotation)
+            if container_id == "Tuple":
+                return mk_tuple_type(container_detail, annotation)
             elif container_id == "Dict":
                 if hasattr(annotation.slice, "lower") or hasattr(annotation.slice, "upper"):
                     return (False, tr("The colon ':' separator is not allower in dictionnary types, use ',' instead"))
-                elif hasattr(annotation.slice, "value"):
-                    return mk_dict_type(annotation.slice.value, annotation)
-                else:
-                    return (False, tr("Missing key,value types in dictionnary type")) 
+                return mk_dict_type(container_detail, annotation)
             else:
-                return mk_container_type(container_id, annotation.slice.value, annotation)
+                return mk_container_type(container_id, container_detail, annotation)
         
         return (False, tr("Does not understand the declared container type."))
     else:
         return (False, tr("Does not understand the declared type."))
+
+def fetch_container_detail(annotation):
+    if isinstance(annotation.slice, ast.Index):
+        # Python <= 3.8  for lists, ...
+        return annotation.slice.value
+    elif isinstance(annotation.slice, (ast.Subscript, ast.Tuple, ast.Slice, ast.Name)):
+        # Python >= 3.9  or >= 3.8 (for dicts)
+        return annotation.slice
+
+    raise ValueError("wrong annotation (please report)")
 
 def check_if_roughly_type_expr(annotation):
     ### XXX : this is *very* rough !

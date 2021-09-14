@@ -1,8 +1,7 @@
-
-MRPYTHON_VERSION_MAJOR = 4
+MRPYTHON_VERSION_MAJOR = 5
 MRPYTHON_VERSION_MINOR = 0
-MRPYTHON_VERSION_PATCH = 3
-MRPYTHON_VERSION_TAG = ""
+MRPYTHON_VERSION_PATCH = 0
+MRPYTHON_VERSION_TAG = "beta"
 
 
 def version_string():
@@ -10,4 +9,3 @@ def version_string():
                                MRPYTHON_VERSION_MINOR,
                                MRPYTHON_VERSION_PATCH,
                                "" if MRPYTHON_VERSION_TAG == "" else ("-" + MRPYTHON_VERSION_TAG))
-

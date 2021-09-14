@@ -1,4 +1,3 @@
-
 AVAILABLE_LOCALE_KEYS = { 'fr', 'en' }
 
 TRANSLATOR_LOCALE_KEY = None
@@ -26,6 +25,7 @@ TRANSLATOR_DICT = {
     , "this construction is not available in Python101 (try expert mode for standard Python)"
     : { 'fr' : "cette construction n'est pas disponible en Python101 (vous pouvez essayer le mode expert pour faire du Python standard)" }
     , "Declaration problem" : { 'fr' : 'Problème de déclaration'}
+    , "Function definition problem" : { 'fr' : 'Problème de définition de fonction'}
     , "Missing variable declaration" : { 'fr' : "La déclaration de variable est manquante." }
     , "Wrong variable name in declaration, it should be '{}'" : { 'fr' : "le nom de variable est erroné dans la déclaration, cela devrait être '{}'"}
     , "Missing ':' character before variable type declaration" : { 'fr' : "je ne comprends pas le type déclaré pour cette variable, il manque le caractère ':'"}
@@ -70,8 +70,13 @@ TRANSLATOR_DICT = {
     , "This expression is in instruction position, the computed value is lost" : { 'fr' : "Cette expression est placée en position d'instruction, la valeur calculée est perdue" }
     , "Return problem" : { 'fr' : "Problème de retour" }
     , "The function '{}' should have `return` statement(s)" : { 'fr' : "Il n'y a aucun `return` dans la fonction '{}', ce n'est pas normal" }
-    , 'Wrong definition' : { 'fr' : "Mauvaise définition" }
+    , "Wrong definition" : { 'fr' : "Mauvaise définition" }
+    , "Undefined variable" : { 'fr' : "Variable indéfinie" }
+    , "Syntax error" : { 'fr' : "Erreur de syntaxe" }
     , "The function '{}' has no correct specification." : { 'fr' : "La fonction '{}' n'est pas spécifée correctement." }
+    , "The precondition in'{}' should be a 'bool', not a '{}'." : { 'fr' : "La précondition dans la fonction '{}' doit être un 'bool', non pas un '{}'."}
+    , "There is an error in the function '{}' precondition." : { 'fr' : "La précondition de la fonction '{}' contient une erreur."}
+    , "The variable '{}' in the precondition is undefined." : { 'fr' : "La variable {} dans la précondition n'est pas définie."}
     , "The function '{}' has no documentation." : { 'fr' : "La fonction '{}' n'a pas de documentation."}
     , 'Wrong statement' : { 'fr' : "Instruction non-supportée" }
     , "In Python 101 this statement cannot be done outside a function body (try expert mode for standard Python)"
@@ -80,7 +85,7 @@ TRANSLATOR_DICT = {
     , "The signature of function '{}' contains some characters at the end that I do not understand: {}"
     : { 'fr' : "La signature de la fonction '{}' contient des caractères que je ne comprends pas à la fin: {}" }
     , "Assignment problem" : { 'fr' : "Problème d'affectation" }
-    , "This assignment to variable '{}' is forbidden in Python101." : { 'fr' : "Cette affectation de la variable '{}' n'est pas permise en Python101 (uniquement disponible en mode expert)." }
+    , "This assignment to variable '{}' is forbidden in Python101." : { 'fr' : "Cette affectation de la variable '{}' n'est pas permise en mode étudiant, il faut déclarer une nouvelle variable  (sinon passez en mode expert)." }
     , "Expecting type '{}' but found '{}': there is a risk of imprecision (but it's maybe not a bug)" : { 'fr' : "J'attends le type '{}' mais j'ai trouvé '{}': il y a un risque d'imprécision (mais ce n'est peut-être pas une erreur)" }
     , "Imprecise typing" : { 'fr' : "Typage imprécis" }
     , "Expression in instruction position" : { 'fr' : "Expression en position instruction" }
@@ -99,7 +104,7 @@ TRANSLATOR_DICT = {
     , "Bad iterator" : { 'fr' : "Problème d'itération" }
     , "Expecting an iterator of tuples" : { 'fr' : "J'attends un itérable de n-uplets" }
     , "Not an iterable type: {}" : { 'fr' : "Type non itérable: {}" }
-    , "Expecting precise type '{}' but found less precise type: {}" : { 'fr' : "J'attends le type précis '{}' mais le type de cette expression est moins précis: {}" }
+    , "Expecting type '{}' but found less precise type '{}' (the value could be None)" : { 'fr' : "J'attends le type '{}' mais le type de cette expression est moins précis : {}  (la valeur pourrait être None)" }
     , "Unhashable (mutable) element forbidden in set, element type is: {}" : { 'fr' : "Un ensemble ne peut contenir de valeur mutable (non-hashable), ici l'élément est de type: {}" }
     , "Unhashable (mutable) key in dictionary, key type is: {}" : { 'fr' : "Une clé de dictionnaire ne peut être mutable (non-hashable), ici la clé est de type: {}" }
     , "Bad set" : { 'fr' : "Problème d'ensemble" }
@@ -124,8 +129,10 @@ TRANSLATOR_DICT = {
     , "Bad variable type" : { 'fr' : "Problème de typage de variable"}
     , "Type mismatch for variable '{}', expecting '{}' instead of: {}" : { 'fr' : "La variable '{}' est déclarée avec le type '{}' qui n'est pas compatible avec le type requis: {}"}
     , "Call to '{}' may cause side effect" : {'fr' : "L'appel à la méthode '{}' risque d'avoir un effet de bord incontrôlé"}
+    , "Assignment may cause side effect" : {'fr': "Cette affectation risque d'avoir un effet de bord incontrôlé"}
     , "There is a risk of side effect as on the following parameter(s) {}" : {'fr' : "Il est possible qu'il y ait un effet de bord sur le(s) paramètre(s) suivant(s): {}"}
     , "Variable '{}' was declared multiple times" : { 'fr' : "La variable '{}' a été déclarée plusieurs fois"}
+    , "Function '{}' was defined multiple times" : { 'fr' : "La fonction '{}' a été définie plusieurs fois"}
     , "Not a variable type declaration : it is a type alias." : { 'fr' : "ce n'est pas une déclaration de variable mais une déclaration d'alias de type."}
     , "Empty tuple" : { 'fr' : "N-uplet vide"}
     , "Python 101 does not allow empty tuples, only in expert mode" : { 'fr' : "les n-uplets vides (0-uplets ?) ne sont pas autorisés en Python101."}
@@ -146,6 +153,9 @@ TRANSLATOR_DICT = {
     , "Does not understand the declared dictionary type (missing key/value types)." : { 'fr' : "Je ne comprends pas le type dictionnaire déclaré : il manque le type des clés et/ou des valeurs" }
     , "The colon ':' separator is not allower in dictionnary types, use ',' instead" : { 'fr' : "le séparateur ':' n'est pas autorisé dans les types dictionnaire, utiliser plutôt la virgule ','" }
     , "Missing key,value types in dictionnary type" : { 'fr' : "Type dictionnaire incorrect : il manque le type des clés et des valeurs."}
+    , "Wrong function name" : { 'fr' : "Nom de fonction incorrect"}
+    , "The function name '{}' is reserved in student mode" : { 'fr' : "Le nom de fonction '{}' n'est pas autorisé en mode étudiant."}
+
 }
 
 def tr(msg):

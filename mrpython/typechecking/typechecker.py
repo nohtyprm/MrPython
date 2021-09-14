@@ -13,7 +13,6 @@ if __name__ == "__main__":
 
     from prog_ast import *
     from type_ast import *
-    from type_parser import (type_expression_parser, function_type_parser, var_type_parser, type_def_parser)
     from type_converter import *
 
     from translate import tr
@@ -21,12 +20,13 @@ if __name__ == "__main__":
 else:
     from .prog_ast import *
     from .type_ast import *
-    from .type_parser import (type_expression_parser, function_type_parser, var_type_parser, type_def_parser)
     from .type_converter import *
 
     from .translate import tr
 
     from .side_effects_utils import *
+
+preconditions = dict()      #Dictionnary to save all the function preconditions
 
 class TypeError:
     def is_fatal(self):
@@ -215,6 +215,11 @@ UnsupportedNode.type_check = type_check_UnsupportedNode
 def type_check_Program(prog):
     ctx = TypingContext(prog)
 
+    if len(prog.multi_declared_functions) != 0:
+        for fun_name in prog.multi_declared_functions:
+            ctx.add_type_error(DuplicateMultiFunDeclarationError(prog.multi_declared_functions[fun_name], fun_name))
+        return ctx
+
     # we do not type check a program with unsupported top-level nodes
     for top_def in prog.other_top_defs:
         if isinstance(top_def.ast, ast.FunctionDef):
@@ -286,17 +291,22 @@ def type_check_Program(prog):
             ctx.register_import(REGISTERED_IMPORTS[import_name])
             # HACK : import the math.pi constant  (the only constant)
             if import_name == "math":
-                ctx.local_env['math.pi'] = (type_expression_parser('float').content, "global")
-                ctx.local_env['math.e'] = (type_expression_parser('float').content, "global")
+                ctx.local_env['math.pi'] = (FloatType(), "global")
+                ctx.local_env['math.e'] = (FloatType(), "global")
         else:
             ctx.add_type_error(UnsupportedImportError(import_name, prog.imports[import_name]))
             return ctx
 
     # third step : process each function to fill the global environment
     for (fun_name, fun_def) in prog.functions.items():
+        if fun_name in { "add", "append"
+                         , "triangle", "draw_triangle", "ellipse", "fill_ellipse"}:
+            ctx.add_type_error(ReservedFunctionNameError(fun_def, fun_def.ast.lineno, fun_def.ast.col_offset))
+            return ctx
+
         if fun_def.docstring is None:
             ctx.add_type_error(NoFunctionDocWarning(fun_def))
-        
+
         if fun_def.returns is None:
             ctx.add_type_error(MissingReturnTypeError(fun_def, fun_def.ast.lineno, fun_def.ast.col_offset))
             return ctx
@@ -305,7 +315,7 @@ def type_check_Program(prog):
         if not ok:
             ctx.add_type_error(TypeExprParseError(fun_def.ast.lineno, fun_def.ast.col_offset, fun_type_ast))
             return ctx
-            
+
         fun_type, unknown_alias = fun_type_ast.unalias(ctx.type_defs)
         if fun_type is None:
             ctx.add_type_error(UnknownTypeAliasError(fun_type_ast, unknown_alias, fun_def.ast.lineno, fun_def.ast.col_offset))
@@ -382,11 +392,38 @@ def type_check_FunctionDef(func_def, ctx):
     ctx.register_return_type(signature.ret_type)
     ctx.register_function_def(func_def, signature.partial)
 
-    # Step 3 : type-check body
+    # step 3 : type-check preconditions 
+    preconditions_ok = []   #List of parsed preconditions
+    for (precondition, precondition_ast) in func_def.preconditions:
+        initCtxErrorsLen = len(ctx.type_errors)
+        precondition_type = type_expect(ctx, precondition, BoolType(), False)
+        if len(ctx.type_errors) != initCtxErrorsLen:
+            for i in range(len(ctx.type_errors)):
+                #To delete the undefined var problem in preconditions
+                if(isinstance(ctx.type_errors[i],UnknownVariableError)):
+                    poped = ctx.type_errors[i]
+                    ctx.type_errors.remove(poped)
+                    ctx.add_type_error(UndefinedVarInPreconditionWarning(func_def, poped.var, precondition_ast.lineno))
+                #Catch all potential errors in precondition
+                else:
+                    poped = ctx.type_errors[i]
+                    ctx.type_errors.remove(poped)
+                    ctx.add_type_error(ErrorInPreconditionWarning(func_def, precondition_ast.lineno))
 
+        else:
+            if precondition_type is None:
+                ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx), precondition_ast.lineno))
+            else:
+                body = precondition_ast.body
+                body.lineno = precondition_ast.lineno
+                preconditions_ok.append(body)
+    preconditions[func_def.name] = preconditions_ok
+    
+    # Step 4 : type-check body
     ctx.push_parent(func_def)
 
     ctx.nb_returns = 0  # counting the number of returns encountered
+    local_vars = set()  #save the checked local variables here
     for instr in func_def.body:
         if isinstance(instr, UnsupportedNode):
             ctx.add_type_error(UnsupportedNodeError(instr))
@@ -395,6 +432,13 @@ def type_check_FunctionDef(func_def, ctx):
             #ctx.pop_parent()
             ctx.unregister_function_def()
             return
+
+        #we abort the type-checking of this function if a local var is declared multiple times
+        if isinstance(instr, DeclareVar):
+            if instr.target.var_name in local_vars:
+                ctx.add_type_error(DuplicateMultiAssignError(instr.ast.lineno, instr.target.var_name))
+                return ctx
+            local_vars.add(instr.target.var_name)
 
         #print(repr(instr))
         instr.type_check(ctx)
@@ -438,7 +482,7 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
     if not ok:
         ctx.add_type_error(TypeExprParseError(lineno, assign_target.ast.col_offset, decl_type))
         return None
-    
+
     declared_types = dict()
 
     if var_name == "_":
@@ -474,7 +518,7 @@ def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
                 return None
             else:
                 continue
-    
+
         decl_type, idk = ctx.declared_env[var_name]
         if decl_type is None:
             ctx.add_type_error(TypeExprParseError(lineno, assign_target.ast.col_offset, annotation.id))
@@ -498,7 +542,7 @@ def fetch_declared_mypy_types(ctx, declaration_target, annotation, strict = Fals
     if not ok:
         ctx.add_type_error(TypeExprParseError(lineno, declaration_target.ast.col_offset, decl_type))
         return None
-        
+
     declared_types = dict()
     if var_name == "_":
         ctx.add_type_error(DeclarationError(ctx.function_def, declaration_target, 'var-name', lineno, tr("The special variable '_' cannot be declared")))
@@ -566,11 +610,16 @@ def fetch_assign_declaration_types(ctx, assign_target, strict=False):
     return declared_types
 
 def check_linearized_tuple_type(working_var, working_type, declared_types, ctx, expr, strict=False):
-    
+    # take care of Optional
+    if isinstance(working_type, OptionType):
+        # add a warning
+        ctx.add_type_error(OptionCoercionWarning(expr, working_type, working_type.elem_type))
+        working_type = working_type.elem_type
+
     if not isinstance(working_var, LHSTuple):
         #check if working_var is an instance of LHSVar
         if isinstance(working_var, LHSVar):
-            
+
             if working_var.var_name == '_': # just skip this check
                 return True
 
@@ -684,16 +733,16 @@ def type_check_Assign(assign, ctx, global_scope = False):
         var_type = ctx.local_env[var.var_name][0]
         if not var_type.type_compare(ctx, assign.expr, expr_type, raise_error=True):
             return False
-        
+
         # nothing else to do for actual assignment
         return True
 
     # here we consider an initialization and not an actual assignment
 
     # next fetch the declared types  (only required for mono-variables)
-    
+
     if declaration:
-        if hasattr(assign, "type_annotation"):
+        if (not global_scope) and hasattr(assign, "type_annotation"):
             ctx.add_type_error( DuplicateMultiAssignError(lineno,var.var_name))
         # Assignation of variables that have already been declared
         declared_types = fetch_assign_declared_mypy_types(ctx, assign.target,True if assign.target.arity() == 1 else False )
@@ -751,7 +800,7 @@ def type_check_For(for_node, ctx):
             ctx.add_type_error(IterVariableInEnvError(var.var_name, var))
             return False
 
-            
+
     declared_types = fetch_assign_declared_mypy_types(ctx, for_node.target, True if for_node.target.arity() == 1 else False)
     if declared_types is None:
         if for_node.target.arity() == 1:
@@ -988,25 +1037,33 @@ def type_check_With(ewith, ctx):
 
 With.type_check = type_check_With
 
-
 def ContainerAssign_type_check(cassign, ctx):
     container_type = cassign.container_expr.type_infer(ctx)
     if container_type is None:
         return False
 
-    if not isinstance(container_type, DictType):
+    if isinstance(container_type, DictType):
+        if container_type.key_type is None:
+            ctx.add_type_error(ContainerAssignEmptyError(cassign))
+        return False
+        key_type = container_type.key_type
+        val_type = container_type.val_type
+    elif isinstance(container_type, ListType):
+        key_type = IntType()
+        val_type = container_type.elem_type
+    else:
         ctx.add_type_error(ContainerAssignTypeError(cassign, container_type))
         return False
 
-    if container_type.key_type is None:
-        ctx.add_type_error(ContainerAssignEmptyError(cassign))
+    if not type_expect(ctx, cassign.container_index, key_type, raise_error=True):
         return False
 
-    if not type_expect(ctx, cassign.container_index, container_type.key_type, raise_error=True):
+    if not type_expect(ctx, cassign.assign_expr, val_type, raise_error=True):
         return False
 
-    if not type_expect(ctx, cassign.assign_expr, container_type.val_type, raise_error=True):
-        return False
+    (has_side_effect, protected_var) = cassign.side_effect(container_type, ctx)
+    if has_side_effect and not ctx.function_def.procedure:
+        ctx.add_type_error(SideEffectContainerWarning(ctx.function_def,cassign,"assign", cassign.container_expr, protected_var))
 
     return True
 
@@ -1344,6 +1401,11 @@ def type_infer_EVar(var, ctx):
     if var.name in ctx.local_env:
         var_type, _ = ctx.local_env[var.name]
         return var_type
+
+    # or maybe the variable is a global function (HOF)
+    if var.name in ctx.global_env:
+        return ctx.global_env[var.name]
+
     # or the variable is unknown
     ctx.add_type_error(UnknownVariableError(ctx.function_def, var))
     return None
@@ -1429,24 +1491,35 @@ def type_infer_narynum(args, ctx):
 ENone.type_infer = type_infer_ENone
 
 def type_infer_ECall(call, ctx):
+
     # step 1 : fetch the signature of the called function
     if call.full_fun_name in ctx.global_env:
         method_call = False
+        hof_call = False
         signature = ctx.global_env[call.full_fun_name]
         arguments = call.arguments
     elif "." + call.fun_name in { ".append", ".readlines", ".read", ".write", ".add", ".remove", ".items", ".keys" }: #XXX: needed ? and not call.multi_receivers:
         method_call = True
+        hof_call = False
         signature = ctx.global_env["." + call.fun_name]
         arguments = []
         arguments.append(call.receiver)
         arguments.extend(call.arguments)
+    elif call.full_fun_name in ctx.function_def.parameters:
+        # handling of HOF
+        hof_call = True
+        method_call = False
+        param_idx = ctx.function_def.parameters.index(call.full_fun_name)
+        signature = ctx.global_env[ctx.function_def.name].param_types[param_idx]
+        arguments = call.arguments
     else:
         ctx.add_type_error(UnknownFunctionError(ctx.function_def, call))
         return None
 
     # step 1bis : we rename the type parameters to avoid any nameclash
     rename_map = {}
-    signature = signature.rename_type_variables(rename_map)
+    if not hof_call:
+        signature = signature.rename_type_variables(rename_map)
     #print("rename_map = {}".format(rename_map))
     #print(repr(signature))
 
@@ -1508,7 +1581,7 @@ def type_infer_ECall(call, ctx):
             return None
 
     (has_side_effect, protected_var) = call.side_effect(ctx)
-    if has_side_effect:
+    if has_side_effect and not ctx.function_def.procedure:
         ctx.add_type_error(SideEffectWarning(ctx.function_def,call,call.fun_name, call.receiver, protected_var))
 
     return nret_type
@@ -1950,6 +2023,36 @@ def type_compare_Anything(expected_type, ctx, expr, expr_type, raise_error=True)
 
 Anything.type_compare = type_compare_Anything
 
+def type_compare_FunctionType(expected_type, ctx, expr, expr_type, raise_error=True):
+    if not isinstance(expr_type, FunctionType):
+        if raise_error:
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Expecting a Function")))
+
+        return False
+
+    expected_param_types = expected_type.param_types
+    expr_param_types = expr_type.param_types
+    if len(expected_param_types) != len(expr_param_types):
+        if raise_error:
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Wrong arity")))
+        return False
+
+
+    for (expected_param_type, expr_param_type) in zip(expected_param_types, expr_param_types):
+        if not expected_param_type.type_compare(ctx, expr, expr_param_type, raise_error):
+            if raise_error:
+                ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Error for function parameter")))
+            return False
+
+    if not expected_type.ret_type.type_compare(ctx, expr, expr_type.ret_type, raise_error):
+        if raise_error:
+            ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Error for function return type")))
+        return False
+
+    return True
+
+FunctionType.type_compare = type_compare_FunctionType
+
 def check_option_type(cause_fn, expected_precise_type, ctx, expr, expr_option_type, raise_error=True):
     # precondition 1: expected type is not an option type
     # precondition 2: expr_type is an option type
@@ -2284,66 +2387,67 @@ DictType.type_compare = type_compare_DictType
 ######################################
 
 BUILTINS_IMPORTS = {
-    'len' : function_type_parser("Iterable[α] -> int").content
-    ,'abs' : function_type_parser("float -> float").content
-    ,'print' : function_type_parser("Ω -> NoneType").content
-    ,'min' : function_type_parser("float * float -> float").content
-    ,'max' : function_type_parser("float * float -> float").content
+    'len' : FunctionType([IterableType(TypeVariable('α'))], IntType())
+    ,'abs' : FunctionType([FloatType()], FloatType())
+    ,'print' : FunctionType([Anything()], NoneTypeType())
+    ,'min' : FunctionType([FloatType(), FloatType()], FloatType())
+    ,'max' : FunctionType([FloatType(), FloatType()], FloatType())
     # ,'range' : function_type_parser("int * int -> Iterable[int]").content  # range is an expression now
-    , 'int' : function_type_parser("Ω -> int").content
-    , 'float' : function_type_parser("Ω -> float").content
-    , 'str' : function_type_parser("Ω -> str").content
-    , 'ord' : function_type_parser("str -> int").content
-    , 'chr' : function_type_parser("int -> str").content
-    , 'round' : function_type_parser("Number -> int").content
-    , '.append' : function_type_parser("list[α] * α -> NoneType").content
+    , 'int' : FunctionType([Anything()], IntType())
+    , 'float' : FunctionType([Anything()], FloatType())
+    , 'str' : FunctionType([Anything()], StrType())
+    , 'ord' : FunctionType([StrType()], IntType())
+    , 'chr' : FunctionType([IntType()], StrType())
+    , 'round' : FunctionType([NumberType()], IntType())
+    , '.append' : FunctionType([ListType(TypeVariable('α')),TypeVariable('α')], NoneTypeType())
     # images   ... TODO: the type system is not precise enough (for now)
-    , 'draw_line' : function_type_parser("float * float * float * float * Ω -> Image").content
-    , 'overlay' : function_type_parser("Image * Image * Ω -> Image").content
-    , 'underlay' : function_type_parser("Image * Image * Ω -> Image").content
-    , 'fill_triangle' : function_type_parser("float * float * float * float * float * float * Ω -> Image").content
-    , 'draw_triangle' : function_type_parser("float * float * float * float * float * float * Ω -> Image").content
-    , 'draw_ellipse' : function_type_parser("float * float * float * float * Ω -> Image").content
-    , 'fill_ellipse' : function_type_parser("float * float * float * float * Ω -> Image").content
-    , 'show_image' : function_type_parser("Image -> NoneType").content
+    , 'draw_line' :  FunctionType([FloatType(), FloatType(), FloatType(), FloatType(), Anything()], ImageType())
+    , 'overlay' : FunctionType([ImageType(), ImageType(), Anything()], ImageType())
+    , 'underlay' : FunctionType([ImageType(), ImageType(), Anything()], ImageType())
+    , 'fill_triangle' : FunctionType([FloatType(), FloatType(), FloatType(), FloatType(), FloatType(),FloatType(), Anything()], ImageType())
+    , 'draw_triangle' : FunctionType([FloatType(), FloatType(), FloatType(), FloatType(), FloatType(),FloatType(), Anything()], ImageType())
+    , 'draw_ellipse' : FunctionType([FloatType(), FloatType(), FloatType(), FloatType(), Anything()], ImageType())
+    , 'fill_ellipse' : FunctionType([FloatType(), FloatType(), FloatType(), FloatType(), Anything()], ImageType())
+    , 'show_image' : FunctionType([ImageType()], NoneTypeType())
     # fichiers
-    , 'open' : function_type_parser("str * str -> FILE").content
-    , '.readlines' : function_type_parser("FILE -> list[str]").content
-    , '.read' : function_type_parser("FILE -> str").content
-    , '.write' : function_type_parser("FILE * str -> NoneType").content
+    , 'open' : FunctionType([StrType(),StrType()], FileType())
+    , '.readlines' : FunctionType([FileType()], ListType(StrType()))
+    , '.read' : FunctionType([FileType()], StrType())
+    , '.write' : FunctionType([FileType(),StrType()], NoneTypeType())
     # ensembles
-    , 'set' : function_type_parser(" -> emptyset").content
-    , '.add' : function_type_parser("set[α] * α -> NoneType").content
-    , '.remove' : function_type_parser("set[α] * α -> NoneType").content
+    , 'set' : FunctionType([], SetType())
+    , '.add' : FunctionType([SetType(TypeVariable('α')),TypeVariable('α')], NoneTypeType())
+    , '.remove' : FunctionType([SetType(TypeVariable('α')),TypeVariable('α')], NoneTypeType())
     # dictionnaires
-    , 'dict' : function_type_parser(" -> emptydict").content
-    , '.items' : function_type_parser(" dict[α:β] -> Iterable[tuple[α,β]]").content
-    , '.keys' : function_type_parser(" dict[α:β] -> Set[α]]").content
+    , 'dict' : FunctionType([], DictType())
+    , '.items' : FunctionType([DictType(key_type = TypeVariable('α'),val_type = TypeVariable('β'))], IterableType(TupleType([TypeVariable('α'),TypeVariable('β')])))
+    , '.keys' : FunctionType([DictType(TypeVariable('α'),TypeVariable('β'))], SetType(TypeVariable('α')))
     # iterables
-    , 'zip' : function_type_parser(" Iterable[α] * Iterable[β] -> Iterable[tuple[α,β]]").content
+    , 'zip' :  FunctionType([IterableType(TypeVariable('α')),IterableType(TypeVariable('β'))], IterableType(TupleType([TypeVariable('α'),TypeVariable('β')])))
 }
 
 MATH_IMPORTS = {
-    'math.sqrt' : function_type_parser("float -> float").content
-    , 'math.floor' : function_type_parser("float -> int").content
-    , 'math.ceil' : function_type_parser("float -> int").content
-    , 'math.sin' : function_type_parser("float -> float").content
-    , 'math.cos' : function_type_parser("float -> float").content
-    , 'math.tan' : function_type_parser("float -> float").content
-    , 'math.cosh' : function_type_parser("float -> float").content
-    , 'math.sinh' : function_type_parser("float -> float").content
-    , 'math.tanh' : function_type_parser("float -> float").content
-    , 'math.acos' : function_type_parser("float -> float").content
-    , 'math.asin' : function_type_parser("float -> float").content
-    , 'math.atan' : function_type_parser("float -> float").content
-    , 'math.acosh' : function_type_parser("float -> float").content
-    , 'math.asinh' : function_type_parser("float -> float").content
-    , 'math.atanh' : function_type_parser("float -> float").content}
+    'math.sqrt' : FunctionType([FloatType()], FloatType())
+    , 'math.floor' : FunctionType([FloatType()], IntType())
+    , 'math.ceil' : FunctionType([FloatType()], IntType())
+    , 'math.sin' : FunctionType([FloatType()], FloatType())
+    , 'math.cos' : FunctionType([FloatType()], FloatType())
+    , 'math.tan' : FunctionType([FloatType()], FloatType())
+    , 'math.cosh' : FunctionType([FloatType()], FloatType())
+    , 'math.sinh' : FunctionType([FloatType()], FloatType())
+    , 'math.tanh' : FunctionType([FloatType()], FloatType())
+    , 'math.acos' : FunctionType([FloatType()], FloatType())
+    , 'math.asin' : FunctionType([FloatType()], FloatType())
+    , 'math.atan' : FunctionType([FloatType()], FloatType())
+    , 'math.acosh' : FunctionType([FloatType()], FloatType())
+    , 'math.asinh' : FunctionType([FloatType()], FloatType())
+    , 'math.atanh' : FunctionType([FloatType()], FloatType())
+    }
 
 
 RANDOM_IMPORTS = {
-    'random.random' : function_type_parser("-> float").content
-    , 'random.seed' : function_type_parser("int -> NoneType").content
+    'random.random' : FunctionType([], FloatType())
+    , 'random.seed' : FunctionType([IntType()], NoneTypeType())
 }
 
 REGISTERED_IMPORTS = {
@@ -2467,6 +2571,22 @@ class DuplicateMultiAssignError(TypeError):
 
     def is_fatal(self):
         return True
+
+class DuplicateMultiFunDeclarationError(TypeError):
+    def __init__(self, lineno, fun_name):
+        self.lineno = lineno
+        self.fun_name = fun_name
+
+    def fail_string(self):
+        return "DuplicateMultiFunDeclarationError[{}]@{}:{}".format(self.fun_name, self.lineno, 0)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Function definition problem"), self.lineno, 0
+                                    , details=tr("Function '{}' was defined multiple times").format(self.fun_name))
+
+    def is_fatal(self):
+        return True
+
 
 
 class AssertionInFunctionWarning(TypeError):
@@ -2604,6 +2724,56 @@ class WrongFunctionDefError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr('Wrong definition'), self.fun_def.ast.lineno, self.fun_def.ast.col_offset
                                     , tr("The function '{}' has no correct specification.").format(self.fun_def.ast.name))
+    
+class FunctionPreconditionWarning(TypeError):
+    def __init__(self, fun_def, precondition_type, lineno):
+        self.fun_def = fun_def
+        self.precondition_type = precondition_type
+        self.lineno = lineno
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "FunctionPreconditionWarning[{}]@{}:{}".format(str(self.fun_def.ast.name)
+                                                        , self.lineno
+                                                        , self.fun_def.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr('Wrong definition'), self.lineno, self.fun_def.ast.col_offset
+                                    , tr("The precondition in '{}' should be a 'bool', not a '{}'.").format(self.fun_def.ast.name, self.precondition_type))
+
+class UndefinedVarInPreconditionWarning(TypeError):
+    def __init__(self, fun_def, var, lineno):
+        self.fun_def = fun_def
+        self.var = var
+        self.lineno = lineno
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "UndefinedVarInPreconditionWarning[{} in {}]@{}:{}".format(self.var.name,str(self.fun_def.ast.name),self.lineno, self.fun_def.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Undefined variable"), self.lineno, self.fun_def.ast.col_offset
+                                    , details=tr("The variable '{}' in the precondition is undefined.").format(self.var.name))
+
+class ErrorInPreconditionWarning(TypeError):
+    def __init__(self, fun_def, lineno):
+        self.fun_def = fun_def
+        self.lineno = lineno
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "ErrorInPreconditionWarning[in {}]@{}:{}".format(str(self.fun_def.ast.name),self.lineno, self.fun_def.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Syntax error"), self.lineno, self.fun_def.ast.col_offset
+                                    , details=tr("There is an error in the function '{}' precondition.").format(self.fun_def.name))
+
 
 class NoFunctionDocWarning(TypeError):
     def __init__(self, fun_def):
@@ -2735,7 +2905,7 @@ class OptionCoercionWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr("Imprecise typing"), self.expr.ast.lineno, self.expr.ast.col_offset
-                                    , tr("Expecting precise type '{}' but found less precise type: {}").format(self.expected_precise_type, self.expr_option_type))
+                                    , tr("Expecting type '{}' but found less precise type '{}' (the value could be None)").format(self.expected_precise_type, self.expr_option_type))
 
 
 class UnsupportedNumericTypeError(TypeError):
@@ -2769,7 +2939,6 @@ class WrongReturnTypeError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Wrong return type"), self.ret_expr.ast.lineno, self.ret_expr.ast.col_offset
                                     , tr("The declared return type for function '{}' is '{}' but the return expression has incompatible type: {}").format(self.in_function.name, self.expected_type, self.ret_type))
-
 
 class UnknownFunctionError(TypeError):
     def __init__(self, in_function, call):
@@ -3140,6 +3309,23 @@ class UnknownTypeAliasError(TypeError):
         report.add_convention_error('error', tr("Type name error"), self.lineno, self.col_offset
                                     , tr("I don't find any definition for the type: {}").format(self.unknown_alias))
 
+
+class ReservedFunctionNameError(TypeError):
+    def __init__(self, fun_def, lineno, col_offset):
+        self.fun_def = fun_def
+        self.lineno = lineno
+        self.col_offset = col_offset
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "ReservedFunctionNameError[{}]@{}:{}".format(self.fun_def.name, self.lineno, self.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Wrong function name"), self.lineno, self.col_offset
+                                    , tr("The function name '{}' is reserved in student mode").format(self.fun_def.name))
+
 class MissingReturnTypeError(TypeError):
     def __init__(self, fun_def, lineno, col_offset):
         self.fun_def = fun_def
@@ -3373,6 +3559,24 @@ class SideEffectWarning(TypeError):
 
     def report(self, report):
         report.add_convention_error('warning', tr("Call to '{}' may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
+                                    , tr("There is a risk of side effect as on the following parameter(s) {}").format(self.protected_var))
+
+class SideEffectContainerWarning(TypeError):
+    def __init__(self, in_function, expr, fun_name, receiver, protected_var):
+        self.in_function = in_function
+        self.receiver = receiver
+        self.fun_name = fun_name
+        self.expr = expr
+        self.protected_var = protected_var
+
+    def is_fatal(self):
+        return False
+
+    def fail_string(self):
+        return "SideEffectContainerWarning[{}]@{}:{}".format(self.fun_name, self.expr.ast.lineno, self.expr.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('warning', tr("Assignment may cause side effect").format(self.fun_name), self.expr.ast.lineno, self.expr.ast.col_offset
                                     , tr("There is a risk of side effect as on the following parameter(s) {}").format(self.protected_var))
 
 class CallNotNoneWarning(TypeError):

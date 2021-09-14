@@ -1,12 +1,12 @@
-from MainView import MainView
+from gui.MainView import MainView
 from tkinter import Tk, sys
-from PyEditor import PyEditor
+from gui.PyEditor import PyEditor
 import Bindings
 
 
 
 
-from PyEditorFrame import PyEditorFrame
+from gui.PyEditorFrame import PyEditorFrame
 
 from translate import tr, set_translator_locale
 
