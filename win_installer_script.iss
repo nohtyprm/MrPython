@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "MrPython"
-#define MyAppVersion "4.0.3"
+#define MyAppVersion "5.0.0alpha"
 #define MyAppPublisher "Frederic Peschanski"
 #define MyAppURL "https://github.com/nohtyprm/MrPython"
 #define MyAppExeName "Application.exe"
@@ -24,7 +24,7 @@ LicenseFile=C:\Users\Fredokun\Projets\MrPython\LICENSE.python
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-OutputBaseFilename=mrpython_4_0_3_install_FR
+OutputBaseFilename=mrpython_5_0_0alpha_install_FR
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -68,7 +68,7 @@ Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\tcl86t.dll"; 
 Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\tk86t.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\unicodedata.pyd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\VCRUNTIME140.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\icons\*.gif"; DestDir: "{app}\icons"; Flags: ignoreversion
+Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\gui\icons\*.gif"; DestDir: "{app}\gui\icons"; Flags: ignoreversion
 Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\Include\*"; DestDir: "{app}\Include"; Flags: ignoreversion
 Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\tcl\*"; DestDir: "{app}\tcl"; Flags: ignoreversion recursesubdirs
 Source: "C:\Users\Fredokun\Projets\MrPython\mrpython\dist\MrPython\tk\*"; DestDir: "{app}\tk"; Flags: ignoreversion recursesubdirs

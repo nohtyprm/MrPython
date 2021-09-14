@@ -4,7 +4,7 @@ block_cipher = None
 
 
 DATA_FILES = [("./config-*.def", ".")
-              ,("./icons/*.gif", "icons")]
+              ,("./gui/icons/*.gif", "gui/icons")]
 
 a = Analysis(['Application.py'],
              pathex=['C:\\Users\\Fredokun\\Projets\\MrPython\\mrpython'],
