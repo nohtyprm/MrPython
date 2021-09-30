@@ -1491,7 +1491,6 @@ def type_infer_narynum(args, ctx):
 ENone.type_infer = type_infer_ENone
 
 def type_infer_ECall(call, ctx):
-
     # step 1 : fetch the signature of the called function
     if call.full_fun_name in ctx.global_env:
         method_call = False
@@ -1505,7 +1504,7 @@ def type_infer_ECall(call, ctx):
         arguments = []
         arguments.append(call.receiver)
         arguments.extend(call.arguments)
-    elif call.full_fun_name in ctx.function_def.parameters:
+    elif ctx.function_def and call.full_fun_name in ctx.function_def.parameters:
         # handling of HOF
         hof_call = True
         method_call = False
