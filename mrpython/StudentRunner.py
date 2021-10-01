@@ -309,7 +309,7 @@ preconditionsLineno = []
 
 class FunctionDefVisitor(ast.NodeTransformer):
     def visit_FunctionDef(self, node):
-        if len(preconditions[node.name]) == 0:
+        if node.name not in preconditions or len(preconditions[node.name]) == 0:
             return node
         else:
             ast_asserts = []

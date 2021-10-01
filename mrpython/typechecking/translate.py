@@ -23,7 +23,7 @@ TRANSLATOR_DICT = {
     : { 'fr' : "la signature de la fonction '{}' definit {} paramètre(s), mais il y en a {} effectivement : {}"}
     , 'Not-Python101' : { 'fr' : "Non-Python101"}
     , "this construction is not available in Python101 (try expert mode for standard Python)"
-    : { 'fr' : "cette construction n'est pas disponible en Python101 (vous pouvez essayer le mode expert pour faire du Python standard)" }
+    : { 'fr' : "cette construction n'est pas disponible en Python101 (Passez en mode expert si vous êtes expert Python)" }
     , "Declaration problem" : { 'fr' : 'Problème de déclaration'}
     , "Function definition problem" : { 'fr' : 'Problème de définition de fonction'}
     , "Missing variable declaration" : { 'fr' : "La déclaration de variable est manquante." }
