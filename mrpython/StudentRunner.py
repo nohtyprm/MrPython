@@ -309,7 +309,7 @@ preconditionsLineno = []
 
 class FunctionDefVisitor(ast.NodeTransformer):
     def visit_FunctionDef(self, node):
-        if len(preconditions[node.name]) == 0:
+        if node.name not in preconditions or len(preconditions[node.name]) == 0:
             return node
         else:
             ast_asserts = []
@@ -319,7 +319,10 @@ class FunctionDefVisitor(ast.NodeTransformer):
                 assert_node = ast.Assert(precondition_node)
                 assert_node.lineno = lineno
                 ast_asserts.append(assert_node)
-            node_res = ast.FunctionDef(node.name,node.args,ast_asserts+node.body,node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
+            if hasattr(node, "type_comment"):
+                node_res = ast.FunctionDef(node.name,node.args,ast_asserts+node.body,node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
+            else: # python 3.7
+                node_res = ast.FunctionDef(node.name,node.args,ast_asserts+node.body,node.decorator_list,node.returns,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno)
             return node_res
 
         
