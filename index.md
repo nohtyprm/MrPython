@@ -25,8 +25,8 @@ MrPython est un éditeur de code source Python minimaliste et à vocation princi
 ## Installation
 
 - Il existe des [consignes d'installation manuelle](https://nohtyprm.github.io/MrPython/install-FR) pour Linux, MacOS et Windows
-- un [installateur pour Windows 10 (MrPython v5.0.0alpha)](https://github.com/nohtyprm/MrPython/raw/win-installer/mrpython_5_0_0alpha_install_FR.exe) est disponible
-- les sources de MrPython v4.0.3 sont également diponibles au [format zip](https://github.com/nohtyprm/MrPython/archive/v4.0.3.zip) et au [format tar.gz](https://github.com/nohtyprm/MrPython/archive/v4.0.3.tar.gz)
+- un [installateur pour Windows 10 (MrPython v5.0.2beta)](https://github.com/nohtyprm/MrPython/raw/win-installer/mrpython_5_0_2beta_install_FR.exe) est disponible
+- les sources de MrPython v5.0.2beta sont également diponibles au [format zip](https://github.com/nohtyprm/MrPython/archive/v5.0.2beta.zip) et au [format tar.gz](https://github.com/nohtyprm/MrPython/archive/v5.0.2beta.tar.gz)
 - un installateur pour MacOS est en cours d'investigation, ainsi que pour différentes version de Linux, n'hésitez pas à [contribuer au projet](https://github.com/nohtyprm/MrPython) !
 
 ## Manuel d'utilisation
