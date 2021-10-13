@@ -17,8 +17,8 @@ Des procédures d'installation plus détaillées sont données ci-dessous.
 Sous **Windows 10** le plus simple pour installer MrPython est d'utiliser
 l'installateur dédié/
 
- - [Installateur pour MrPython v5.0.0](https://github.com/nohtyprm/MrPython/blob/win-installer/mrpython_5_0_0alpha_install_FR.exe)
- - (version précédente : [Installateur pour MrPython v4.0.3](https://github.com/nohtyprm/MrPython/blob/win-installer/mrpython_4_0_3_install_FR.exe))
+ - [Installateur pour MrPython v5.0.2beta](https://github.com/nohtyprm/MrPython/blob/win-installer/mrpython_5_0_2beta_install_FR.exe)
+ - (version stable précédente : [Installateur pour MrPython v4.0.3](https://github.com/nohtyprm/MrPython/blob/win-installer/mrpython_4_0_3_install_FR.exe))
  
 ## Installation sous Windows (installation manuelle)
  
