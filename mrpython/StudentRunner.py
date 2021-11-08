@@ -169,8 +169,24 @@ class StudentRunner:
             traceb = traceback.extract_tb(tb)
             if len(traceb) > 1:
                 filename, lineno, file_type, line = traceb[-1]
-            else:
+            if hasattr(a, '__name__'):
                 self.report.add_execution_error('error', a.__name__, lineno, details=str(err))
+            else:
+                self.report.add_execution_error('error', "Exception", lineno, details=str(err))
+            return (False, None)
+        except: # catch all the rest
+            a, b, tb = sys.exc_info() # Get the traceback object
+            # Extract the information for the traceback corresponding to the error
+            # inside the source code : [0] refers to the result = exec(code)
+            # traceback, [1] refers to the last error inside code
+            lineno=None
+            traceb = traceback.extract_tb(tb)
+            if len(traceb) > 1:
+                filename, lineno, file_type, line = traceb[-1]
+            if hasattr(a, '__name__'):
+                self.report.add_execution_error('error', a.__name__, lineno, details=str(a))
+            else:
+                self.report.add_execution_error('error', "Unknown Exception", lineno, details=str(a))
             return (False, None)
         finally:
             self.running = False
