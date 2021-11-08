@@ -2442,6 +2442,7 @@ MATH_IMPORTS = {
     , 'math.asinh' : FunctionType([FloatType()], FloatType())
     , 'math.atanh' : FunctionType([FloatType()], FloatType())
     , 'math.factorial' : FunctionType([IntType()], IntType())
+    , 'math.log' : FunctionType([FloatType()], FloatType())
     }
 
 
