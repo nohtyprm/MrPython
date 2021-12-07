@@ -196,7 +196,7 @@ class FunctionDef:
                     splitedLine = s.split(":")
                     if len(splitedLine) > 1:
                         precondition = splitedLine[1].strip()
-                        if precondition == "":
+                        if precondition == "" and (i+1 < len(splitedDocstring)):
                             precondition = splitedDocstring[i+1].strip()
                             j = 1
                         if precondition != "":
