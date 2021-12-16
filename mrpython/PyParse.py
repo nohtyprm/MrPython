@@ -1,6 +1,12 @@
 import re
 import sys
-from collections import Mapping
+
+# Python 3.10 fix and legacy support
+if sys.version_info[0] > 3:
+    from collections import Mapping
+else :
+    from collections.abc import Mapping
+
 from functools import partial
 
 # Reason last stmt is continued (or C_NONE if it's not).
