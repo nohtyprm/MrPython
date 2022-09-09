@@ -4,8 +4,6 @@ from gui.PyEditor import PyEditor
 import Bindings
 
 
-
-
 from gui.PyEditorFrame import PyEditorFrame
 
 from translate import tr, set_translator_locale

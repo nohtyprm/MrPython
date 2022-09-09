@@ -1,6 +1,12 @@
 import re
 import sys
-from collections import Mapping
+
+# thank you, breaking changes, LeGmask and issue #178
+if sys.version_info[0] <= 3 and sys.version_info[1] < 10:
+    from collections import Mapping
+else:
+    from collections.abc import Mapping
+
 from functools import partial
 
 # Reason last stmt is continued (or C_NONE if it's not).
