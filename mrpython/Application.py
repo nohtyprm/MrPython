@@ -244,6 +244,26 @@ class Application:
         self.console.runit(file_name)
 
 if __name__ == "__main__":
-    mp.set_start_method('spawn')
-    app = Application()
-    app.run()
+    # command-line arguments
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(description="The MrPython Environment", prog="mrpython")
+    parser.add_argument('file', type=str, metavar='<file>', nargs='?', default=None,
+                        help="(Optional) file to open")
+    parser.add_argument('-c', '--check', action='store_true',
+                        help="Check the specified <file> (no GUI)")
+    import version
+    parser.add_argument('-v', '--version', action='version', version=f"%(prog)s {version.version_string()}")
+
+    
+    config = parser.parse_args()
+    
+    if not config.check:
+        # launch app (GUI)
+        mp.set_start_method('spawn')
+        app = Application()
+        app.run()
+    else:
+        print("Check-only mode not yet operational")
+        sys.exit(0)
