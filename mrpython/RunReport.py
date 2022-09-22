@@ -97,3 +97,39 @@ Report:
            self.execution_errors,
            self.output)
 
+    def show_detailed(self):
+        
+        ret = ""
+        
+        if self.compilation_errors:
+            ret += tr("Compilation Errors:\n")
+            ret += "-------------------\n"
+            
+            for err in self.compilation_errors:
+                ret += str(err)
+                ret += "\n"
+
+        if self.convention_errors:
+            ret += tr("Conventions:\n")
+            ret += "------------------\n"
+            
+            for err in self.convention_errors:
+                ret += str(err)
+                ret += "\n"
+
+        if self.execution_errors:
+            ret += tr("Execution Errors:\n")
+            ret += "-----------------\n"
+
+            for err in self.execution_errors:
+                ret += str(err)
+                ret += "\n"
+
+        if self.output:
+            ret += tr("<<<Output>>>\n")
+            ret += self.output
+
+        return ret
+    
+            
+            

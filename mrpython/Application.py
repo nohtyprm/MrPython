@@ -271,11 +271,28 @@ if __name__ == "__main__":
     
     config = parser.parse_args()
     
+    mp.set_start_method('spawn')
+    
     if not config.check:
         # launch app (GUI)
-        mp.set_start_method('spawn')
         app = Application()
         app.run(filename=config.file)
     else:
-        print("Check-only mode not yet operational")
-        sys.exit(0)
+        from Checkfile import FileChecker
+        filename = config.file
+
+        if filename:
+            import sys
+            import os.path
+            if not os.path.exists(filename) or os.path.isdir(filename):
+                print("Error: cannot open '{}': file not existing.".format(filename), file=sys.stderr)
+                print("<Abort>")
+                sys.exit(1)
+        
+        print("Checking file: " + filename)
+
+        checker = FileChecker()
+        report = checker.run(filename)
+        
+        print("<<<Check Report>>>")
+        print(report.show_detailed())
