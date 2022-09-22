@@ -57,9 +57,14 @@ class Application:
         self.running_interpreter_proxy = None
         self.running_interpreter_callback = None
 
-    def run(self):
+    def run(self, filename=None):
         """ Run the application """
+        if filename:
+            self.open(event=None, filename=filename)
         self.main_view.show()
+
+            
+
 
 
     def apply_bindings(self, keydefs=None):
@@ -172,9 +177,9 @@ class Application:
         file_editor = PyEditorFrame(self.editor_list)
         self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
 
-    def open(self, event=None):
+    def open(self, event=None, filename=None):
         """ Open a file in the text editor """
-        file_editor = PyEditorFrame(self.editor_list, open=True)
+        file_editor = PyEditorFrame(self.editor_list, open=True, filename=filename)
         if (self.editor_list.focusOn(file_editor.long_title()) == False):
             if (file_editor.isOpen()):
                 self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
@@ -263,7 +268,7 @@ if __name__ == "__main__":
         # launch app (GUI)
         mp.set_start_method('spawn')
         app = Application()
-        app.run()
+        app.run(filename=config.file)
     else:
         print("Check-only mode not yet operational")
         sys.exit(0)
