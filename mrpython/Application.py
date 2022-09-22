@@ -60,6 +60,13 @@ class Application:
     def run(self, filename=None):
         """ Run the application """
         if filename:
+            import sys
+            import os.path
+            if not os.path.exists(filename) or os.path.isdir(filename):
+                print("Error: cannot open '{}': file not existing.".format(filename), file=sys.stderr)
+                print("<Abort>")
+                sys.exit(1)
+                
             self.open(event=None, filename=filename)
         self.main_view.show()
 
