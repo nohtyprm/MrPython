@@ -265,6 +265,8 @@ if __name__ == "__main__":
                         help="(Optional) file to open")
     parser.add_argument('-c', '--check', action='store_true',
                         help="Check the specified <file> (no GUI)")
+    parser.add_argument('-r', '--run', action='store_true',
+                        help="Chech and Run the specified <file> (no GUI)")
     import version
     parser.add_argument('-v', '--version', action='version', version=f"%(prog)s {version.version_string()}")
 
@@ -273,11 +275,11 @@ if __name__ == "__main__":
     
     mp.set_start_method('spawn')
     
-    if not config.check:
+    if config.run is False and config.check is False:
         # launch app (GUI)
         app = Application()
         app.run(filename=config.file)
-    else:
+    else: # check and/or run
         from Checkfile import FileChecker
         filename = config.file
 
@@ -292,7 +294,13 @@ if __name__ == "__main__":
         print("Checking file: " + filename)
 
         checker = FileChecker()
-        report = checker.run(filename)
+
+        if config.check:
+            print("TODO")
+            sys.exit(0)
         
-        print("<<<Check Report>>>")
-        print(report.show_detailed())
+        else: # config.run
+            report = checker.run(filename)
+        
+            print("<<<Check Report>>>")
+            print(report.show_detailed())

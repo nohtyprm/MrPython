@@ -52,7 +52,7 @@ TRANSLATOR_DICT = {
     , "Compilation Errors:\n" : {'fr' : "Erreurs de Compilation :\n"}
     , "Conventions:\n" : {'fr' : "Conventions :\n"}
     , "Execution Errors:\n" : {'fr' : "Erreurs d'exécution :\n"}
-    , "<<<Output>>>\n" : {'fr' : "<<<Sorties>>>"}
+    , "<<<Output>>>\n" : {'fr' : "<<<Sorties>>>\n"}
     
 }
 
