@@ -296,9 +296,11 @@ if __name__ == "__main__":
         checker = FileChecker()
 
         if config.check:
-            print("TODO")
-            sys.exit(0)
-        
+            print("<<<Typechecking>>>")
+            report = checker.check(filename)
+            print("<<<Check Report>>>")
+            print(report.show_detailed())
+
         else: # config.run
             report = checker.run(filename)
         
