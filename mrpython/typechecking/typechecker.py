@@ -513,7 +513,7 @@ def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False, only_wa
     for var in vars:
         var_name = var.var_name
         if var_name not in ctx.declared_env:
-            if strict:
+            if var_name != "_" and strict:
                 if not only_warning:
                     ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("Missing variable declaration for variable: {}").format(var_name)))
                     return None
