@@ -8,7 +8,7 @@ Pour pouvoir utiliser MrPython, il est nécessaire de disposer d'un ordinateur a
 
  - un **système d'exploitation récent**, au choix :  Windows, MacOS X ou Linux (et autres systèmes Unix)
 
- - l'environnement Python dans une version supérieure ou égale à la 3.6, cf. https://www.python.org/downloads/
+ - l'environnement Python dans une version supérieure ou égale à la 3.8, cf. https://www.python.org/downloads/
 
 Des procédures d'installation plus détaillées sont données ci-dessous.
 
