@@ -49,6 +49,10 @@ TRANSLATOR_DICT = {
     , "-----\nPython101 convention errors:\n-----\n" : { 'fr' : "-----\nErreurs de convention (Python101) :\n-----\n" }
     , "\n-----\nCompilation errors (Python interpreter):\n-----\n" : { 'fr' : "\n-----\nErreurs de compilation (Interprète Python) :\n-----\n" }
     , "\n-----\nExecution errors (Python interpreter):\n-----\n" : { 'fr' : "\n-----\nErreurs à l'exécution (Interprète Python) :\n-----\n" }
+    , "Compilation Errors:\n" : {'fr' : "Erreurs de Compilation :\n"}
+    , "Conventions:\n" : {'fr' : "Conventions :\n"}
+    , "Execution Errors:\n" : {'fr' : "Erreurs d'exécution :\n"}
+    , "<<<Output>>>\n" : {'fr' : "<<<Sorties>>>\n"}
     
 }
 

@@ -13,6 +13,8 @@ import sys
 
 import tempfile
 
+import time
+
 RUN_POLL_DELAY=250
 
 class InterpreterProxy:
@@ -55,7 +57,12 @@ class InterpreterProxy:
                 # print("[proxy] RECV: exec ok ? {}  report={}".format(ok, report))
                 callback(ok, report)
             else:
-                self.root.after(RUN_POLL_DELAY, timer_callback)
+                if self.root:
+                    self.root.after(RUN_POLL_DELAY, timer_callback)
+                else:
+                    time.sleep(RUN_POLL_DELAY / 1000.0)
+                    timer_callback()
+
             
         self.comm.send('exec')
         timer_callback()

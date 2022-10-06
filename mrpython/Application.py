@@ -57,9 +57,21 @@ class Application:
         self.running_interpreter_proxy = None
         self.running_interpreter_callback = None
 
-    def run(self):
+    def run(self, filename=None):
         """ Run the application """
+        if filename:
+            import sys
+            import os.path
+            if not os.path.exists(filename) or os.path.isdir(filename):
+                print("Error: cannot open '{}': file not existing.".format(filename), file=sys.stderr)
+                print("<Abort>")
+                sys.exit(1)
+                
+            self.open(event=None, filename=filename)
         self.main_view.show()
+
+            
+
 
 
     def apply_bindings(self, keydefs=None):
@@ -172,9 +184,9 @@ class Application:
         file_editor = PyEditorFrame(self.editor_list)
         self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
 
-    def open(self, event=None):
+    def open(self, event=None, filename=None):
         """ Open a file in the text editor """
-        file_editor = PyEditorFrame(self.editor_list, open=True)
+        file_editor = PyEditorFrame(self.editor_list, open=True, filename=filename)
         if (self.editor_list.focusOn(file_editor.long_title()) == False):
             if (file_editor.isOpen()):
                 self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
@@ -244,6 +256,53 @@ class Application:
         self.console.runit(file_name)
 
 if __name__ == "__main__":
+    # command-line arguments
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(description="The MrPython Environment", prog="mrpython")
+    parser.add_argument('file', type=str, metavar='<file>', nargs='?', default=None,
+                        help="(Optional) file to open")
+    parser.add_argument('-c', '--check', action='store_true',
+                        help="Check the specified <file> (no GUI)")
+    parser.add_argument('-r', '--run', action='store_true',
+                        help="Chech and Run the specified <file> (no GUI)")
+    import version
+    parser.add_argument('-v', '--version', action='version', version=f"%(prog)s {version.version_string()}")
+
+    
+    config = parser.parse_args()
+    
     mp.set_start_method('spawn')
-    app = Application()
-    app.run()
+    
+    if config.run is False and config.check is False:
+        # launch app (GUI)
+        app = Application()
+        app.run(filename=config.file)
+    else: # check and/or run
+        from Checkfile import FileChecker
+        filename = config.file
+
+        if filename:
+            import sys
+            import os.path
+            if not os.path.exists(filename) or os.path.isdir(filename):
+                print("Error: cannot open '{}': file not existing.".format(filename), file=sys.stderr)
+                print("<Abort>")
+                sys.exit(1)
+        
+        print("Checking file: " + filename)
+
+        checker = FileChecker()
+
+        if config.check:
+            print("<<<Typechecking>>>")
+            report = checker.check(filename)
+            print("<<<Check Report>>>")
+            print(report.show_detailed())
+
+        else: # config.run
+            report = checker.run(filename)
+        
+            print("<<<Check Report>>>")
+            print(report.show_detailed())
