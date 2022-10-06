@@ -499,7 +499,7 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
 
     return declared_types
 
-def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
+def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False, only_warning=False):
     lineno = assign_target.ast.lineno
 
     vars = []
@@ -514,8 +514,12 @@ def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
         var_name = var.var_name
         if var_name not in ctx.declared_env:
             if strict:
-                ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("Missing variable declaration for variable: {}").format(var_name)))
-                return None
+                if not only_warning:
+                    ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("Missing variable declaration for variable: {}").format(var_name)))
+                    return None
+                else: # only warning
+                    ctx.add_type_error(DeclarationWarning(ctx.function_def, assign_target, 'var-name', lineno, tr("Missing variable declaration for variable: {}").format(var_name)))
+                continue
             else:
                 continue
 
@@ -801,7 +805,9 @@ def type_check_For(for_node, ctx):
             return False
 
 
-    declared_types = fetch_assign_declared_mypy_types(ctx, for_node.target, True if for_node.target.arity() == 1 else False)
+    strict = True if for_node.target.arity() == 1 else False
+    only_warning = True if for_node.target.arity() == 1 else False
+    declared_types = fetch_assign_declared_mypy_types(ctx, for_node.target, strict, only_warning)
     if declared_types is None:
         if for_node.target.arity() == 1:
             return False
@@ -2821,6 +2827,27 @@ class DeclarationError(TypeError):
     def report(self, report):
         col_offset = self.node.ast.col_offset
         report.add_convention_error('error', tr('Declaration problem'), self.lineno, col_offset, self.explain)
+
+
+class DeclarationWarning(TypeError):
+    def __init__(self, in_function, node, category, lineno, explain):
+        self.in_function = in_function
+        self.node = node
+        self.category = category
+        self.lineno = lineno
+        self.explain = explain
+
+    def fail_string(self):
+        return "DeclarationWarning[{}]@{}:{}".format(self.category
+                                                     , self.lineno
+                                                     , self.node.ast.col_offset)
+
+    def is_fatal(self):
+        return False
+
+    def report(self, report):
+        col_offset = self.node.ast.col_offset
+        report.add_convention_error('warning', tr('Declaration problem'), self.lineno, col_offset, self.explain)
 
 class UnknownVariableError(TypeError):
     def __init__(self, in_function, var):
