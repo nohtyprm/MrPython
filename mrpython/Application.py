@@ -1,5 +1,5 @@
 from gui.MainView import MainView
-from tkinter import Tk, sys
+from tkinter import Tk, sys, messagebox
 from gui.PyEditor import PyEditor
 import Bindings
 
@@ -56,6 +56,8 @@ class Application:
 
         self.running_interpreter_proxy = None
         self.running_interpreter_callback = None
+
+        self.expert_mode_warning_shown = False
 
     def run(self, filename=None):
         """ Run the application """
@@ -172,7 +174,15 @@ class Application:
     def change_mode(self, event=None):
         """ Swap the python mode : full python or student """
         if self.mode == "student":
-            self.mode = "full"
+            if not self.expert_mode_warning_shown:
+                confirm = messagebox.askquestion(tr('Switch to export mode?'), tr("Are you sure to switch to 'expert' mode ?\n All code verifications will be turned off!"))
+                if confirm == 'yes':
+                    self.mode = "full"
+                    self.expert_mode_warning_shown = True
+                else:
+                    return
+            else:
+                self.mode = "full"
         else:
             self.mode = "student"
         self.icon_widget.switch_icon_mode(self.mode)

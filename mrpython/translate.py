@@ -53,6 +53,10 @@ TRANSLATOR_DICT = {
     , "Conventions:\n" : {'fr' : "Conventions :\n"}
     , "Execution Errors:\n" : {'fr' : "Erreurs d'exécution :\n"}
     , "<<<Output>>>\n" : {'fr' : "<<<Sorties>>>\n"}
+    , 'Switch to export mode?' : {'fr' : "Passer en mode expert ?"}
+    , "Are you sure to switch to 'expert' mode ?\n All code verifications will be turned off!"
+    : {'fr' : "Êtes-vous sûr de passer en mode 'expert' ?\nToutes les vérifications seront désactivées !"}
+
     
 }
 
