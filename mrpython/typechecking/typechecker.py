@@ -636,11 +636,11 @@ def check_linearized_tuple_type(working_var, working_type, declared_types, ctx, 
                 return True
 
             # not declared
-            if strict:
-                return False
-            else:
-                ctx.local_env[working_var.var_name] = (working_type, ctx.fetch_scope_mode())
-                return True
+            #if strict:
+            #    return False
+            #else:
+            ctx.local_env[working_var.var_name] = (working_type, ctx.fetch_scope_mode())
+            return True
         else:
             raise NotSupportedError("Not assignating a variable, please report")
             return False
@@ -689,7 +689,7 @@ def type_check_DeclareVar(declareVar, ctx, global_scope = False):
                                                                   , "col_offset" : declareVar.ast.col_offset})
             return True
         else:
-            return False
+            return True #False
     else:
         ctx.declared_env[working_var.var_name] = (working_type, { "lineno" : declareVar.ast.lineno
                                                                   , "col_offset" : declareVar.ast.col_offset})
@@ -2689,7 +2689,7 @@ class UnsupportedNodeError(TypeError):
         self.node = node
 
     def is_fatal(self):
-        return False
+        return True
 
     def fail_string(self):
         return "UnsupportedNodeError[{}]@{}:{}".format(str(self.node.ast.__class__.__name__)
