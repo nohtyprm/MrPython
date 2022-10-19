@@ -788,6 +788,10 @@ Assign.type_check = type_check_Assign
 
 def type_check_For(for_node, ctx):
 
+    if for_node.has_forbidden_orelse:
+        ctx.add_type_error(UnsupportedElseError(for_node))
+        return False
+
     # first let's see if the iter variables are dead or in the local environment
     for var in for_node.target.variables():
         if var.var_name in ctx.dead_variables:
@@ -936,6 +940,11 @@ def type_check_If(ifnode, ctx):
 If.type_check = type_check_If
 
 def type_check_While(wnode, ctx):
+    # avoid else clause
+    if wnode.has_forbidden_orelse:
+        ctx.add_type_error(UnsupportedElseError(wnode))
+        return False
+
     # push the parent for the scoping rule
     ctx.push_parent(wnode)
 
@@ -2699,6 +2708,22 @@ class UnsupportedNodeError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr('Not-Python101'), self.node.ast.lineno, self.node.ast.col_offset
                                     , tr("this construction is not available in Python101 (try expert mode for standard Python)"))
+
+class UnsupportedElseError(TypeError):
+    def __init__(self, node):
+        self.node = node
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "UnsupportedElseError[{}]@{}:{}".format(str(self.node.ast.__class__.__name__)
+                                                       , self.node.ast.lineno
+                                                       , self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr('Not-Python101'), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("Loops with `else` clause not supported"))
 
 class UnsupportedTopLevelNodeError(TypeError):
     def __init__(self, node):
