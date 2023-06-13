@@ -2221,6 +2221,7 @@ def type_compare_SetType(expected_type, ctx, expr, expr_type, raise_error=True):
 SetType.type_compare = type_compare_SetType
 
 def type_compare_IterableType(expected_type, ctx, expr, expr_type, raise_error=True):
+    
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_IterableType, expected_type, ctx, expr, expr_type, raise_error)
 
@@ -2300,12 +2301,13 @@ def type_compare_TypeVariable(expected_type, ctx, expr, expr_type, raise_error=T
             ctx.call_type_env[-1][expected_type.var_name] = expr_type
             return True
     else: # not a call variable
-        if expected_type == expr_type:
-            return True
-        else:
-            if raise_error:
-                ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Type mismatch for parameter #{} in call, expecting {} found: {}").format(expected_type.var_name[1:], expected_type, expr_type)))
-        return False
+        # XXX: is it always safe to accept the comparison ?
+        # or an error should be returned
+        return True
+        
+        # if raise_error:
+        #     ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Type mismatch for parameter #{} in call, expecting {} found: {}").format(expected_type.var_name[1:], expected_type, expr_type)))
+        # return False
 
 TypeVariable.type_compare = type_compare_TypeVariable
 
