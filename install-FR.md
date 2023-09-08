@@ -14,11 +14,11 @@ Des procédures d'installation plus détaillées sont données ci-dessous.
 
 ## Installation sous Windows (installateur)
 
-Sous **Windows 10** le plus simple pour installer MrPython est d'utiliser
+Sous **Windows 10/11** le plus simple pour installer MrPython est d'utiliser
 l'installateur dédié/
 
- - [Installateur pour MrPython v5.0.2beta](https://github.com/nohtyprm/MrPython/blob/win-installer/mrpython_5_0_2beta_install_FR.exe)
- - (version stable précédente : [Installateur pour MrPython v4.0.3](https://github.com/nohtyprm/MrPython/blob/win-installer/mrpython_4_0_3_install_FR.exe))
+ - [Installateur pour MrPython v5.1.3beta](https://github.com/nohtyprm/MrPython/blob/win-installer/mrpython_5_1_3beta_install_FR.exe)
+ - (version précédente : [Installateur pour MrPython v5.0.2beta](https://github.com/nohtyprm/MrPython/blob/win-installer/mrpython_5_0_2beta_install_FR.exe))
  
 ## Installation sous Windows (installation manuelle)
  
@@ -63,7 +63,7 @@ Il n'y a pas encore d'installateur disponible pour MacOs, mais l'installation ma
 ### Etape 1 : installation de Python (si ce n'est déjà fait)
 
 La page [python.org](https://www.python.org/) propose un [installateur Python 3.8.6 pour MacOS](https://www.python.org/ftp/python/3.8.6/python-3.8.6-macosx10.9.pkg).
-Vous pouvez alternativement installer Python (version 3.6 ou ultérieure) via [Momebrew](https://docs.brew.sh/Homebrew-and-Python) ou les [Macports](https://www.macports.org/), mais vous devez déjà connaître ces environnements.
+Vous pouvez alternativement installer Python (version 3.8 ou ultérieure) via [Momebrew](https://docs.brew.sh/Homebrew-and-Python) ou les [Macports](https://www.macports.org/), mais vous devez déjà connaître ces environnements.
 
 ### Etape 2 : récupération des sources de MrPython
 
