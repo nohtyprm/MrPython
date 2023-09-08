@@ -266,22 +266,8 @@ class Application:
         self.console.runit(file_name)
 
 if __name__ == "__main__":
-    # command-line arguments
-    import argparse
-    import sys
-
-    parser = argparse.ArgumentParser(description="The MrPython Environment", prog="mrpython")
-    parser.add_argument('file', type=str, metavar='<file>', nargs='?', default=None,
-                        help="(Optional) file to open")
-    parser.add_argument('-c', '--check', action='store_true',
-                        help="Check the specified <file> (no GUI)")
-    parser.add_argument('-r', '--run', action='store_true',
-                        help="Chech and Run the specified <file> (no GUI)")
-    import version
-    parser.add_argument('-v', '--version', action='version', version=f"%(prog)s {version.version_string()}")
-
-    
-    config = parser.parse_args()
+    # windows only
+    mp.freeze_support()
     
     mp.set_start_method('spawn')
     
