@@ -271,34 +271,5 @@ if __name__ == "__main__":
     
     mp.set_start_method('spawn')
     
-    if config.run is False and config.check is False:
-        # launch app (GUI)
-        app = Application()
-        app.run(filename=config.file)
-    else: # check and/or run
-        from Checkfile import FileChecker
-        filename = config.file
-
-        if filename:
-            import sys
-            import os.path
-            if not os.path.exists(filename) or os.path.isdir(filename):
-                print("Error: cannot open '{}': file not existing.".format(filename), file=sys.stderr)
-                print("<Abort>")
-                sys.exit(1)
-        
-        print("Checking file: " + filename)
-
-        checker = FileChecker()
-
-        if config.check:
-            print("<<<Typechecking>>>")
-            report = checker.check(filename)
-            print("<<<Check Report>>>")
-            print(report.show_detailed())
-
-        else: # config.run
-            report = checker.run(filename)
-        
-            print("<<<Check Report>>>")
-            print(report.show_detailed())
+    app = Application()
+    app.run()
