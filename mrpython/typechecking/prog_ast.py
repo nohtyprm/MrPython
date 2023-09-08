@@ -195,7 +195,7 @@ class FunctionDef:
                     splitedLine = s.split(":")
                     if len(splitedLine) > 1:
                         precondition = splitedLine[1].strip()
-                        if precondition == "":
+                        if precondition == "" and (i+1 < len(splitedDocstring)):
                             precondition = splitedDocstring[i+1].strip()
                             j = 1
                         if precondition != "":
@@ -360,6 +360,13 @@ def parse_assign(node):
 
 class For:
     def __init__(self, node):
+        # avoid else clause
+        if hasattr(node, 'orelse') and len(node.orelse) > 0:
+            self.has_forbidden_orelse = True
+            self.ast = node
+            return # does not construct the rest
+
+        self.has_forbidden_orelse = False
         self.ast = node
 
         self.target = build_lhs_destruct(self.ast.target)
@@ -397,6 +404,13 @@ class If:
 
 class While:
     def __init__(self, node):
+        # avoid else clause
+        if hasattr(node, 'orelse') and len(node.orelse) > 0:
+            self.has_forbidden_orelse = True
+            self.ast = node
+            return # does not construct the rest
+
+        self.has_forbidden_orelse = False
         self.ast = node
         self.cond = parse_expression(self.ast.test)
         self.body = []
@@ -631,6 +645,7 @@ def EBinOp(node):
         wrap_node = BINOP_CLASSES[binop_type_name](node, left, right)
         return wrap_node
     else:
+
         #print(astpp.dump(node))
         return UnsupportedNode(node)
 

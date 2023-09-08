@@ -155,7 +155,7 @@ TRANSLATOR_DICT = {
     , "Missing key,value types in dictionnary type" : { 'fr' : "Type dictionnaire incorrect : il manque le type des clés et des valeurs."}
     , "Wrong function name" : { 'fr' : "Nom de fonction incorrect"}
     , "The function name '{}' is reserved in student mode" : { 'fr' : "Le nom de fonction '{}' n'est pas autorisé en mode étudiant."}
-
+    , "Loops with `else` clause not supported" : { 'fr' : "Les boucles avec une clause `else` ne sont pas disponibles en mode étudiant" }
 }
 
 def tr(msg):

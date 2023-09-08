@@ -499,7 +499,7 @@ def fetch_assign_mypy_types(ctx, assign_target,annotation, strict=False):
 
     return declared_types
 
-def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
+def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False, only_warning=False):
     lineno = assign_target.ast.lineno
 
     vars = []
@@ -513,9 +513,13 @@ def fetch_assign_declared_mypy_types(ctx, assign_target, strict = False):
     for var in vars:
         var_name = var.var_name
         if var_name not in ctx.declared_env:
-            if strict:
-                ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("Missing variable declaration for variable: {}").format(var_name)))
-                return None
+            if var_name != "_" and strict:
+                if not only_warning:
+                    ctx.add_type_error(DeclarationError(ctx.function_def, assign_target, 'var-name', lineno, tr("Missing variable declaration for variable: {}").format(var_name)))
+                    return None
+                else: # only warning
+                    ctx.add_type_error(DeclarationWarning(ctx.function_def, assign_target, 'var-name', lineno, tr("Missing variable declaration for variable: {}").format(var_name)))
+                continue
             else:
                 continue
 
@@ -632,11 +636,11 @@ def check_linearized_tuple_type(working_var, working_type, declared_types, ctx, 
                 return True
 
             # not declared
-            if strict:
-                return False
-            else:
-                ctx.local_env[working_var.var_name] = (working_type, ctx.fetch_scope_mode())
-                return True
+            #if strict:
+            #    return False
+            #else:
+            ctx.local_env[working_var.var_name] = (working_type, ctx.fetch_scope_mode())
+            return True
         else:
             raise NotSupportedError("Not assignating a variable, please report")
             return False
@@ -685,7 +689,7 @@ def type_check_DeclareVar(declareVar, ctx, global_scope = False):
                                                                   , "col_offset" : declareVar.ast.col_offset})
             return True
         else:
-            return False
+            return True #False
     else:
         ctx.declared_env[working_var.var_name] = (working_type, { "lineno" : declareVar.ast.lineno
                                                                   , "col_offset" : declareVar.ast.col_offset})
@@ -784,6 +788,10 @@ Assign.type_check = type_check_Assign
 
 def type_check_For(for_node, ctx):
 
+    if for_node.has_forbidden_orelse:
+        ctx.add_type_error(UnsupportedElseError(for_node))
+        return False
+
     # first let's see if the iter variables are dead or in the local environment
     for var in for_node.target.variables():
         if var.var_name in ctx.dead_variables:
@@ -801,7 +809,9 @@ def type_check_For(for_node, ctx):
             return False
 
 
-    declared_types = fetch_assign_declared_mypy_types(ctx, for_node.target, True if for_node.target.arity() == 1 else False)
+    strict = True if for_node.target.arity() == 1 else False
+    only_warning = True if for_node.target.arity() == 1 else False
+    declared_types = fetch_assign_declared_mypy_types(ctx, for_node.target, strict, only_warning)
     if declared_types is None:
         if for_node.target.arity() == 1:
             return False
@@ -930,6 +940,11 @@ def type_check_If(ifnode, ctx):
 If.type_check = type_check_If
 
 def type_check_While(wnode, ctx):
+    # avoid else clause
+    if wnode.has_forbidden_orelse:
+        ctx.add_type_error(UnsupportedElseError(wnode))
+        return False
+
     # push the parent for the scoping rule
     ctx.push_parent(wnode)
 
@@ -2206,6 +2221,7 @@ def type_compare_SetType(expected_type, ctx, expr, expr_type, raise_error=True):
 SetType.type_compare = type_compare_SetType
 
 def type_compare_IterableType(expected_type, ctx, expr, expr_type, raise_error=True):
+    
     if isinstance(expr_type, OptionType):
         return check_option_type(type_compare_IterableType, expected_type, ctx, expr, expr_type, raise_error)
 
@@ -2285,12 +2301,13 @@ def type_compare_TypeVariable(expected_type, ctx, expr, expr_type, raise_error=T
             ctx.call_type_env[-1][expected_type.var_name] = expr_type
             return True
     else: # not a call variable
-        if expected_type == expr_type:
-            return True
-        else:
-            if raise_error:
-                ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Type mismatch for parameter #{} in call, expecting {} found: {}").format(expected_type.var_name[1:], expected_type, expr_type)))
-        return False
+        # XXX: is it always safe to accept the comparison ?
+        # or an error should be returned
+        return True
+        
+        # if raise_error:
+        #     ctx.add_type_error(TypeComparisonError(ctx.function_def, expected_type, expr, expr_type, tr("Type mismatch for parameter #{} in call, expecting {} found: {}").format(expected_type.var_name[1:], expected_type, expr_type)))
+        # return False
 
 TypeVariable.type_compare = type_compare_TypeVariable
 
@@ -2442,6 +2459,7 @@ MATH_IMPORTS = {
     , 'math.asinh' : FunctionType([FloatType()], FloatType())
     , 'math.atanh' : FunctionType([FloatType()], FloatType())
     , 'math.factorial' : FunctionType([IntType()], IntType())
+    , 'math.log' : FunctionType([FloatType()], FloatType())
     }
 
 
@@ -2682,7 +2700,7 @@ class UnsupportedNodeError(TypeError):
         self.node = node
 
     def is_fatal(self):
-        return False
+        return True
 
     def fail_string(self):
         return "UnsupportedNodeError[{}]@{}:{}".format(str(self.node.ast.__class__.__name__)
@@ -2692,6 +2710,22 @@ class UnsupportedNodeError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr('Not-Python101'), self.node.ast.lineno, self.node.ast.col_offset
                                     , tr("this construction is not available in Python101 (try expert mode for standard Python)"))
+
+class UnsupportedElseError(TypeError):
+    def __init__(self, node):
+        self.node = node
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "UnsupportedElseError[{}]@{}:{}".format(str(self.node.ast.__class__.__name__)
+                                                       , self.node.ast.lineno
+                                                       , self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr('Not-Python101'), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("Loops with `else` clause not supported"))
 
 class UnsupportedTopLevelNodeError(TypeError):
     def __init__(self, node):
@@ -2820,6 +2854,27 @@ class DeclarationError(TypeError):
     def report(self, report):
         col_offset = self.node.ast.col_offset
         report.add_convention_error('error', tr('Declaration problem'), self.lineno, col_offset, self.explain)
+
+
+class DeclarationWarning(TypeError):
+    def __init__(self, in_function, node, category, lineno, explain):
+        self.in_function = in_function
+        self.node = node
+        self.category = category
+        self.lineno = lineno
+        self.explain = explain
+
+    def fail_string(self):
+        return "DeclarationWarning[{}]@{}:{}".format(self.category
+                                                     , self.lineno
+                                                     , self.node.ast.col_offset)
+
+    def is_fatal(self):
+        return False
+
+    def report(self, report):
+        col_offset = self.node.ast.col_offset
+        report.add_convention_error('warning', tr('Declaration problem'), self.lineno, col_offset, self.explain)
 
 class UnknownVariableError(TypeError):
     def __init__(self, in_function, var):

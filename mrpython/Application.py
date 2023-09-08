@@ -1,9 +1,7 @@
 from gui.MainView import MainView
-from tkinter import Tk, sys
+from tkinter import Tk, sys, messagebox
 from gui.PyEditor import PyEditor
 import Bindings
-
-
 
 
 from gui.PyEditorFrame import PyEditorFrame
@@ -59,9 +57,23 @@ class Application:
         self.running_interpreter_proxy = None
         self.running_interpreter_callback = None
 
-    def run(self):
+        self.expert_mode_warning_shown = False
+
+    def run(self, filename=None):
         """ Run the application """
+        if filename:
+            import sys
+            import os.path
+            if not os.path.exists(filename) or os.path.isdir(filename):
+                print("Error: cannot open '{}': file not existing.".format(filename), file=sys.stderr)
+                print("<Abort>")
+                sys.exit(1)
+                
+            self.open(event=None, filename=filename)
         self.main_view.show()
+
+            
+
 
 
     def apply_bindings(self, keydefs=None):
@@ -162,7 +174,15 @@ class Application:
     def change_mode(self, event=None):
         """ Swap the python mode : full python or student """
         if self.mode == "student":
-            self.mode = "full"
+            if not self.expert_mode_warning_shown:
+                confirm = messagebox.askquestion(tr('Switch to export mode?'), tr("Are you sure to switch to 'expert' mode ?\n All code verifications will be turned off!"))
+                if confirm == 'yes':
+                    self.mode = "full"
+                    self.expert_mode_warning_shown = True
+                else:
+                    return
+            else:
+                self.mode = "full"
         else:
             self.mode = "student"
         self.icon_widget.switch_icon_mode(self.mode)
@@ -174,9 +194,9 @@ class Application:
         file_editor = PyEditorFrame(self.editor_list)
         self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
 
-    def open(self, event=None):
+    def open(self, event=None, filename=None):
         """ Open a file in the text editor """
-        file_editor = PyEditorFrame(self.editor_list, open=True)
+        file_editor = PyEditorFrame(self.editor_list, open=True, filename=filename)
         if (self.editor_list.focusOn(file_editor.long_title()) == False):
             if (file_editor.isOpen()):
                 self.editor_list.add(file_editor, self.main_view.editor_widget, text=file_editor.get_file_name())
@@ -248,6 +268,37 @@ class Application:
 if __name__ == "__main__":
     # windows only
     mp.freeze_support()
+    
     mp.set_start_method('spawn')
-    app = Application()
-    app.run()
+    
+    if config.run is False and config.check is False:
+        # launch app (GUI)
+        app = Application()
+        app.run(filename=config.file)
+    else: # check and/or run
+        from Checkfile import FileChecker
+        filename = config.file
+
+        if filename:
+            import sys
+            import os.path
+            if not os.path.exists(filename) or os.path.isdir(filename):
+                print("Error: cannot open '{}': file not existing.".format(filename), file=sys.stderr)
+                print("<Abort>")
+                sys.exit(1)
+        
+        print("Checking file: " + filename)
+
+        checker = FileChecker()
+
+        if config.check:
+            print("<<<Typechecking>>>")
+            report = checker.check(filename)
+            print("<<<Check Report>>>")
+            print(report.show_detailed())
+
+        else: # config.run
+            report = checker.run(filename)
+        
+            print("<<<Check Report>>>")
+            print(report.show_detailed())

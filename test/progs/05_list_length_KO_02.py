@@ -1,4 +1,4 @@
-##!FAIL: DeclarationError[var-name]@10:8
+##!FAIL: DeclarationWarning[var-name]@10:8
 
 def longueur(l : Iterable[T]) -> int:
     """Retourne la longueur de L"""
@@ -18,7 +18,7 @@ assert longueur([1, 2, 3, 4]) == 4
 assert longueur([]) == 0
 
 
-def list_length(ll : Iterable[Iterable[T]]) -> int:
+def list_length(ll : Iterable[Iterable[T]]) -> List[int]:
     """Retourne la liste des longueurs de listes de L"""
 
     lr : List[int]
