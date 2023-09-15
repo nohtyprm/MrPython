@@ -53,11 +53,13 @@ TRANSLATOR_DICT = {
     , "Conventions:\n" : {'fr' : "Conventions :\n"}
     , "Execution Errors:\n" : {'fr' : "Erreurs d'exécution :\n"}
     , "<<<Output>>>\n" : {'fr' : "<<<Sorties>>>\n"}
-    , 'Switch to export mode?' : {'fr' : "Passer en mode expert ?"}
+    , 'Switch to expert mode?' : {'fr' : "Passer en mode expert ?"}
     , "Are you sure to switch to 'expert' mode ?\n All code verifications will be turned off!"
     : {'fr' : "Êtes-vous sûr de passer en mode 'expert' ?\nToutes les vérifications seront désactivées !"}
 
-    
+    , 'Python 3.11+ warning' : { 'fr' : "Avertissement Python 3.11+"}
+    , "MrPython is not yet fully supported by Python 3.11+\n A version between Python 3.8.x and Python 3.10.y is recommended\n Are you sure to run in degraded mode?\n Some condition checking will be turned off!" : { 'fr' : "MrPython n'est pas encore 100% compatible avec Python 3.11+\n Les version 3.8.x à 3.10.y sont recommandées\nCertaines vérifications de code seront désactivées !\nÊtes-vous surs de vouloir lancer le mode dégradé ?" }
+    , "==> use a python 3.8 >= 3.11 interpreter instead" : { 'fr' : "==> utilisez une version de python entre 3.8 et 3.11" }
 }
 
 def tr(msg):

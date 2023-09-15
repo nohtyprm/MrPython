@@ -27,7 +27,7 @@ class Application:
 
         language = None
         try: # Work around a possible Python3.7 bug on MacOS
-            loc = locale.getdefaultlocale()
+            loc = locale.getlocale()
             if loc:
                 for el in loc:
                     if str(el).upper().startswith("FR"):
@@ -60,6 +60,18 @@ class Application:
         self.expert_mode_warning_shown = False
 
     def run(self, filename=None):
+
+        import sys
+        if sys.version_info.major == 3 and sys.version_info.minor >= 11:
+            # XXX: temporary message for incomplete support of python >= 3.11
+            
+            confirm = messagebox.askquestion(tr('Python 3.11+ warning'), tr("MrPython is not yet fully supported by Python 3.11+\n A version between Python 3.8.x and Python 3.10.y is recommended\n Are you sure to run in degraded mode?\n Some condition checking will be turned off!"))
+
+            if confirm != "yes":
+                print(tr("==> use a python 3.8 >= 3.11 interpreter instead"))
+                print(tr("bye bye !"))
+                sys.exit(1)
+        
         """ Run the application """
         if filename:
             import sys
@@ -175,7 +187,7 @@ class Application:
         """ Swap the python mode : full python or student """
         if self.mode == "student":
             if not self.expert_mode_warning_shown:
-                confirm = messagebox.askquestion(tr('Switch to export mode?'), tr("Are you sure to switch to 'expert' mode ?\n All code verifications will be turned off!"))
+                confirm = messagebox.askquestion(tr('Switch to expert mode?'), tr("Are you sure to switch to 'expert' mode ?\n All code verifications will be turned off!"))
                 if confirm == 'yes':
                     self.mode = "full"
                     self.expert_mode_warning_shown = True
