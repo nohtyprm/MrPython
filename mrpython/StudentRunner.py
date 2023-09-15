@@ -303,8 +303,13 @@ class StudentRunner:
         return not fatal_error
 
     def add_FunctionPreconditions(self):
-        self.AST = FunctionDefVisitor().visit(self.AST)
-        ast.fix_missing_locations(self.AST)
+        # TODO : because of changes in python 3.11+ dynamic compilation
+        #        we cannot add precondition checking code in this
+        #        way (hiding line numbers)
+        # a new scheme will be introduced
+        if sys.version_info.minor < 11: 
+            self.AST = FunctionDefVisitor().visit(self.AST)
+            self.AST = ast.fix_missing_locations(self.AST)
 
 class FunCallsVisitor(ast.NodeVisitor):
     def __init__(self):
