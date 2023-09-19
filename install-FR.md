@@ -12,6 +12,8 @@ Pour pouvoir utiliser MrPython, il est nécessaire de disposer d'un ordinateur a
 
 Des procédures d'installation plus détaillées sont données ci-dessous.
 
+> **ATTENTION** :  MrPython n'est pas compatible avec Python 3.7 et précédentes. De plus, Il n'est pour l'instant pas 100% compatible avec Python 3.11+.  Privilégiez une installation entre Python 3.8 et Python 3.10. 
+
 ## Installation sous Windows (installateur)
 
 Sous **Windows 10/11** le plus simple pour installer MrPython est d'utiliser
@@ -63,7 +65,7 @@ Il n'y a pas encore d'installateur disponible pour MacOs, mais l'installation ma
 ### Etape 1 : installation de Python (si ce n'est déjà fait)
 
 La page [python.org](https://www.python.org/) propose un [installateur Python 3.8.6 pour MacOS](https://www.python.org/ftp/python/3.8.6/python-3.8.6-macosx10.9.pkg).
-Vous pouvez alternativement installer Python (version 3.8 ou ultérieure) via [Momebrew](https://docs.brew.sh/Homebrew-and-Python) ou les [Macports](https://www.macports.org/), mais vous devez déjà connaître ces environnements.
+Vous pouvez alternativement installer Python (version 3.8 ou ultérieure) via [Homebrew](https://docs.brew.sh/Homebrew-and-Python) ou les [Macports](https://www.macports.org/), mais vous devez déjà connaître ces environnements.
 
 ### Etape 2 : récupération des sources de MrPython
 
