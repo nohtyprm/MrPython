@@ -61,16 +61,16 @@ class Application:
 
     def run(self, filename=None):
 
-        import sys
-        if sys.version_info.major == 3 and sys.version_info.minor >= 11:
+        #import sys
+        #if sys.version_info.major == 3 and sys.version_info.minor >= 11:
             # XXX: temporary message for incomplete support of python >= 3.11
-            
-            confirm = messagebox.askquestion(tr('Python 3.11+ warning'), tr("MrPython is not yet fully supported by Python 3.11+\n A version between Python 3.8.x and Python 3.10.y is recommended\n Are you sure to run in degraded mode?\n Some condition checking will be turned off!"))
+            # deactivated for now
+            #confirm = messagebox.askquestion(tr('Python 3.11+ warning'), tr("MrPython is not yet fully supported by Python 3.11+\n A version between Python 3.8.x and Python 3.10.y is recommended\n Are you sure to run in degraded mode?\n Some condition checking will be turned off!"))
 
-            if confirm != "yes":
-                print(tr("==> use a python 3.8 >= 3.11 interpreter instead"))
-                print(tr("bye bye !"))
-                sys.exit(1)
+            #if confirm != "yes":
+            #    print(tr("==> use a python 3.8 >= 3.11 interpreter instead"))
+            #    print(tr("bye bye !"))
+            #    sys.exit(1)
         
         """ Run the application """
         if filename:
@@ -83,9 +83,6 @@ class Application:
                 
             self.open(event=None, filename=filename)
         self.main_view.show()
-
-            
-
 
 
     def apply_bindings(self, keydefs=None):
