@@ -1,6 +1,7 @@
 
 def incrementer(d : Dict[str,int]) -> None:
-    """Incrémente tous les éléments du dictionnaire d.
+    """***Procedure***
+    Incrémente tous les éléments du dictionnaire d.
     """
     e : str
     for e in d:
