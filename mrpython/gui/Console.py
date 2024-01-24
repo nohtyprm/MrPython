@@ -260,6 +260,8 @@ class Console:
             self.write("\n")
 
         if not status:
+            # Allows debug-printing
+            self.write(str(report.output), tags=('stdout'))
             has_compilation_error = False
             for error in report.compilation_errors:
                 if error.severity == "error" and not has_compilation_error:
@@ -283,6 +285,9 @@ class Console:
                 self.write("\n")
 
         else:
+            self.write(str(report.output), tags=('stdout'))
+            if report.result is not None:
+                self.write(repr(report.result), tags=('normal'))
             has_execution_error = False
             for error in report.execution_errors:
                 if error.severity == "error" and not has_execution_error:
@@ -293,11 +298,6 @@ class Console:
                 self.write("\n")
                 self.write(str(error), tags=(error.severity, hyper, hyper_spec))
                 self.write("\n")
-
-
-            self.write(str(report.output), tags=('stdout'))
-            if report.result is not None:
-                self.write(repr(report.result), tags=('normal'))
 
         if exec_mode == 'exec' and status and self.mode == tr('student') and report.nb_defined_funs > 0:
             if report.nb_passed_tests > 1:
