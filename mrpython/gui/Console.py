@@ -247,6 +247,7 @@ class Console:
         
         has_convention_error = False
         
+        # show convention errors, if any
         for error in report.convention_errors:
             if error.severity == "error" and not has_convention_error:
                 self.write(tr("-----\nPython101 convention errors:\n-----\n"), tags='info')
@@ -259,45 +260,35 @@ class Console:
             self.write(str(error), tags=(error.severity, hyper, hyper_spec))
             self.write("\n")
 
-        if not status:
-            has_compilation_error = False
-            for error in report.compilation_errors:
-                if error.severity == "error" and not has_compilation_error:
-                    self.write(tr("\n-----\nCompilation errors (Python interpreter):\n-----\n"), tags='info')
-                    has_compilation_error = True
-                hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
-                self.write("\n")
-                self.write(str(error), tags=(error.severity, hyper, hyper_spec))
-                self.write("\n")
+        # show compilation errors, if any
+        has_compilation_error = False
+        for error in report.compilation_errors:
+            if error.severity == "error" and not has_compilation_error:
+                self.write(tr("\n-----\nCompilation errors (Python interpreter):\n-----\n"), tags='info')
+                has_compilation_error = True
+            hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
+            self.write("\n")
+            self.write(str(error), tags=(error.severity, hyper, hyper_spec))
+            self.write("\n")
 
-
-            has_execution_error = False
-            for error in report.execution_errors:
-                if error.severity == "error" and not has_execution_error:
-                    self.write(tr("\n-----\nExecution errors (Python interpreter):\n-----\n"), tags='info')
-                    has_execution_error = True
+        # write the stdout that has been generated
+        self.write(str(report.output), tags=('stdout'))
+            
+        # show execution errors, if any
+        has_execution_error = False
+        for error in report.execution_errors:
+            if error.severity == "error" and not has_execution_error:
+                self.write(tr("\n-----\nExecution errors (Python interpreter):\n-----\n"), tags='info')
+                has_execution_error = True
                     
-                hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
-                self.write("\n")
-                self.write(str(error), tags=(error.severity, hyper, hyper_spec))
-                self.write("\n")
+            hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
+            self.write("\n")
+            self.write(str(error), tags=(error.severity, hyper, hyper_spec))
+            self.write("\n")
 
-        else:
-            has_execution_error = False
-            for error in report.execution_errors:
-                if error.severity == "error" and not has_execution_error:
-                    self.write(tr("\n-----\nExecution errors (Python interpreter):\n-----\n"), tags='info')
-                    has_execution_error = True
-
-                hyper, hyper_spec = self.hyperlinks.add(ErrorCallback(self, error))
-                self.write("\n")
-                self.write(str(error), tags=(error.severity, hyper, hyper_spec))
-                self.write("\n")
-
-
-            self.write(str(report.output), tags=('stdout'))
-            if report.result is not None:
-                self.write(repr(report.result), tags=('normal'))
+        # show evaluation result
+        if status and report.result is not None:
+            self.write(repr(report.result), tags=('normal'))
 
         if exec_mode == 'exec' and status and self.mode == tr('student') and report.nb_defined_funs > 0:
             if report.nb_passed_tests > 1:
