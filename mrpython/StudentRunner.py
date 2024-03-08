@@ -6,6 +6,7 @@ import sys
 import traceback
 import os
 import copy
+from PreconditionLinenoHandler import PreconditionAstLinenoUpdater
 
 from translate import tr
 
@@ -207,7 +208,6 @@ class StudentRunner:
             typ, exc, tb = sys.exc_info()
             self.report.add_compilation_error('error', str(typ), err.lineno, err.offset, details=str(err))
             return False
-
         (ok, result) = self._exec_or_eval('exec', code, locals, locals)
         #if not ok:
         #    return False
@@ -307,9 +307,8 @@ class StudentRunner:
         #        we cannot add precondition checking code in this
         #        way (hiding line numbers)
         # a new scheme will be introduced
-        if sys.version_info.minor < 11: 
-            self.AST = FunctionDefVisitor().visit(self.AST)
-            self.AST = ast.fix_missing_locations(self.AST)
+        self.AST = FunctionDefVisitor().visit(self.AST)
+        self.AST = ast.fix_missing_locations(self.AST)
 
 class FunCallsVisitor(ast.NodeVisitor):
     def __init__(self):
@@ -330,22 +329,30 @@ preconditionsLineno = []
 
 class FunctionDefVisitor(ast.NodeTransformer):
     def visit_FunctionDef(self, node):
-        if node.name not in preconditions or len(preconditions[node.name]) == 0:
+        if node.name not in preconditions.keys() or len(preconditions[node.name]) == 0:
             return node
         else:
             ast_asserts = []
+            new_end_lineno = 0
             for precondition_node in preconditions[node.name]:
-                lineno = precondition_node.lineno
+                lineno = precondition_node.lineno # Is the right assertion lineno
+                PreconditionAstLinenoUpdater(lineno).visit(precondition_node)
                 preconditionsLineno.append(lineno)
                 assert_node = ast.Assert(precondition_node)
-                assert_node.lineno = lineno
+                assert_node.lineno = lineno + new_end_lineno
+                assert_node.end_lineno = assert_node.lineno + 1
                 ast_asserts.append(assert_node)
+                new_end_lineno += 1
+            
+            # Line number synchronization to avoid an overlapping scenario
+            line_diff = new_end_lineno - node.lineno
+            ast.increment_lineno(node, n=line_diff)
             if hasattr(node, "type_comment"):
                 node_res = ast.FunctionDef(node.name,node.args,ast_asserts+node.body,node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
             else: # python 3.7
                 node_res = ast.FunctionDef(node.name,node.args,ast_asserts+node.body,node.decorator_list,node.returns,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno)
-            return node_res
 
+            return node_res
         
 if __name__ == "__main__":
     # for testing purpose only

@@ -323,30 +323,6 @@ def type_check_Program(prog):
         else:
             ctx.register_function(fun_name, fun_type, fun_def)
 
-        ### XXX : old code for annotations
-        # else:
-        #     #print(repr(signature))
-        #     #print(fun_def.docstring)
-        #     signature = function_type_parser(fun_def.docstring)
-        #     if signature.iserror:
-        #         ctx.add_type_error(SignatureParseError(fun_name, fun_def, signature))
-        #     else: # HACK: trailing non-whistespace characters at the end of the signature
-        #         #parsed = fun_def.docstring[0:signature.end_pos.offset:]
-        #         #print("parsed = '{}'".format(parsed))
-        #         remaining = fun_def.docstring[signature.end_pos.offset:]
-        #         #print("remaining = '{}'".format(remaining))
-        #         if not fun_def.docstring[signature.end_pos.offset-1].isspace() and remaining and not remaining[0].isspace():
-        #             ctx.add_type_error(SignatureTrailingError(fun_name, fun_def, remaining))
-        #             # XXX: Not fatal ?
-        #         else:
-        #             fun_type, unknown_alias = signature.content.unalias(ctx.type_defs)
-        #             if fun_type is None:
-        #                 # position is a little bit ad-hoc
-        #                 ctx.add_type_error(UnknownTypeAliasError(signature.content, unknown_alias, fun_def.ast.lineno+ 1, fun_def.ast.col_offset + 7))
-        #                 return ctx
-        #             else:
-        #                 ctx.register_function(fun_name, fun_type, fun_def)
-
     # fourth step : type-check each function
     for (fun_name, fun_def) in ctx.functions.items():
         fun_def.type_check(ctx)
@@ -394,30 +370,35 @@ def type_check_FunctionDef(func_def, ctx):
 
     # step 3 : type-check preconditions 
     preconditions_ok = []   #List of parsed preconditions
-    for (precondition, precondition_ast) in func_def.preconditions:
-        initCtxErrorsLen = len(ctx.type_errors)
-        precondition_type = type_expect(ctx, precondition, BoolType(), False)
-        if len(ctx.type_errors) != initCtxErrorsLen:
-            for i in range(len(ctx.type_errors)):
-                #To delete the undefined var problem in preconditions
-                if(isinstance(ctx.type_errors[i],UnknownVariableError)):
-                    poped = ctx.type_errors[i]
-                    ctx.type_errors.remove(poped)
-                    ctx.add_type_error(UndefinedVarInPreconditionWarning(func_def, poped.var, precondition_ast.lineno))
-                #Catch all potential errors in precondition
-                else:
-                    poped = ctx.type_errors[i]
-                    ctx.type_errors.remove(poped)
-                    ctx.add_type_error(ErrorInPreconditionWarning(func_def, precondition_ast.lineno))
+    
+    # In some version preconditions dict could go empty cause of multiple checkings
+    if func_def.name not in preconditions:
+        for (precondition, precondition_ast) in func_def.preconditions:
+            initCtxErrorsLen = len(ctx.type_errors)
+            precondition_type = type_expect(ctx, precondition, BoolType(), False)
+            if len(ctx.type_errors) != initCtxErrorsLen:
+                for i in range(len(ctx.type_errors)):
+                    #To delete the undefined var problem in preconditions
+                    if(isinstance(ctx.type_errors[i],UnknownVariableError)):
+                        poped = ctx.type_errors[i]
+                        ctx.type_errors.remove(poped)
+                        ctx.add_type_error(UndefinedVarInPreconditionWarning(func_def, poped.var, precondition_ast.lineno))
+                    #Catch all potential errors in precondition
+                    else:
+                        poped = ctx.type_errors[i]
+                        ctx.type_errors.remove(poped)
+                        ctx.add_type_error(ErrorInPreconditionWarning(func_def, precondition_ast.lineno))
 
-        else:
-            if precondition_type is None:
-                ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx), precondition_ast.lineno))
             else:
-                body = precondition_ast.body
-                body.lineno = precondition_ast.lineno
-                preconditions_ok.append(body)
-    preconditions[func_def.name] = preconditions_ok
+                if precondition_type is None:
+                    ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx), precondition_ast.lineno))
+                else:
+                    body = precondition_ast.body
+                    body.lineno = precondition_ast.lineno
+                    # Very important to sync start_lineno and end_lineno to avoid case of start_lineno > end_lineno
+                    body.end_lineno = body.lineno + 1
+                    preconditions_ok.append(body)
+        preconditions[func_def.name] = preconditions_ok
     
     # Step 4 : type-check body
     ctx.push_parent(func_def)
@@ -1060,7 +1041,7 @@ def ContainerAssign_type_check(cassign, ctx):
     if isinstance(container_type, DictType):
         if container_type.key_type is None:
             ctx.add_type_error(ContainerAssignEmptyError(cassign))
-        return False
+            return False
         key_type = container_type.key_type
         val_type = container_type.val_type
     elif isinstance(container_type, ListType):
@@ -1420,6 +1401,13 @@ def type_infer_EVar(var, ctx):
     # or maybe the variable is a global function (HOF)
     if var.name in ctx.global_env:
         return ctx.global_env[var.name]
+
+    # or, is it a global variable ?
+    for global_var in ctx.prog.global_vars:
+        if isinstance(global_var, DeclareVar) and isinstance(global_var.target, LHSVar):
+            if var.name == global_var.target.var_name:
+                ctx.add_type_error(GlobalVariableUseError(var.name, var))
+                return None
 
     # or the variable is unknown
     ctx.add_type_error(UnknownVariableError(ctx.function_def, var))
@@ -3123,6 +3111,21 @@ class DeadVariableDefineError(TypeError):
     def report(self, report):
         report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
                                     , tr("Forbidden use of a \"dead\" variable name '{}' (Python101 rule)").format(self.var_name))
+
+class GlobalVariableUseError(TypeError):
+    def __init__(self, var_name, node):
+        self.var_name = var_name
+        self.node = node
+
+    def is_fatal(self):
+        return True
+
+    def fail_string(self):
+        return "GlobalVariableUseError[{}]@{}:{}".format(self.var_name, self.node.ast.lineno, self.node.ast.col_offset)
+
+    def report(self, report):
+        report.add_convention_error('error', tr("Bad variable"), self.node.ast.lineno, self.node.ast.col_offset
+                                    , tr("Forbidden use of global variable '{}' (Python101 rule)").format(self.var_name))
 
 class VariableTypeError(TypeError):
     def __init__(self, target, var, declared_type, var_type):
