@@ -371,34 +371,33 @@ def type_check_FunctionDef(func_def, ctx):
     # step 3 : type-check preconditions 
     preconditions_ok = []   #List of parsed preconditions
     
-    # In some version preconditions dict could go empty cause of multiple checkings
-    if func_def.name not in preconditions:
-        for (precondition, precondition_ast) in func_def.preconditions:
-            initCtxErrorsLen = len(ctx.type_errors)
-            precondition_type = type_expect(ctx, precondition, BoolType(), False)
-            if len(ctx.type_errors) != initCtxErrorsLen:
-                for i in range(len(ctx.type_errors)):
-                    #To delete the undefined var problem in preconditions
-                    if(isinstance(ctx.type_errors[i],UnknownVariableError)):
-                        poped = ctx.type_errors[i]
-                        ctx.type_errors.remove(poped)
-                        ctx.add_type_error(UndefinedVarInPreconditionWarning(func_def, poped.var, precondition_ast.lineno))
-                    #Catch all potential errors in precondition
-                    else:
-                        poped = ctx.type_errors[i]
-                        ctx.type_errors.remove(poped)
-                        ctx.add_type_error(ErrorInPreconditionWarning(func_def, precondition_ast.lineno))
-
-            else:
-                if precondition_type is None:
-                    ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx), precondition_ast.lineno))
+    for (precondition, precondition_ast) in func_def.preconditions:
+        initCtxErrorsLen = len(ctx.type_errors)
+        precondition_type = type_expect(ctx, precondition, BoolType(), False)
+        if len(ctx.type_errors) != initCtxErrorsLen:
+            for i in range(len(ctx.type_errors)):
+                #To delete the undefined var problem in preconditions
+                if(isinstance(ctx.type_errors[i],UnknownVariableError)):
+                    poped = ctx.type_errors[i]
+                    ctx.type_errors.remove(poped)
+                    ctx.add_type_error(UndefinedVarInPreconditionWarning(func_def, poped.var, precondition_ast.lineno))
+                #Catch all potential errors in precondition
                 else:
-                    body = precondition_ast.body
-                    body.lineno = precondition_ast.lineno
-                    # Very important to sync start_lineno and end_lineno to avoid case of start_lineno > end_lineno
-                    body.end_lineno = body.lineno + 1
-                    preconditions_ok.append(body)
-        preconditions[func_def.name] = preconditions_ok
+                    poped = ctx.type_errors[i]
+                    ctx.type_errors.remove(poped)
+                    ctx.add_type_error(ErrorInPreconditionWarning(func_def, precondition_ast.lineno))
+
+        else:
+            if precondition_type is None:
+                ctx.add_type_error(FunctionPreconditionWarning(func_def, precondition.type_infer(ctx), precondition_ast.lineno))
+            else:
+                body = precondition_ast.body
+                body.lineno = precondition_ast.lineno
+                # Very important to sync start_lineno and end_lineno to avoid case of start_lineno > end_lineno
+                body.end_lineno = body.lineno
+                preconditions_ok.append(body)
+
+    preconditions[func_def.name] = preconditions_ok
     
     # Step 4 : type-check body
     ctx.push_parent(func_def)

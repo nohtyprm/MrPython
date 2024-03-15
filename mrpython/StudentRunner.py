@@ -340,7 +340,7 @@ class FunctionDefVisitor(ast.NodeTransformer):
                 preconditionsLineno.append(lineno)
                 assert_node = ast.Assert(precondition_node)
                 assert_node.lineno = lineno + new_end_lineno
-                assert_node.end_lineno = assert_node.lineno + 1
+                assert_node.end_lineno = assert_node.lineno
                 ast_asserts.append(assert_node)
                 new_end_lineno += 1
             
