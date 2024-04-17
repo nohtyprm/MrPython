@@ -154,7 +154,6 @@ class StudentRunner:
             _, _, tb = sys.exc_info()
             lineno=None
             traceb = traceback.extract_tb(tb)
-            print(err)
             s = "Precondition error\n\t Function : {} (Line {})\n\t Precondition : {}\n\t False with {}"
             if len(traceb) > 1:
                 _, lineno, _, line = traceb[-1]
@@ -344,7 +343,6 @@ class FunctionDefVisitor(ast.NodeTransformer):
                 lineno = precondition_node.lineno # Is the right assertion lineno
                 PreconditionAstLinenoUpdater(lineno).visit(precondition_node)
                 preconditionsLineno.append(lineno)
-                print(ast.dump(precondition_node, annotate_fields=True, include_attributes=True, indent=4))
                 assert_node = ast.Assert(test=precondition_node)
                 assert_node.lineno = lineno + new_end_lineno
                 assert_node.end_lineno = assert_node.lineno
