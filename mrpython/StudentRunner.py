@@ -6,7 +6,7 @@ import sys
 import traceback
 import os
 import copy
-from PreconditionLinenoHandler import PreconditionAstLinenoUpdater
+from PreconditionHandler import PreconditionAstLinenoUpdater
 
 from translate import tr
 
@@ -150,14 +150,20 @@ class StudentRunner:
             filename, lineno, file_type, line = traceback.extract_tb(tb)[-1]
             self.report.add_execution_error('error', tr("Division by zero"), lineno if mode=='exec' else None)
             return (False, None)
-        except AssertionError:
-            a, b, tb = sys.exc_info()
+        except AssertionError as err:
+            _, _, tb = sys.exc_info()
             lineno=None
             traceb = traceback.extract_tb(tb)
+            print(err)
+            s = "Precondition error\n\t Function : {} (Line {})\n\t Precondition : {}\n\t False with {}"
             if len(traceb) > 1:
-                filename, lineno, file_type, line = traceb[-1]
+                _, lineno, _, line = traceb[-1]
+                func_name = traceb[-1].name
+                arg = ""
+                assert_lineno = traceb[-2].lineno
+                code = traceb[-2].line
             if lineno in preconditionsLineno:
-                self.report.add_execution_error('error', tr("Precondition error (False)"), lineno)
+                self.report.add_execution_error('error', tr(s).format(func_name, lineno, line.split(':', 1)[-1].strip(), arg), assert_lineno)
             else:
                 self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno)
             return (True, None)
@@ -338,7 +344,8 @@ class FunctionDefVisitor(ast.NodeTransformer):
                 lineno = precondition_node.lineno # Is the right assertion lineno
                 PreconditionAstLinenoUpdater(lineno).visit(precondition_node)
                 preconditionsLineno.append(lineno)
-                assert_node = ast.Assert(precondition_node)
+                print(ast.dump(precondition_node, annotate_fields=True, include_attributes=True, indent=4))
+                assert_node = ast.Assert(test=precondition_node)
                 assert_node.lineno = lineno + new_end_lineno
                 assert_node.end_lineno = assert_node.lineno
                 ast_asserts.append(assert_node)
