@@ -1,4 +1,5 @@
 from code import InteractiveInterpreter
+import inspect
 from RunReport import RunReport
 import ast
 import tokenize
@@ -6,6 +7,7 @@ import sys
 import traceback
 import os
 import copy
+import re
 from PreconditionHandler import PreconditionAstLinenoUpdater
 
 from translate import tr
@@ -154,13 +156,40 @@ class StudentRunner:
             _, _, tb = sys.exc_info()
             lineno=None
             traceb = traceback.extract_tb(tb)
+            print(err)
+            print(traceb)
             s = "Precondition error\n\t Function : {} (Line {})\n\t Precondition : {}\n\t False with {}"
             if len(traceb) > 1:
                 _, lineno, _, line = traceb[-1]
                 func_name = traceb[-1].name
-                arg = ""
                 assert_lineno = traceb[-2].lineno
-                code = traceb[-2].line
+                code_tb = traceb[-2].line
+                arg_names = []
+                arg_values = []
+
+                source_code = inspect.getsource(code)
+                matches = matches = re.findall(r'\((.*?)\)', code_tb)
+
+                try:
+                    tree = ast.parse(source_code)
+                except SyntaxError:
+                    print("Erreur de syntaxe dans le code fourni.")
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.FunctionDef):
+                        for argg in node.args.args:
+                            arg_name = argg.arg
+                            arg_names.append(arg_name)
+
+                for match in matches:
+                    arg_values = match.split(',')
+
+                if len(arg_names) == len(arg_names) : 
+                    arg = "\n\t"
+                    for i in range(len(arg_names)):
+                        arg += "\t" + str(arg_names[i]) + " = " + str(arg_values[i]) + "\n\t"
+                else : 
+                    arg = "error of arguments"
+                        
             if lineno in preconditionsLineno:
                 self.report.add_execution_error('error', tr(s).format(func_name, lineno, line.split(':', 1)[-1].strip(), arg), assert_lineno)
             else:
@@ -343,7 +372,9 @@ class FunctionDefVisitor(ast.NodeTransformer):
                 lineno = precondition_node.lineno # Is the right assertion lineno
                 PreconditionAstLinenoUpdater(lineno).visit(precondition_node)
                 preconditionsLineno.append(lineno)
+                print(ast.dump(precondition_node, annotate_fields=True, include_attributes=True, indent=4))
                 assert_node = ast.Assert(test=precondition_node)
+                assert_node = ast.Assert(precondition_node)
                 assert_node.lineno = lineno + new_end_lineno
                 assert_node.end_lineno = assert_node.lineno
                 ast_asserts.append(assert_node)
