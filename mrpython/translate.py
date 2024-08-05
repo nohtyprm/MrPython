@@ -34,8 +34,9 @@ TRANSLATOR_DICT = {
     ,"Division by zero" : { 'fr' : "Division par zéro" }
     ,"Assertion error (failed test?)" : { 'fr' : "Erreur d'assertion (test invalide ?)" }
     ,"Precondition error\n\t Function : {} (Line {})\n\t Precondition : {}\n\t False with {}" : { 
-        'fr' : "Erreur de précondition\n\t Fonction : {} (Ligne {})\n\t Précondition : {}\n\t Fausse avec {}" 
-        }
+    'fr' : "Erreur de précondition\n\t Fonction : {} (Ligne {})\n\t Précondition : {}\n\t Fausse avec {}" 
+    }
+    ,"in line :" :{ 'fr' : "dans la ligne :"}
     ,"User interruption" : { 'fr' : "Interruption par l'utilisateur"}
     # Erreurs de conventions
     , ": line {}\n" : { 'fr' : ": ligne {}\n"}
