@@ -158,10 +158,10 @@ class StudentRunner:
             traceb = traceback.extract_tb(tb)
             #print(traceb)
             #import pdb ; pdb.set_trace()
-            s = "Precondition error\n\t Function : {} (Line {})\n\t Precondition : {}\n\t False with {}"
-            if len(traceb) > 1 and err.args and err.args[0] == "<<<PRECONDITION>>>":
-                print(">>> prepare precondition message")
+            if len(traceb) > 1:
                 _, lineno, _, line = traceb[-1]
+            if len(traceb) > 1 and err.args and err.args[0] == "<<<PRECONDITION>>>":
+                s = "Precondition error\n\t Function : {} (Line {})\n\t Precondition : {}\n\t False with {}"
                 func_name = traceb[-1].name
                 assert_lineno = traceb[-2].lineno
                 code_tb = traceb[-2].line
@@ -169,12 +169,12 @@ class StudentRunner:
                 arg_values = []
 
                 source_code = inspect.getsource(code)
-                matches = matches = re.findall(r'\((.*?)\)', code_tb)
+                #matches = re.findall(r'\((.*?)\)', code_tb)
 
                 try:
                     tree = ast.parse(source_code)
                 except SyntaxError as err:
-                    print("Fatal Syntax error (please report)", file=sys.stderr)
+                    print("Fatal Syntax error (precondition handling, please report)", file=sys.stderr)
                     raise err
                 for node in ast.walk(tree):
                     if isinstance(node, ast.FunctionDef):
@@ -182,15 +182,14 @@ class StudentRunner:
                             arg_name = argg.arg
                             arg_names.append(arg_name)
 
-                for match in matches:
-                    arg_values = match.split(',')
+                arg_values = parse_assertion_arg_values(func_name, code_tb)
 
-                if len(arg_names) == len(arg_names) : 
+                if len(arg_names) <= len(arg_values) : 
                     arg = "\n\t"
                     for i in range(len(arg_names)):
                         arg += "\t" + str(arg_names[i]) + " = " + str(arg_values[i]) + "\n\t"
                 else : 
-                    arg = "error of arguments"
+                    raise ValueError("Precondition handling fails (wrong parameter/value, please report)")
                         
                 if lineno in preconditionsLineno:
                     self.report.add_execution_error('error', tr(s).format(func_name, lineno, line.split(':', 1)[-1].strip(), arg), assert_lineno)
@@ -345,6 +344,46 @@ class StudentRunner:
         # a new scheme will be introduced
         self.AST = FunctionDefVisitor().visit(self.AST)
         self.AST = ast.fix_missing_locations(self.AST)
+
+
+def parse_assertion_arg_values(func_name, code_str):
+    """Parsing argumentexpression in assertion call"""
+
+    fn_index = code_str.find(func_name)
+    if fn_index == -1:
+        return None
+    
+    i = fn_index
+    while i < len(code_str) and code_str[i] != '(':
+        i += 1
+    if i >= len(code_str):
+        return None
+
+    arg_values = []
+    i += 1
+    level = 0
+    arg = ""
+    while i < len(code_str) and not (level == 0 and code_str[i] == ')'):
+
+        if code_str[i] == '(':
+            level += 1
+            arg += code_str[i]
+        elif code_str[i] == ')':
+            level -= 1
+            arg += code_str[i]
+        elif code_str[i] == ',' and level == 0:
+            arg_values.append(arg.strip())
+            arg = ""
+        elif code_str[i] == ' ':
+            pass
+        else:
+            arg += code_str[i]
+
+        i += 1
+
+    arg_values.append(arg)
+
+    return arg_values       
 
 class FunCallsVisitor(ast.NodeVisitor):
     def __init__(self):
