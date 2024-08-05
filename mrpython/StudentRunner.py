@@ -156,10 +156,11 @@ class StudentRunner:
             _, _, tb = sys.exc_info()
             lineno=None
             traceb = traceback.extract_tb(tb)
-            print(err)
-            print(traceb)
+            #print(traceb)
+            #import pdb ; pdb.set_trace()
             s = "Precondition error\n\t Function : {} (Line {})\n\t Precondition : {}\n\t False with {}"
-            if len(traceb) > 1:
+            if len(traceb) > 1 and err.args and err.args[0] == "<<<PRECONDITION>>>":
+                print(">>> prepare precondition message")
                 _, lineno, _, line = traceb[-1]
                 func_name = traceb[-1].name
                 assert_lineno = traceb[-2].lineno
@@ -172,8 +173,9 @@ class StudentRunner:
 
                 try:
                     tree = ast.parse(source_code)
-                except SyntaxError:
-                    print("Erreur de syntaxe dans le code fourni.")
+                except SyntaxError as err:
+                    print("Fatal Syntax error (please report)", file=sys.stderr)
+                    raise err
                 for node in ast.walk(tree):
                     if isinstance(node, ast.FunctionDef):
                         for argg in node.args.args:
@@ -190,10 +192,10 @@ class StudentRunner:
                 else : 
                     arg = "error of arguments"
                         
-            if lineno in preconditionsLineno:
-                self.report.add_execution_error('error', tr(s).format(func_name, lineno, line.split(':', 1)[-1].strip(), arg), assert_lineno)
+                if lineno in preconditionsLineno:
+                    self.report.add_execution_error('error', tr(s).format(func_name, lineno, line.split(':', 1)[-1].strip(), arg), assert_lineno)
             else:
-                self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno)
+                self.report.add_execution_error('error', tr("Assertion error (failed test?)") + (f"\n ==> {str(err)}" if str(err) else ""), lineno)
             return (True, None)
         except Exception as err:
             a, b, tb = sys.exc_info() # Get the traceback object
@@ -372,9 +374,9 @@ class FunctionDefVisitor(ast.NodeTransformer):
                 lineno = precondition_node.lineno # Is the right assertion lineno
                 PreconditionAstLinenoUpdater(lineno).visit(precondition_node)
                 preconditionsLineno.append(lineno)
-                print(ast.dump(precondition_node, annotate_fields=True, include_attributes=True, indent=4))
+                # print(ast.dump(precondition_node, annotate_fields=True, include_attributes=True, indent=4))
                 assert_node = ast.Assert(test=precondition_node)
-                assert_node = ast.Assert(precondition_node)
+                assert_node.msg = ast.Constant("<<<PRECONDITION>>>")
                 assert_node.lineno = lineno + new_end_lineno
                 assert_node.end_lineno = assert_node.lineno
                 ast_asserts.append(assert_node)
