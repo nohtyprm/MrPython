@@ -1,4 +1,4 @@
-##!FAIL: Erreur: ligne 6
+##!FAIL: Erreur: ligne 12
 
 def est_majeure(nom: str, prenom : str, age: int) -> bool:
     """

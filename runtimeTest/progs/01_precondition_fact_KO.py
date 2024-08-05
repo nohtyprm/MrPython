@@ -1,4 +1,4 @@
-##!FAIL: Erreur: ligne 5
+##!FAIL: Erreur: ligne 21
 
 def fact(n : int) -> int:
     """Retourne la factorielle de n.

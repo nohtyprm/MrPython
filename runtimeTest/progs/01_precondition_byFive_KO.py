@@ -1,4 +1,4 @@
-##!FAIL: Erreur: ligne 5
+##!FAIL: Erreur: ligne 12
 
 def byFive(x : int) -> float:
     """
