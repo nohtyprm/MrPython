@@ -1,4 +1,5 @@
 from code import InteractiveInterpreter
+import inspect
 from RunReport import RunReport
 import ast
 import tokenize
@@ -6,6 +7,8 @@ import sys
 import traceback
 import os
 import copy
+import re
+from PreconditionHandler import PreconditionAstLinenoUpdater
 
 from translate import tr
 
@@ -149,16 +152,49 @@ class StudentRunner:
             filename, lineno, file_type, line = traceback.extract_tb(tb)[-1]
             self.report.add_execution_error('error', tr("Division by zero"), lineno if mode=='exec' else None)
             return (False, None)
-        except AssertionError:
-            a, b, tb = sys.exc_info()
+        except AssertionError as err:
+            _, _, tb = sys.exc_info()
             lineno=None
             traceb = traceback.extract_tb(tb)
+            #print(traceb)
+            #import pdb ; pdb.set_trace()
             if len(traceb) > 1:
-                filename, lineno, file_type, line = traceb[-1]
-            if lineno in preconditionsLineno:
-                self.report.add_execution_error('error', tr("Precondition error (False)"), lineno)
+                _, lineno, _, line = traceb[-1]
+            if len(traceb) > 1 and err.args and err.args[0] == "<<<PRECONDITION>>>":
+                s = "Precondition error\n\t Function : {} (Line {})\n\t Precondition : {}\n\t False with {}"
+                func_name = traceb[-1].name
+                assert_lineno = traceb[-2].lineno
+                code_tb = traceb[-2].line
+                arg_names = []
+                arg_values = []
+
+                source_code = inspect.getsource(code)
+                #matches = re.findall(r'\((.*?)\)', code_tb)
+
+                try:
+                    tree = ast.parse(source_code)
+                except SyntaxError as err:
+                    print("Fatal Syntax error (precondition handling, please report)", file=sys.stderr)
+                    raise err
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.FunctionDef):
+                        for argg in node.args.args:
+                            arg_name = argg.arg
+                            arg_names.append(arg_name)
+
+                arg_values = parse_assertion_arg_values(func_name, code_tb)
+
+                if len(arg_names) <= len(arg_values) : 
+                    arg = "\n\t"
+                    for i in range(len(arg_names)):
+                        arg += "\t" + str(arg_names[i]) + " = " + str(arg_values[i]) + "\n\t"
+                else : 
+                    raise ValueError("Precondition handling fails (wrong parameter/value, please report)")
+                        
+                if lineno in preconditionsLineno:
+                    self.report.add_execution_error('error', tr(s).format(func_name, lineno, line.split(':', 1)[-1].strip(), arg), assert_lineno)
             else:
-                self.report.add_execution_error('error', tr("Assertion error (failed test?)"), lineno)
+                self.report.add_execution_error('error', tr("Assertion error (failed test?)") + (f"\n ==> {str(err)}" if str(err) else ""), lineno)
             return (True, None)
         except Exception as err:
             a, b, tb = sys.exc_info() # Get the traceback object
@@ -207,7 +243,6 @@ class StudentRunner:
             typ, exc, tb = sys.exc_info()
             self.report.add_compilation_error('error', str(typ), err.lineno, err.offset, details=str(err))
             return False
-
         (ok, result) = self._exec_or_eval('exec', code, locals, locals)
         #if not ok:
         #    return False
@@ -307,9 +342,48 @@ class StudentRunner:
         #        we cannot add precondition checking code in this
         #        way (hiding line numbers)
         # a new scheme will be introduced
-        if sys.version_info.minor < 11: 
-            self.AST = FunctionDefVisitor().visit(self.AST)
-            self.AST = ast.fix_missing_locations(self.AST)
+        self.AST = FunctionDefVisitor().visit(self.AST)
+        self.AST = ast.fix_missing_locations(self.AST)
+
+
+def parse_assertion_arg_values(func_name, code_str):
+    """Parsing argumentexpression in assertion call"""
+
+    fn_index = code_str.find(func_name)
+    if fn_index == -1:
+        return None
+    
+    i = fn_index
+    while i < len(code_str) and code_str[i] != '(':
+        i += 1
+    if i >= len(code_str):
+        return None
+
+    arg_values = []
+    i += 1
+    level = 0
+    arg = ""
+    while i < len(code_str) and not (level == 0 and code_str[i] == ')'):
+
+        if code_str[i] == '(':
+            level += 1
+            arg += code_str[i]
+        elif code_str[i] == ')':
+            level -= 1
+            arg += code_str[i]
+        elif code_str[i] == ',' and level == 0:
+            arg_values.append(arg.strip())
+            arg = ""
+        elif code_str[i] == ' ':
+            pass
+        else:
+            arg += code_str[i]
+
+        i += 1
+
+    arg_values.append(arg)
+
+    return arg_values       
 
 class FunCallsVisitor(ast.NodeVisitor):
     def __init__(self):
@@ -330,22 +404,32 @@ preconditionsLineno = []
 
 class FunctionDefVisitor(ast.NodeTransformer):
     def visit_FunctionDef(self, node):
-        if node.name not in preconditions or len(preconditions[node.name]) == 0:
+        if node.name not in preconditions.keys() or len(preconditions[node.name]) == 0:
             return node
         else:
             ast_asserts = []
+            new_end_lineno = 0
             for precondition_node in preconditions[node.name]:
-                lineno = precondition_node.lineno
+                lineno = precondition_node.lineno # Is the right assertion lineno
+                PreconditionAstLinenoUpdater(lineno).visit(precondition_node)
                 preconditionsLineno.append(lineno)
-                assert_node = ast.Assert(precondition_node)
-                assert_node.lineno = lineno
+                # print(ast.dump(precondition_node, annotate_fields=True, include_attributes=True, indent=4))
+                assert_node = ast.Assert(test=precondition_node)
+                assert_node.msg = ast.Constant("<<<PRECONDITION>>>")
+                assert_node.lineno = lineno + new_end_lineno
+                assert_node.end_lineno = assert_node.lineno
                 ast_asserts.append(assert_node)
+                new_end_lineno += 1
+            
+            # Line number synchronization to avoid an overlapping scenario
+            line_diff = new_end_lineno - node.lineno
+            ast.increment_lineno(node, n=line_diff)
             if hasattr(node, "type_comment"):
                 node_res = ast.FunctionDef(node.name,node.args,ast_asserts+node.body,node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
             else: # python 3.7
                 node_res = ast.FunctionDef(node.name,node.args,ast_asserts+node.body,node.decorator_list,node.returns,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno)
-            return node_res
 
+            return node_res
         
 if __name__ == "__main__":
     # for testing purpose only

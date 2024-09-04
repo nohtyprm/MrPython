@@ -370,6 +370,7 @@ def type_check_FunctionDef(func_def, ctx):
 
     # step 3 : type-check preconditions 
     preconditions_ok = []   #List of parsed preconditions
+    
     for (precondition, precondition_ast) in func_def.preconditions:
         initCtxErrorsLen = len(ctx.type_errors)
         precondition_type = type_expect(ctx, precondition, BoolType(), False)
@@ -392,7 +393,10 @@ def type_check_FunctionDef(func_def, ctx):
             else:
                 body = precondition_ast.body
                 body.lineno = precondition_ast.lineno
+                # Very important to sync start_lineno and end_lineno to avoid case of start_lineno > end_lineno
+                body.end_lineno = body.lineno
                 preconditions_ok.append(body)
+
     preconditions[func_def.name] = preconditions_ok
     
     # Step 4 : type-check body

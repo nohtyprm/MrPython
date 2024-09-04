@@ -33,7 +33,10 @@ TRANSLATOR_DICT = {
     ,"Name error (unitialized variable?)" : { 'fr': "Erreur de nommage (variable non initialisée ?)" }
     ,"Division by zero" : { 'fr' : "Division par zéro" }
     ,"Assertion error (failed test?)" : { 'fr' : "Erreur d'assertion (test invalide ?)" }
-    ,"Precondition error (False)" : { 'fr' : "Erreur de précondition (Fausse)" }
+    ,"Precondition error\n\t Function : {} (Line {})\n\t Precondition : {}\n\t False with {}" : { 
+    'fr' : "Erreur de précondition\n\t Fonction : {} (Ligne {})\n\t Précondition : {}\n\t Fausse avec {}" 
+    }
+    ,"in line :" :{ 'fr' : "dans la ligne :"}
     ,"User interruption" : { 'fr' : "Interruption par l'utilisateur"}
     # Erreurs de conventions
     , ": line {}\n" : { 'fr' : ": ligne {}\n"}
