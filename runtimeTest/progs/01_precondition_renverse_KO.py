@@ -1,4 +1,4 @@
-##!FAIL: Erreur: ligne 6
+##!FAIL: Erreur: ligne 22
 
 def prec_renverse(l : Sequence[T]) -> List[T]:
     """

@@ -1,4 +1,4 @@
-##!FAIL: Erreur: ligne 5
+##!FAIL: Erreur: ligne 19
 
 def longueur(l : Iterable[T]) -> int:
     """Retourne la longueur de L
