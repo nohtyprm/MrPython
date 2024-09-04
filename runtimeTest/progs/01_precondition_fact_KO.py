@@ -1,4 +1,4 @@
-##!FAIL: Erreur: ligne 5
+##!FAIL: Erreur: ligne 21
 
 def fact(n : int) -> int:
     """Retourne la factorielle de n.
@@ -18,7 +18,7 @@ def fact(n : int) -> int:
     return acc
 
 # Jeu de tests
-assert fact(-1) == fact(1) == 1
+assert fact(-1) == 1
 assert fact(1) == 1
 assert fact(2) == 2
 assert fact(3) == 6

@@ -1,4 +1,4 @@
-##!FAIL: Erreur: ligne 7
+##!FAIL: Erreur: ligne 26
 
 def valeur_absolue(x : float) -> float:
     """

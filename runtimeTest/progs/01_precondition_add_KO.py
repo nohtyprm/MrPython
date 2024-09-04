@@ -1,4 +1,4 @@
-##!FAIL: Erreur: ligne 4
+##!FAIL: Erreur: ligne 8
 
 def addition(a:int,b:int)->int:
     """ HyPoThEsE : (a > 0) and (b > 0)"""
