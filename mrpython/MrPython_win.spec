@@ -7,7 +7,7 @@ DATA_FILES = [("./config-*.def", ".")
               ,("./gui/icons/*.gif", "gui/icons")]
 
 a = Analysis(['Application.py'],
-             pathex=['C:\\Users\\Fredokun\\Projets\\MrPython\\mrpython'],
+             pathex=['C:\\Users\\frede\\Projets\\MrPython\\mrpython'],
              binaries=[],
              datas=DATA_FILES,
              hiddenimports=['typechecking.astpp'],
