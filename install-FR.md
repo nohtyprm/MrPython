@@ -12,15 +12,15 @@ Pour pouvoir utiliser MrPython, il est nécessaire de disposer d'un ordinateur a
 
 Des procédures d'installation plus détaillées sont données ci-dessous.
 
-> **ATTENTION** :  MrPython n'est pas compatible avec Python 3.7 et précédentes. De plus, Il n'est pour l'instant pas 100% compatible avec Python 3.11+.  Privilégiez une installation entre Python 3.8 et Python 3.10. 
+> **ATTENTION** :  MrPython n'est pas compatible avec Python 3.7 et précédentes.
 
 ## Installation sous Windows (installateur)
 
 Sous **Windows 10/11** le plus simple pour installer MrPython est d'utiliser
 l'installateur dédié/
 
- - [Installateur pour MrPython v5.1.3beta](https://github.com/nohtyprm/MrPython/blob/win-installer/mrpython_5_1_3beta_install_FR.exe)
- - (version précédente : [Installateur pour MrPython v5.0.2beta](https://github.com/nohtyprm/MrPython/blob/win-installer/mrpython_5_0_2beta_install_FR.exe))
+ - [Installateur pour MrPython v5.2.0beta](https://github.com/nohtyprm/MrPython/blob/win-installer/mrpython_5_2_0beta_install_FR.exe)
+ - (version précédente : [Installateur pour MrPython v5.1.3beta]([https://github.com/nohtyprm/MrPython/blob/win-installer/mrpython_5_0_2beta_install_FR.exe](https://github.com/nohtyprm/MrPython/blob/win-installer/mrpython_5_1_3beta_install_FR.exe)))
  
 ## Installation sous Windows (installation manuelle)
  
@@ -29,11 +29,9 @@ Il est aussi possible, sous windows, d'installer MrPython manuellement, voici le
 ### Etape 1 : installation de Python (si ce n'est déjà fait)
 
  - récupérer la dernière version stable de Python sur le site https://www.python.org
-   - par exemple la version 3.8.5 : https://www.python.org/ftp/python/3.8.5/python-3.8.5.exe
+   - par exemple la version 3.12.5 : https://www.python.org/ftp/python/3.12.5/python-3.12.5-amd64.exe
    
  - procéder à l'installation
-
-**Attention :** MrPython n'est pas compatible avec les version antérieures à Python 3.8
  
 ### Etape 2 : récupération des sources de MrPython
  
@@ -64,7 +62,7 @@ Il n'y a pas encore d'installateur disponible pour MacOs, mais l'installation ma
 
 ### Etape 1 : installation de Python (si ce n'est déjà fait)
 
-La page [python.org](https://www.python.org/) propose un [installateur Python 3.8.6 pour MacOS](https://www.python.org/ftp/python/3.8.6/python-3.8.6-macosx10.9.pkg).
+La page [python.org](https://www.python.org/) propose un [installateur Python 3.12.5 pour MacOS](https://www.python.org/ftp/python/3.12.5/python-3.12.5-macos11.pkg).
 Vous pouvez alternativement installer Python (version 3.8 ou ultérieure) via [Homebrew](https://docs.brew.sh/Homebrew-and-Python) ou les [Macports](https://www.macports.org/), mais vous devez déjà connaître ces environnements.
 
 ### Etape 2 : récupération des sources de MrPython
@@ -93,9 +91,9 @@ de traduire les explications pour les autres distributions de Linux.
 L'installation peut se faire, dans le terminal en mode administrateur, avec la commande suivante :
 
 ```shell
-apt-get install python3.8 python3-tk 
+apt-get install python3.12 python3-tk 
 ```
-(ici, par exemple, pour installer Python 3.8)
+(ici, par exemple, pour installer Python 3.12)
 
 **Remarque** : sous Linux, contrairement aux autres systèmes, il est nécessaire d'installer la bibliothèque
 d'interface graphique [tkinter](https://docs.python.org/fr/3/library/tkinter.html) (paquet `python3-tk`) séparément.
@@ -103,7 +101,7 @@ d'interface graphique [tkinter](https://docs.python.org/fr/3/library/tkinter.htm
 On peut directement passer directement en mode administrateur :
 
 ```shell
-sudo apt-get install python3.8 python3-tk
+sudo apt-get install python3.12 python3-tk
 ```
 (il faudra alors au préalable saisir le mot de passe administrateur)
  
@@ -134,7 +132,7 @@ de Linux et Ubuntu.
 Par exemple (dans votre `.bashrc`) :
 
 ```shell
-alias mrpython="python3.8 <chemin de MrPython>/MrPython-master/mrpython/Application.py"
+alias mrpython="python3 <chemin de MrPython>/MrPython-master/mrpython/Application.py"
 ```
 (ou il faut remplacer `<chemin de MrPython>` par le chemin d'installation utilisé lors
 de l'étape 1).
