@@ -142,6 +142,8 @@ def check_typevar_assign(node):
         return False # TODO : handle this case more precisely, why not  T : TypeVar = TypeVar('T') ?
     if len(node.targets) != 1:
         return False
+    if not isinstance(node.targets[0], ast.Name):
+        return False
     if node.targets[0].id not in PREDEFINED_TYPE_VARIABLES:
         return False
     if node.value.func.id != 'TypeVar':
