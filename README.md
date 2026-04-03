@@ -13,6 +13,9 @@ $ cd MrPython
 $ python3 mrpython/Application.py &
 ```
 
+### This fork
+
+Adds compatibility of type checking with Python 3.9+ version (tested with Python 3.14.11).
 
 ----
 

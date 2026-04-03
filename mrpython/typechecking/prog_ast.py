@@ -1,6 +1,5 @@
 """The abstract syntax tree of programs."""
 
-import ast
 import tokenize
 
 try:
@@ -12,6 +11,11 @@ try:
     from .type_converter import *
 except ImportError:
     from type_converter import *
+
+try:
+    from .ast_compat import normalize_index_slice, as_str_literal
+except ImportError:
+    from ast_compat import normalize_index_slice
 
 import os.path, sys
 
@@ -150,7 +154,7 @@ def check_typevar_assign(node):
         return False
     if len(node.value.args) != 1:
         return False
-    if node.value.args[0].s != node.targets[0].id:
+    if as_str_literal(node.value.args[0]) != node.targets[0].id:
         return False
 
     return True
@@ -187,8 +191,12 @@ class FunctionDef:
         first_instr = self.ast.body[0]
         next_instr_index = 0
         self.docstring = None
-        if isinstance(first_instr, ast.Expr) and isinstance(first_instr.value, ast.Str):
-            self.docstring = first_instr.value.s
+        first_docstring = None
+        if isinstance(first_instr, ast.Expr):
+            first_docstring = as_str_literal(first_instr.value)
+
+        if first_docstring is not None:
+            self.docstring = first_docstring
             next_instr_index = 1
             splitedDocstring = self.docstring.splitlines()
             i = 0
@@ -330,13 +338,8 @@ class ContainerAssign:
     def __init__(self, node, target, expr):
         self.ast = node
         self.container_expr = parse_expression(target.value)
-        if isinstance(target.slice, ast.Index):
-            # Python <= 3.8 < 3.9
-            self.container_index = parse_expression(target.slice.value)
-        else:
-            # Python >= 3.9
-            self.container_index = parse_expression(target.slice)
-        
+        self.container_index = parse_expression(normalize_index_slice(target.slice))
+
         self.assign_expr = parse_expression(expr)
 
 
@@ -882,14 +885,9 @@ class Indexing(Expr):
     def __init__(self, node):
         self.ast = node
         self.subject = parse_expression(node.value)
-        if isinstance(node.slice, ast.Index):
-            # Python <= 3.8 < 3.8
-            self.index = parse_expression(node.slice.value)
-        else:
-            # Python >= 3.9
-            self.index = parse_expression(node.slice)
+        self.index = parse_expression(normalize_index_slice(node.slice))
 
-        
+
 class Slicing(Expr):
     def __init__(self, node):
         self.ast = node
@@ -913,7 +911,7 @@ def parse_subscript(node):
             return Indexing(node)
     else:
         raise ValueError("Wrong subscript AST (please report)")
-        
+
 class Generator:
     def __init__(self, generator):
         self.ast = generator

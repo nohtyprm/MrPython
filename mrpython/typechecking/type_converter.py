@@ -4,9 +4,11 @@ import ast
 try:
     from .type_ast import *
     from .translate import tr
+    from .ast_compat import normalize_index_slice
 except ImportError:
     from type_ast import *
     from translate import tr
+    from ast_compat import normalize_index_slice
 
 def mk_container_type(container_id, element_value, annotation): 
     #import pdb ; pdb.set_trace()
@@ -76,12 +78,11 @@ def type_converter(annotation):
 
     # Special case for function types (HOF)
     if hasattr(annotation, "value") and hasattr(annotation.value, "id") and annotation.value.id == "Callable":
-        if isinstance(annotation.slice, ast.Index) and hasattr(annotation.slice, "value"):
-            # Python <= 3.8 < 3.9
-            sig = annotation.slice.value.elts
-        elif isinstance(annotation.slice, ast.Tuple):
+        callable_slice = normalize_index_slice(annotation.slice)
+
+        if isinstance(callable_slice, ast.Tuple):
             # Python >= 3.9
-            sig = annotation.slice.elts
+            sig = callable_slice.elts
         else:
             raise ValueError("Wrong AST (please report)")
             
@@ -135,12 +136,10 @@ def type_converter(annotation):
         return (False, tr("Does not understand the declared type."))
 
 def fetch_container_detail(annotation):
-    if isinstance(annotation.slice, ast.Index):
-        # Python <= 3.8  for lists, ...
-        return annotation.slice.value
-    elif isinstance(annotation.slice, (ast.Subscript, ast.Tuple, ast.Slice, ast.Name)):
+    slice_node = normalize_index_slice(annotation.slice)
+    if isinstance(slice_node, (ast.Subscript, ast.Tuple, ast.Slice, ast.Name)):
         # Python >= 3.9  or >= 3.8 (for dicts)
-        return annotation.slice
+        return slice_node
 
     raise ValueError("wrong annotation (please report)")
 
