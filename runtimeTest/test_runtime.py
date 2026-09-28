@@ -1,5 +1,6 @@
 import sys
 import glob
+import tokenize
 import os.path
 
 sys.path.append("../mrpython")
@@ -25,7 +26,7 @@ def testWithoutPreconditionError(prog_filename, prog_name, prog):
             print("      | " + error.fail_string())
         nb_tests_fail+=1
     else:
-        runner = studentRunner.StudentRunner(None, prog_filename,open(prog_filename,"r").read(), check_tk=False)
+        runner = studentRunner.StudentRunner(None, prog_filename,tokenize.open(prog_filename).read(), check_tk=False)
         runner.execute(dict(), capture_stdout=False)
         if runner.report.has_execution_error():
             print("  ==> FAIL: precondition error has been raised")
@@ -36,7 +37,7 @@ def testWithoutPreconditionError(prog_filename, prog_name, prog):
 
 def testWithPreconditionError(prog_filename, prog_name, prog):
     global nb_tests_abort, nb_tests_fail, nb_tests_pass
-    with open(prog_filename, 'r') as f:
+    with tokenize.open(prog_filename) as f:
         header = f.readline()
 
     if not header.startswith("##!FAIL:"):
@@ -50,7 +51,7 @@ def testWithPreconditionError(prog_filename, prog_name, prog):
         for error in ctx.type_errors:
             print("      | " + error.fail_string())
         nb_tests_fail+=1
-    runner = studentRunner.StudentRunner(None, prog_filename,open(prog_filename,"r").read(), check_tk=False)
+    runner = studentRunner.StudentRunner(None, prog_filename,tokenize.open(prog_filename).read(), check_tk=False)
     runner.execute(dict(), capture_stdout=False)
     if not runner.report.has_execution_error():
         print("  ==> FAIL: an error was expected (found none)")
