@@ -1,5 +1,4 @@
 from code import InteractiveInterpreter
-import inspect
 from RunReport import RunReport
 import ast
 import tokenize
@@ -160,39 +159,19 @@ class StudentRunner:
             #import pdb ; pdb.set_trace()
             if len(traceb) > 1:
                 _, lineno, _, line = traceb[-1]
-            if len(traceb) > 1 and err.args and err.args[0] == "<<<PRECONDITION>>>":
+            precondition = extract_precondition(err)
+            if len(traceb) > 1 and precondition is not None:
                 s = "Precondition error\n\t Function : {} (Line {})\n\t Precondition : {}\n\t False with {}"
                 func_name = traceb[-1].name
-                assert_lineno = traceb[-2].lineno
-                code_tb = traceb[-2].line
-                arg_names = []
-                arg_values = []
-
-                source_code = inspect.getsource(code)
-                #matches = re.findall(r'\((.*?)\)', code_tb)
-
-                try:
-                    tree = ast.parse(source_code)
-                except SyntaxError as err:
-                    print("Fatal Syntax error (precondition handling, please report)", file=sys.stderr)
-                    raise err
-                for node in ast.walk(tree):
-                    if isinstance(node, ast.FunctionDef):
-                        for argg in node.args.args:
-                            arg_name = argg.arg
-                            arg_names.append(arg_name)
-
-                arg_values = parse_assertion_arg_values(func_name, code_tb)
-
-                if len(arg_names) <= len(arg_values) : 
-                    arg = "\n\t"
-                    for i in range(len(arg_names)):
-                        arg += "\t" + str(arg_names[i]) + " = " + str(arg_values[i]) + "\n\t"
-                else : 
-                    raise ValueError("Precondition handling fails (wrong parameter/value, please report)")
-                        
-                if lineno in preconditionsLineno:
-                    self.report.add_execution_error('error', tr(s).format(func_name, lineno, line.split(':', 1)[-1].strip(), arg), assert_lineno)
+                # the arguments of the faulty call are read from the frame itself
+                # (the precondition checks are the first statements of the function)
+                arg = describe_call_arguments(tb)
+                # the line of the call is only relevant if it belongs to the edited
+                # file : in the interactive interpreter the call is made from a
+                # string that has nothing to do with the file being edited
+                call_site = traceb[-2]
+                assert_lineno = call_site.lineno if call_site.filename == self.filename else None
+                self.report.add_execution_error('error', tr(s).format(func_name, lineno, precondition, arg), assert_lineno)
             else:
                 self.report.add_execution_error('error', tr("Assertion error (failed test?)") + (f"\n ==> {str(err)}" if str(err) else ""), lineno)
             return (True, None)
@@ -338,52 +317,36 @@ class StudentRunner:
         return not fatal_error
 
     def add_FunctionPreconditions(self):
-        # TODO : because of changes in python 3.11+ dynamic compilation
-        #        we cannot add precondition checking code in this
-        #        way (hiding line numbers)
-        # a new scheme will be introduced
         self.AST = FunctionDefVisitor().visit(self.AST)
         self.AST = ast.fix_missing_locations(self.AST)
 
 
-def parse_assertion_arg_values(func_name, code_str):
-    """Parsing argumentexpression in assertion call"""
-
-    fn_index = code_str.find(func_name)
-    if fn_index == -1:
+def extract_precondition(err):
+    """Return the source of the violated precondition, or None if the
+       assertion error does not come from a precondition check."""
+    if not err.args or not isinstance(err.args[0], str):
         return None
-    
-    i = fn_index
-    while i < len(code_str) and code_str[i] != '(':
-        i += 1
-    if i >= len(code_str):
+    if not err.args[0].startswith(PRECONDITION_TAG):
         return None
+    return err.args[0][len(PRECONDITION_TAG):]
 
-    arg_values = []
-    i += 1
-    level = 0
-    arg = ""
-    while i < len(code_str) and not (level == 0 and code_str[i] == ')'):
 
-        if code_str[i] == '(':
-            level += 1
-            arg += code_str[i]
-        elif code_str[i] == ')':
-            level -= 1
-            arg += code_str[i]
-        elif code_str[i] == ',' and level == 0:
-            arg_values.append(arg.strip())
-            arg = ""
-        elif code_str[i] == ' ':
-            pass
-        else:
-            arg += code_str[i]
+def describe_call_arguments(tb):
+    """Describe the arguments of the call that failed its precondition.
 
-        i += 1
+       The precondition checks are injected at the very beginning of the
+       function body, hence the locals of the deepest frame of the traceback
+       are exactly the arguments of the faulty call."""
+    while tb.tb_next is not None:
+        tb = tb.tb_next
+    frame = tb.tb_frame
+    code = frame.f_code
+    arg_names = code.co_varnames[:code.co_argcount + code.co_kwonlyargcount]
 
-    arg_values.append(arg)
-
-    return arg_values       
+    descr = "\n\t"
+    for arg_name in arg_names:
+        descr += "\t" + arg_name + " = " + repr(frame.f_locals.get(arg_name)) + "\n\t"
+    return descr
 
 class FunCallsVisitor(ast.NodeVisitor):
     def __init__(self):
@@ -400,7 +363,16 @@ class FunCallsVisitor(ast.NodeVisitor):
 
 from typechecking.typechecker import preconditions
 
-preconditionsLineno = []
+# marker prepended to the message of the injected assertions, so that a
+# precondition failure can be told apart from a plain (test) assertion
+PRECONDITION_TAG = "<<<PRECONDITION>>>"
+
+def precondition_source(precondition_node):
+    """The source code of a precondition, as written by the student."""
+    if hasattr(ast, "unparse"): # python 3.9+
+        return ast.unparse(precondition_node)
+    else:
+        return ast.dump(precondition_node)
 
 class FunctionDefVisitor(ast.NodeTransformer):
     def visit_FunctionDef(self, node):
@@ -408,29 +380,23 @@ class FunctionDefVisitor(ast.NodeTransformer):
             return node
         else:
             ast_asserts = []
-            new_end_lineno = 0
             for precondition_node in preconditions[node.name]:
                 lineno = precondition_node.lineno # Is the right assertion lineno
                 PreconditionAstLinenoUpdater(lineno).visit(precondition_node)
-                preconditionsLineno.append(lineno)
                 # print(ast.dump(precondition_node, annotate_fields=True, include_attributes=True, indent=4))
                 assert_node = ast.Assert(test=precondition_node)
-                assert_node.msg = ast.Constant("<<<PRECONDITION>>>")
-                assert_node.lineno = lineno + new_end_lineno
-                assert_node.end_lineno = assert_node.lineno
+                # the precondition is carried by the assertion message so that it
+                # can be reported without relying on (unreliable) line numbers
+                assert_node.msg = ast.Constant(PRECONDITION_TAG + precondition_source(precondition_node))
+                assert_node.lineno = lineno
+                assert_node.end_lineno = lineno
                 ast_asserts.append(assert_node)
-                new_end_lineno += 1
-            
-            # Line number synchronization to avoid an overlapping scenario
-            line_diff = new_end_lineno - node.lineno
-            ast.increment_lineno(node, n=line_diff)
-            if hasattr(node, "type_comment"):
-                node_res = ast.FunctionDef(node.name,node.args,ast_asserts+node.body,node.decorator_list,node.returns,node.type_comment,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno, end_col_offset = node.end_col_offset)
-            else: # python 3.7
-                node_res = ast.FunctionDef(node.name,node.args,ast_asserts+node.body,node.decorator_list,node.returns,lineno = node.lineno,col_offset = node.col_offset, end_lineno = node.lineno)
 
-            return node_res
-        
+            # the checks are prepended to the body so that, when one of them
+            # fails, the locals of the function are exactly its arguments
+            node.body = ast_asserts + node.body
+            return node
+
 if __name__ == "__main__":
     # for testing purpose only
     runner = StudentRunner(None, "toto.py","""
