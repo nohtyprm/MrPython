@@ -13,14 +13,12 @@ $ cd MrPython
 $ python3 mrpython/Application.py &
 ```
 
-
 ----
 
 Copyright (C)
 =============
 
   - 2001-2015 the IDLE authors (Idle)
-  - 2015-2018 Frederic Peschanski (MrPython fork)
-          under Python license (cf. `LICENSE.python`).
-
+  - 2015-2026 the IDLE authors and Frederic Peschanski (MrPython fork)
+              under Python license (cf. `LICENSE.python`).
 
