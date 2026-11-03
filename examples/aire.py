@@ -14,7 +14,7 @@ def aire_triangle(a : float, b : float, c : float) -> float:
     j : float
     j = 4.2
 
-    i : int
+    i : float
     i = j + 3
 
     return math.sqrt(p * (p - a) * (p - b) * (p - c))
